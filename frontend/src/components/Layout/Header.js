@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -7,26 +7,34 @@ import {
   IconButton,
   Typography,
   Avatar,
+  Menu,
+  MenuItem,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
 import {
-  DarkModeOutlined,
-  LightModeOutlined,
   NotificationsOutlined,
   LogoutOutlined,
+  Person,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme as useCustomTheme } from '../../contexts/ThemeContext';
 
 const Header = () => {
   const { user, logout } = useAuth();
-  const { darkMode, toggleTheme } = useCustomTheme();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleUserMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const getUserInitials = () => {
@@ -68,20 +76,23 @@ const Header = () => {
 
         {/* Action Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton
-            onClick={toggleTheme}
-            color="inherit"
-            title={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
-          >
-            {darkMode ? <LightModeOutlined /> : <DarkModeOutlined />}
-          </IconButton>
-
           <IconButton color="inherit" title="Notifications">
             <NotificationsOutlined />
           </IconButton>
 
           {/* User Menu */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', p: 1, borderRadius: 1, '&:hover': { backgroundColor: 'action.hover' } }}>
+          <Box 
+            onClick={handleUserMenuOpen}
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1, 
+              cursor: 'pointer', 
+              p: 1, 
+              borderRadius: 1, 
+              '&:hover': { backgroundColor: 'action.hover' } 
+            }}
+          >
             {!isMobile && (
               <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="body2" fontWeight="600">
@@ -104,9 +115,29 @@ const Header = () => {
             </Avatar>
           </Box>
 
-          <IconButton onClick={handleLogout} color="inherit" title="Logout">
-            <LogoutOutlined />
-          </IconButton>
+          {/* User Dropdown Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleUserMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleUserMenuClose}>
+              <Person sx={{ mr: 1 }} />
+              Profile
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <LogoutOutlined sx={{ mr: 1 }} />
+              Logout
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

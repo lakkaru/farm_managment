@@ -10,6 +10,12 @@ const getFarms = asyncHandler(async (req, res) => {
   
   const query = {};
   
+  // Filter by user's farms (owned or managed)
+  query.$or = [
+    { owner: req.user._id },
+    { managers: req.user._id }
+  ];
+  
   // Add filters if provided
   if (farmType) query.farmType = farmType;
   if (city) query['location.city'] = new RegExp(city, 'i');

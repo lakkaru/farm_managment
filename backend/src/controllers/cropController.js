@@ -17,10 +17,22 @@ const getCrops = asyncHandler(async (req, res) => {
     plantingDateTo 
   } = req.query;
   
-  const query = {};
+  // First get user's farms
+  const userFarms = await Farm.find({
+    $or: [
+      { owner: req.user._id },
+      { managers: req.user._id }
+    ]
+  }).select('_id');
+  
+  const userFarmIds = userFarms.map(f => f._id);
+  
+  const query = {
+    farm: { $in: userFarmIds }
+  };
   
   // Add filters if provided
-  if (farm) query.farm = farm;
+  if (farm && userFarmIds.includes(farm)) query.farm = farm;
   if (status) query.status = status;
   if (category) query.category = category;
   
