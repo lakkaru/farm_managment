@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const response = await authAPI.getProfile();
-      dispatch({ type: 'LOAD_USER', payload: response.data.user });
+      dispatch({ type: 'LOAD_USER', payload: response.data.data });
     } catch (error) {
       dispatch({ type: 'AUTH_ERROR', payload: error.response?.data?.message || 'Failed to load user' });
       localStorage.removeItem('token');
@@ -106,8 +106,14 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'LOGIN_START' });
       const response = await authAPI.login(credentials);
       
-      localStorage.setItem('token', response.data.token);
-      dispatch({ type: 'LOGIN_SUCCESS', payload: response.data });
+      localStorage.setItem('token', response.data.data.token);
+      dispatch({ 
+        type: 'LOGIN_SUCCESS', 
+        payload: { 
+          user: response.data.data, 
+          token: response.data.data.token 
+        }
+      });
       
       toast.success('Login successful!');
       return response.data;
@@ -125,8 +131,14 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'REGISTER_START' });
       const response = await authAPI.register(userData);
       
-      localStorage.setItem('token', response.data.token);
-      dispatch({ type: 'REGISTER_SUCCESS', payload: response.data });
+      localStorage.setItem('token', response.data.data.token);
+      dispatch({ 
+        type: 'REGISTER_SUCCESS', 
+        payload: { 
+          user: response.data.data, 
+          token: response.data.data.token 
+        }
+      });
       
       toast.success('Registration successful!');
       return response.data;
@@ -149,7 +161,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (userData) => {
     try {
       const response = await authAPI.updateProfile(userData);
-      dispatch({ type: 'LOAD_USER', payload: response.data.user });
+      dispatch({ type: 'LOAD_USER', payload: response.data.data });
       toast.success('Profile updated successfully!');
       return response.data;
     } catch (error) {

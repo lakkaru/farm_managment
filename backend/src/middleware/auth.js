@@ -20,20 +20,15 @@ const protect = asyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from token
-    const user = await User.findById(decoded.id).select('+password');
+    const user = await User.findById(decoded.id);
     
     if (!user) {
       throw new AppError('No user found with this token', 401);
     }
     
     // Check if user account is active
-    if (!user.isActive) {
+    if (user.isActive === false) {
       throw new AppError('User account is deactivated', 401);
-    }
-    
-    // Check if user account is locked
-    if (user.isLocked) {
-      throw new AppError('User account is temporarily locked', 401);
     }
     
     req.user = user;
@@ -52,8 +47,9 @@ const protect = asyncHandler(async (req, res, next) => {
 // Authorize specific roles
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      throw new AppError(`User role ${req.user.role} is not authorized to access this route`, 403);
+    const userRole = req.user.profile ? req.user.profile.role : req.user.role;
+    if (!roles.includes(userRole)) {
+      throw new AppError(`User role ${userRole} is not authorized to access this route`, 403);
     }
     next();
   };
@@ -69,7 +65,8 @@ const checkFarmPermission = (permission) => {
     }
     
     // Admin can access all farms
-    if (req.user.role === 'admin') {
+    const userRole = req.user.profile ? req.user.profile.role : req.user.role;
+    if (userRole === 'admin') {
       return next();
     }
     
