@@ -47,7 +47,7 @@ const protect = asyncHandler(async (req, res, next) => {
 // Authorize specific roles
 const authorize = (...roles) => {
   return (req, res, next) => {
-    const userRole = req.user.profile ? req.user.profile.role : req.user.role;
+    const userRole = req.user.role;
     if (!roles.includes(userRole)) {
       throw new AppError(`User role ${userRole} is not authorized to access this route`, 403);
     }
@@ -65,7 +65,7 @@ const checkFarmPermission = (permission) => {
     }
     
     // Admin can access all farms
-    const userRole = req.user.profile ? req.user.profile.role : req.user.role;
+    const userRole = req.user.role;
     if (userRole === 'admin') {
       return next();
     }

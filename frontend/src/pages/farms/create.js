@@ -120,7 +120,11 @@ const CreateFarmContent = () => {
         if (err.response.status === 401) {
           message = 'Please log in again. Your session may have expired.';
         } else if (err.response.status === 403) {
-          message = 'You do not have permission to create farms.';
+          if (err.response.data?.message?.includes('role undefined')) {
+            message = 'Account setup incomplete. Please log out and log in again.';
+          } else {
+            message = 'You do not have permission to create farms. Please contact your administrator.';
+          }
         } else if (err.response.data?.message) {
           message = err.response.data.message;
         }
