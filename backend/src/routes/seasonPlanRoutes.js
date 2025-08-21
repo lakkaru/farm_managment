@@ -18,14 +18,7 @@ const seasonPlanValidation = [
   body('season')
     .isIn(['maha', 'yala'])
     .withMessage('Season must be either maha or yala'),
-  body('district')
-    .trim()
-    .notEmpty()
-    .withMessage('District is required'),
-  body('climateZone')
-    .trim()
-    .notEmpty()
-    .withMessage('Climate zone is required'),
+  // climateZone will be auto-populated from farm
   body('irrigationMethod')
     .isIn(['Rain-fed', 'Irrigated (Tank)', 'Irrigated (River)', 'Irrigated (Tube well)', 'Irrigated (Canal)'])
     .withMessage('Invalid irrigation method'),

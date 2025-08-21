@@ -16,8 +16,8 @@ const getSeasonPlans = async (req, res) => {
     if (farmId) filter.farmId = farmId;
 
     const plans = await SeasonPlan.find(filter)
-      .populate('farmId', 'name location')
-      .populate('paddyVariety', 'name duration type')
+      .populate('farmId', 'name location district cultivationZone totalArea')
+      .populate('paddyVariety', 'name duration type characteristics')
       .sort({ cultivationDate: -1 });
     
     res.json({
@@ -41,7 +41,7 @@ const getSeasonPlans = async (req, res) => {
 const getSeasonPlan = async (req, res) => {
   try {
     const plan = await SeasonPlan.findById(req.params.id)
-      .populate('farmId', 'name location')
+      .populate('farmId', 'name location district cultivationZone totalArea')
       .populate('paddyVariety', 'name duration type characteristics');
     
     if (!plan) {
@@ -87,6 +87,16 @@ const createSeasonPlan = async (req, res) => {
       });
     }
 
+    // Get the farm to extract district and climate zone
+    const Farm = require('../models/Farm');
+    const farm = await Farm.findById(req.body.farmId);
+    if (!farm) {
+      return res.status(404).json({
+        success: false,
+        message: 'Farm not found',
+      });
+    }
+
     // Get paddy variety details
     const paddyVariety = await PaddyVariety.findById(req.body.paddyVariety);
     if (!paddyVariety) {
@@ -96,10 +106,12 @@ const createSeasonPlan = async (req, res) => {
       });
     }
 
-    // Generate season plan data
+    // Generate season plan data with farm's district and climate zone
     const planData = {
       ...req.body,
       userId: req.user.id,
+      // Use climate zone from farm's cultivationZone, or use a default based on district
+      climateZone: farm.cultivationZone || getDefaultClimateZone(farm.district),
     };
 
     // Generate growing stages
@@ -120,10 +132,12 @@ const createSeasonPlan = async (req, res) => {
       estimatedYield: calculateEstimatedYield(req.body.cultivatingArea, paddyVariety.characteristics?.yield || 4),
     };
 
+    console.log('Creating season plan with data:', JSON.stringify(planData, null, 2));
+
     const plan = await SeasonPlan.create(planData);
     
     const populatedPlan = await SeasonPlan.findById(plan._id)
-      .populate('farmId', 'name location')
+      .populate('farmId', 'name district cultivationZone')
       .populate('paddyVariety', 'name duration type');
     
     res.status(201).json({
@@ -176,8 +190,8 @@ const updateSeasonPlan = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('farmId', 'name location')
-     .populate('paddyVariety', 'name duration type');
+    ).populate('farmId', 'name location district cultivationZone totalArea')
+     .populate('paddyVariety', 'name duration type characteristics');
 
     res.json({
       success: true,
@@ -335,6 +349,39 @@ const generateFertilizerSchedule = (cultivationDate, area, soilCondition) => {
 
 const calculateEstimatedYield = (area, yieldPerAcre = 4) => {
   return Math.round(area * yieldPerAcre * 100) / 100; // tons
+};
+
+// Helper function to get default climate zone based on district
+const getDefaultClimateZone = (district) => {
+  // This is a simplified mapping - you might want to use your districts constants
+  const zoneMapping = {
+    'Colombo': 'WL1',
+    'Gampaha': 'WL1', 
+    'Kalutara': 'WL2',
+    'Kandy': 'WM1',
+    'Matale': 'WM2',
+    'Nuwara Eliya': 'WU1',
+    'Kurunegala': 'IM1',
+    'Puttalam': 'DL1',
+    'Anuradhapura': 'DL1',
+    'Polonnaruwa': 'DL2',
+    'Batticaloa': 'DL3',
+    'Ampara': 'DL3',
+    'Trincomalee': 'DL2',
+    'Vavuniya': 'DL1',
+    'Mannar': 'DL1',
+    'Jaffna': 'DL1',
+    'Kilinochchi': 'DL1',
+    'Mullaitivu': 'DL1',
+    'Galle': 'WL2',
+    'Matara': 'WL2',
+    'Hambantota': 'DL3',
+    'Ratnapura': 'WL3',
+    'Kegalle': 'WM1',
+    'Badulla': 'IL1',
+    'Moneragala': 'IL1'
+  };
+  return zoneMapping[district] || 'WL1'; // Default to WL1 if district not found
 };
 
 module.exports = {

@@ -50,6 +50,7 @@ const Sidebar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paddyMenuOpen, setPaddyMenuOpen] = useState(false);
   const [farmsMenuOpen, setFarmsMenuOpen] = useState(false);
+  const [cropsMenuOpen, setCropsMenuOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('/dashboard');
 
   // Load farms when component mounts
@@ -88,14 +89,23 @@ const Sidebar = () => {
         { path: '/farms/create', icon: AddIcon, label: 'Create Farm' },
       ]
     },
-    { path: '/crops', icon: AgricultureIcon, label: 'Crops' },
     { 
-      path: '/paddy', 
-      icon: PaddyIcon, 
-      label: 'Paddy',
+      path: '/crops', 
+      icon: AgricultureIcon, 
+      label: 'Crops',
       hasSubmenu: true,
       submenu: [
-        { path: '/paddy/plan-season', icon: PlanSeasonIcon, label: 'Plan Season' },
+        { path: '/crops', icon: ViewIcon, label: 'View All Crops' },
+        { path: '/crops/create', icon: AddIcon, label: 'Create Crop' },
+        { 
+          label: 'Paddy', 
+          icon: PaddyIcon, 
+          isSubmenuGroup: true,
+          submenu: [
+            { path: '/paddy/varieties', icon: PaddyIcon, label: 'Paddy Varieties' },
+            { path: '/paddy/season-plans', icon: PlanSeasonIcon, label: 'Season Plans' },
+          ]
+        },
       ]
     },
     { path: '/livestock', icon: PetsIcon, label: 'Livestock' },
@@ -117,18 +127,22 @@ const Sidebar = () => {
       setPaddyMenuOpen(!paddyMenuOpen);
     } else if (menuType === 'farms') {
       setFarmsMenuOpen(!farmsMenuOpen);
+    } else if (menuType === 'crops') {
+      setCropsMenuOpen(!cropsMenuOpen);
     }
   };
 
   const getMenuState = (item) => {
     if (item.label === 'Paddy') return paddyMenuOpen;
     if (item.label === 'Farms') return farmsMenuOpen;
+    if (item.label === 'Crops') return cropsMenuOpen;
     return false;
   };
 
   const getMenuType = (item) => {
     if (item.label === 'Paddy') return 'paddy';
     if (item.label === 'Farms') return 'farms';
+    if (item.label === 'Crops') return 'crops';
     return null;
   };
 
@@ -234,35 +248,98 @@ const Sidebar = () => {
               <Collapse in={getMenuState(item)} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {item.submenu.map((subItem) => (
-                    <ListItem key={subItem.path} disablePadding sx={{ mb: 0.5 }}>
-                      <ListItemButton
-                        onClick={() => handleNavigation(subItem.path)}
-                        selected={currentPath === subItem.path}
-                        sx={{
-                          pl: 4,
-                          borderRadius: 2,
-                          '&.Mui-selected': {
-                            backgroundColor: 'primary.light',
-                            color: 'primary.contrastText',
-                            '&:hover': {
-                              backgroundColor: 'primary.main',
-                            },
-                          },
-                          '&:hover': {
-                            backgroundColor: 'primary.light',
-                          },
-                        }}
-                      >
-                        <ListItemIcon
-                          sx={{
-                            color: currentPath === subItem.path ? 'primary.contrastText' : 'inherit',
-                          }}
-                        >
-                          <subItem.icon />
-                        </ListItemIcon>
-                        <ListItemText primary={subItem.label} />
-                      </ListItemButton>
-                    </ListItem>
+                    <React.Fragment key={subItem.path || subItem.label}>
+                      {subItem.isSubmenuGroup ? (
+                        /* Nested submenu group (like Paddy) */
+                        <>
+                          <ListItem disablePadding sx={{ mb: 0.5 }}>
+                            <ListItemButton
+                              onClick={() => setPaddyMenuOpen(!paddyMenuOpen)}
+                              sx={{
+                                pl: 4,
+                                borderRadius: 2,
+                                '&:hover': {
+                                  backgroundColor: 'primary.light',
+                                },
+                              }}
+                            >
+                              <ListItemIcon>
+                                <subItem.icon />
+                              </ListItemIcon>
+                              <ListItemText primary={subItem.label} />
+                              {paddyMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                            </ListItemButton>
+                          </ListItem>
+                          
+                          <Collapse in={paddyMenuOpen} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>
+                              {subItem.submenu.map((nestedItem) => (
+                                <ListItem key={nestedItem.path} disablePadding sx={{ mb: 0.5 }}>
+                                  <ListItemButton
+                                    onClick={() => handleNavigation(nestedItem.path)}
+                                    selected={currentPath === nestedItem.path}
+                                    sx={{
+                                      pl: 6,
+                                      borderRadius: 2,
+                                      '&.Mui-selected': {
+                                        backgroundColor: 'primary.light',
+                                        color: 'primary.contrastText',
+                                        '&:hover': {
+                                          backgroundColor: 'primary.main',
+                                        },
+                                      },
+                                      '&:hover': {
+                                        backgroundColor: 'primary.light',
+                                      },
+                                    }}
+                                  >
+                                    <ListItemIcon
+                                      sx={{
+                                        color: currentPath === nestedItem.path ? 'primary.contrastText' : 'inherit',
+                                      }}
+                                    >
+                                      <nestedItem.icon />
+                                    </ListItemIcon>
+                                    <ListItemText primary={nestedItem.label} />
+                                  </ListItemButton>
+                                </ListItem>
+                              ))}
+                            </List>
+                          </Collapse>
+                        </>
+                      ) : (
+                        /* Regular submenu item */
+                        <ListItem key={subItem.path} disablePadding sx={{ mb: 0.5 }}>
+                          <ListItemButton
+                            onClick={() => handleNavigation(subItem.path)}
+                            selected={currentPath === subItem.path}
+                            sx={{
+                              pl: 4,
+                              borderRadius: 2,
+                              '&.Mui-selected': {
+                                backgroundColor: 'primary.light',
+                                color: 'primary.contrastText',
+                                '&:hover': {
+                                  backgroundColor: 'primary.main',
+                                },
+                              },
+                              '&:hover': {
+                                backgroundColor: 'primary.light',
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{
+                                color: currentPath === subItem.path ? 'primary.contrastText' : 'inherit',
+                              }}
+                            >
+                              <subItem.icon />
+                            </ListItemIcon>
+                            <ListItemText primary={subItem.label} />
+                          </ListItemButton>
+                        </ListItem>
+                      )}
+                    </React.Fragment>
                   ))}
                 </List>
               </Collapse>

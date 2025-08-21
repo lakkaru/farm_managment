@@ -16,10 +16,7 @@ const seasonPlanSchema = new mongoose.Schema({
     required: [true, 'Season is required'],
     enum: ['maha', 'yala'],
   },
-  district: {
-    type: String,
-    required: [true, 'District is required'],
-  },
+  // Remove district requirement as it will come from farm
   climateZone: {
     type: String,
     required: [true, 'Climate zone is required'],
@@ -116,7 +113,11 @@ seasonPlanSchema.virtual('planDuration').get(function() {
 seasonPlanSchema.index({ farmId: 1, userId: 1 });
 seasonPlanSchema.index({ season: 1, cultivationDate: 1 });
 seasonPlanSchema.index({ status: 1 });
-seasonPlanSchema.index({ district: 1, climateZone: 1 });
+
+// Virtual for getting farm district
+seasonPlanSchema.virtual('district').get(function() {
+  return this.farmId?.district;
+});
 
 const SeasonPlan = mongoose.model('SeasonPlan', seasonPlanSchema);
 

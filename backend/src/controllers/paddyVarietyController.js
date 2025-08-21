@@ -6,9 +6,21 @@ const { validationResult } = require('express-validator');
 // @access  Private
 const getPaddyVarieties = async (req, res) => {
   try {
-    const { type, zone, active = true } = req.query;
+    console.log('=== getPaddyVarieties API called ===');
+    console.log('User:', req.user.id);
+    console.log('Query params:', req.query);
     
-    const filter = { isActive: active === 'true' };
+    const { type, zone, active, search, yearFrom, yearTo } = req.query;
+    
+    const filter = {};
+    
+    // Only add isActive filter if explicitly set to false
+    if (active === 'false') {
+      filter.isActive = false;
+    } else {
+      // Default to active varieties only
+      filter.isActive = true;
+    }
     
     if (type) {
       filter.type = type;
@@ -18,7 +30,35 @@ const getPaddyVarieties = async (req, res) => {
       filter['characteristics.suitableZones'] = { $in: [zone] };
     }
 
-    const varieties = await PaddyVariety.find(filter).sort({ type: 1, duration: 1 });
+    // Search by name or popular name
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { popularName: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Filter by year range
+    if (yearFrom) {
+      filter.yearOfRelease = { ...filter.yearOfRelease, $gte: parseInt(yearFrom) };
+    }
+    if (yearTo) {
+      filter.yearOfRelease = { ...filter.yearOfRelease, $lte: parseInt(yearTo) };
+    }
+
+    const varieties = await PaddyVariety.find(filter).sort({ name: 1 });
+    
+    console.log('Total varieties found (no filter):', await PaddyVariety.countDocuments({ isActive: true }));
+    console.log('Filtered varieties count:', varieties.length);
+    if (varieties.length > 0) {
+      console.log('First variety:', { 
+        name: varieties[0].name, 
+        type: varieties[0].type, 
+        isActive: varieties[0].isActive,
+        duration: varieties[0].duration
+      });
+    }
+    console.log('=== End getPaddyVarieties ===');
     
     res.json({
       success: true,
