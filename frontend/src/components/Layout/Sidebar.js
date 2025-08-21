@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useLocation, Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -32,24 +31,63 @@ import {
   Schedule as PlanSeasonIcon,
   ExpandLess,
   ExpandMore,
+  Add as AddIcon,
+  Visibility as ViewIcon,
+  Business as FarmIcon,
 } from '@mui/icons-material';
+import { navigate } from 'gatsby';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFarm } from '../../contexts/FarmContext';
+import { farmAPI } from '../../services/api';
 
 const drawerWidth = 260;
 
 const Sidebar = () => {
-  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
-  const { farms, selectedFarm, setSelectedFarm } = useFarm();
+  const { farms, selectedFarm, setSelectedFarm, setFarms } = useFarm();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paddyMenuOpen, setPaddyMenuOpen] = useState(false);
+  const [farmsMenuOpen, setFarmsMenuOpen] = useState(false);
+  const [currentPath, setCurrentPath] = useState('/dashboard');
+
+  // Load farms when component mounts
+  useEffect(() => {
+    const loadFarms = async () => {
+      try {
+        const response = await farmAPI.getFarms();
+        setFarms(response.data.data || []);
+      } catch (error) {
+        console.error('Error loading farms:', error);
+        setFarms([]);
+      }
+    };
+
+    if (user) {
+      loadFarms();
+    }
+  }, [user]); // Removed setFarms from dependencies to prevent infinite loop
+
+  // Update current path for navigation highlighting
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentPath(window.location.pathname);
+    }
+  }, []);
 
   const navigationItems = [
     { path: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
-    { path: '/farms', icon: HomeIcon, label: 'Farms' },
+    { 
+      path: '/farms', 
+      icon: FarmIcon, 
+      label: 'Farms',
+      hasSubmenu: true,
+      submenu: [
+        { path: '/farms', icon: ViewIcon, label: 'View All Farms' },
+        { path: '/farms/create', icon: AddIcon, label: 'Create Farm' },
+      ]
+    },
     { path: '/crops', icon: AgricultureIcon, label: 'Crops' },
     { 
       path: '/paddy', 
@@ -65,6 +103,34 @@ const Sidebar = () => {
     { path: '/reports', icon: BarChartIcon, label: 'Reports' },
     { path: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    setCurrentPath(path);
+    if (isMobile) {
+      handleDrawerToggle();
+    }
+  };
+
+  const handleMenuToggle = (menuType) => {
+    if (menuType === 'paddy') {
+      setPaddyMenuOpen(!paddyMenuOpen);
+    } else if (menuType === 'farms') {
+      setFarmsMenuOpen(!farmsMenuOpen);
+    }
+  };
+
+  const getMenuState = (item) => {
+    if (item.label === 'Paddy') return paddyMenuOpen;
+    if (item.label === 'Farms') return farmsMenuOpen;
+    return false;
+  };
+
+  const getMenuType = (item) => {
+    if (item.label === 'Paddy') return 'paddy';
+    if (item.label === 'Farms') return 'farms';
+    return null;
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -97,8 +163,11 @@ const Sidebar = () => {
       </Box>
 
       {/* Farm Selector */}
-      {farms.length > 0 && (
-        <Box sx={{ px: 2, pb: 2 }}>
+      <Box sx={{ px: 2, pb: 2 }}>
+        <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>
+          Farms ({farms.length})
+        </Typography>
+        {farms.length > 0 ? (
           <FormControl fullWidth size="small">
             <Select
               value={selectedFarm?._id || ''}
@@ -117,8 +186,12 @@ const Sidebar = () => {
               ))}
             </Select>
           </FormControl>
-        </Box>
-      )}
+        ) : (
+          <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 1 }}>
+            No farms found. Create a farm first.
+          </Typography>
+        )}
+      </Box>
 
       <Divider />
 
@@ -128,10 +201,8 @@ const Sidebar = () => {
           <React.Fragment key={item.path}>
             <ListItem disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
-                component={item.hasSubmenu ? 'div' : RouterLink}
-                to={item.hasSubmenu ? undefined : item.path}
-                selected={!item.hasSubmenu && location.pathname === item.path}
-                onClick={item.hasSubmenu ? () => setPaddyMenuOpen(!paddyMenuOpen) : (isMobile ? handleDrawerToggle : undefined)}
+                selected={!item.hasSubmenu && currentPath === item.path}
+                onClick={item.hasSubmenu ? () => handleMenuToggle(getMenuType(item)) : () => handleNavigation(item.path)}
                 sx={{
                   borderRadius: 2,
                   '&.Mui-selected': {
@@ -148,27 +219,25 @@ const Sidebar = () => {
               >
                 <ListItemIcon
                   sx={{
-                    color: (!item.hasSubmenu && location.pathname === item.path) ? 'primary.contrastText' : 'inherit',
+                    color: (!item.hasSubmenu && currentPath === item.path) ? 'primary.contrastText' : 'inherit',
                   }}
                 >
                   <item.icon />
                 </ListItemIcon>
                 <ListItemText primary={item.label} />
-                {item.hasSubmenu && (paddyMenuOpen ? <ExpandLess /> : <ExpandMore />)}
+                {item.hasSubmenu && (getMenuState(item) ? <ExpandLess /> : <ExpandMore />)}
               </ListItemButton>
             </ListItem>
             
             {/* Submenu */}
             {item.hasSubmenu && (
-              <Collapse in={paddyMenuOpen} timeout="auto" unmountOnExit>
+              <Collapse in={getMenuState(item)} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {item.submenu.map((subItem) => (
                     <ListItem key={subItem.path} disablePadding sx={{ mb: 0.5 }}>
                       <ListItemButton
-                        component={RouterLink}
-                        to={subItem.path}
-                        selected={location.pathname === subItem.path}
-                        onClick={isMobile ? handleDrawerToggle : undefined}
+                        onClick={() => handleNavigation(subItem.path)}
+                        selected={currentPath === subItem.path}
                         sx={{
                           pl: 4,
                           borderRadius: 2,
@@ -186,7 +255,7 @@ const Sidebar = () => {
                       >
                         <ListItemIcon
                           sx={{
-                            color: location.pathname === subItem.path ? 'primary.contrastText' : 'inherit',
+                            color: currentPath === subItem.path ? 'primary.contrastText' : 'inherit',
                           }}
                         >
                           <subItem.icon />

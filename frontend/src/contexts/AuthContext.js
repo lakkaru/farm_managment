@@ -95,6 +95,7 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.getProfile();
       dispatch({ type: 'LOAD_USER', payload: response.data.data });
     } catch (error) {
+      console.error('AuthContext: Failed to load user:', error);
       dispatch({ type: 'AUTH_ERROR', payload: error.response?.data?.message || 'Failed to load user' });
       localStorage.removeItem('token');
     }
@@ -118,7 +119,16 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      let message = 'Login failed';
+      
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        message = 'Network error. Please check your connection.';
+      } else if (error.code === 'ECONNREFUSED') {
+        message = 'Cannot connect to server. Please try again later.';
+      }
+      
       dispatch({ type: 'LOGIN_FAIL', payload: message });
       toast.error(message);
       throw error;

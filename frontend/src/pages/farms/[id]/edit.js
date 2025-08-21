@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -14,15 +14,16 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { navigate } from 'gatsby';
-import Layout from '../../components/Layout/Layout';
-import AppProviders from '../../providers/AppProviders';
-import { farmAPI } from '../../services/api';
+import Layout from '../../../components/Layout/Layout';
+import AppProviders from '../../../providers/AppProviders';
+import { farmAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
-import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/districts';
-import { COMMON_SOIL_TYPES } from '../../constants/soilTypes';
+import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../../constants/districts';
+import { COMMON_SOIL_TYPES } from '../../../constants/soilTypes';
 
-const CreateFarmContent = () => {
-  const [loading, setLoading] = useState(false);
+const EditFarmContent = ({ farmId }) => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -50,9 +51,56 @@ const CreateFarmContent = () => {
     soilType: ''
   });
 
+  const loadFarm = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await farmAPI.getFarm(farmId);
+      const farm = response.data.data;
+      
+      setFormData({
+        name: farm.name || '',
+        description: farm.description || '',
+        farmType: farm.farmType || '',
+        district: farm.district || farm.location?.district || '',
+        cultivationZone: farm.cultivationZone || farm.location?.cultivationZone || '',
+        location: {
+          address: farm.location?.address || '',
+          country: 'Sri Lanka',
+          zipCode: farm.location?.zipCode || '',
+          coordinates: {
+            latitude: farm.location?.coordinates?.latitude || '',
+            longitude: farm.location?.coordinates?.longitude || ''
+          }
+        },
+        totalArea: {
+          value: farm.totalArea?.value || farm.totalArea || '',
+          unit: farm.totalArea?.unit || 'acres'
+        },
+        cultivatedArea: {
+          value: farm.cultivatedArea?.value || farm.cultivatedArea || '',
+          unit: farm.cultivatedArea?.unit || 'acres'
+        },
+        soilType: farm.soilType || ''
+      });
+    } catch (err) {
+      console.error('Error loading farm:', err);
+      setError('Failed to load farm details');
+    } finally {
+      setLoading(false);
+    }
+  }, [farmId]);
+
+  useEffect(() => {
+    if (farmId) {
+      loadFarm();
+    }
+  }, [farmId, loadFarm]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     
+    // Handle nested fields
     if (name.includes('.')) {
       const keys = name.split('.');
       setFormData(prev => {
@@ -69,123 +117,79 @@ const CreateFarmContent = () => {
         ...prev,
         [name]: value
       }));
-      
-      // Auto-populate cultivation zone when district changes
-      if (name === 'district') {
-        const selectedDistrict = SRI_LANKAN_DISTRICTS.find(d => d.name === value);
-        if (selectedDistrict) {
-          setFormData(prev => ({
-            ...prev,
-            cultivationZone: selectedDistrict.zone
-          }));
-        }
+    }
+
+    // Auto-populate cultivation zone when district changes
+    if (name === 'district') {
+      const selectedDistrict = SRI_LANKAN_DISTRICTS.find(d => d.name === value);
+      if (selectedDistrict) {
+        setFormData(prev => ({
+          ...prev,
+          cultivationZone: selectedDistrict.cultivationZone
+        }));
       }
     }
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
+    
     try {
-      // Validate required fields
-      if (!formData.name || !formData.farmType || !formData.district || !formData.totalArea.value) {
-        setError('Please fill in all required fields');
-        return;
-      }
-
-      // Transform form data to match backend model
-      const farmData = {
+      setSaving(true);
+      setError('');
+      
+      // Prepare data for submission
+      const submitData = {
         name: formData.name,
         description: formData.description,
         farmType: formData.farmType,
         district: formData.district,
         cultivationZone: formData.cultivationZone,
-        soilType: formData.soilType,
-        location: {
-          address: formData.location.address || formData.district, // Use district as address if address is empty
-          country: formData.location.country,
-          zipCode: formData.location.zipCode || '00000', // Provide default if empty
-          coordinates: {
-            latitude: formData.location.coordinates.latitude ? parseFloat(formData.location.coordinates.latitude) : undefined,
-            longitude: formData.location.coordinates.longitude ? parseFloat(formData.location.coordinates.longitude) : undefined
-          }
-        },
-        totalArea: {
-          value: formData.totalArea.value ? parseFloat(formData.totalArea.value) : 0,
-          unit: formData.totalArea.unit
-        },
-        cultivatedArea: {
-          value: formData.cultivatedArea.value ? parseFloat(formData.cultivatedArea.value) : undefined,
-          unit: formData.cultivatedArea.unit
-        }
+        location: formData.location,
+        totalArea: Number(formData.totalArea),
+        cultivatedArea: Number(formData.cultivatedArea),
+        soilType: formData.soilType
       };
 
-      // Remove undefined coordinates if not provided
-      if (!farmData.location.coordinates.latitude || !farmData.location.coordinates.longitude) {
-        delete farmData.location.coordinates;
-      }
-
-      console.log('Sending farm data:', JSON.stringify(farmData, null, 2));
+      await farmAPI.updateFarm(farmId, submitData);
+      toast.success('Farm updated successfully');
+      navigate(`/farms/${farmId}`);
       
-      await farmAPI.createFarm(farmData);
-      toast.success('Farm created successfully!');
-      navigate('/dashboard');
     } catch (err) {
-      console.error('Farm creation error:', err);
-      console.error('Error response:', err.response);
-      console.error('Error data:', err.response?.data);
-      
-      let message = 'Failed to create farm';
-      
-      if (err.response) {
-        // Server responded with error status
-        if (err.response.status === 401) {
-          message = 'Please log in again. Your session may have expired.';
-        } else if (err.response.status === 403) {
-          if (err.response.data?.message?.includes('role undefined')) {
-            message = 'Account setup incomplete. Please log out and log in again.';
-          } else {
-            message = 'You do not have permission to create farms. Please contact your administrator.';
-          }
-        } else if (err.response.data?.message) {
-          message = err.response.data.message;
-        }
-      } else if (err.request) {
-        // Network error - no response received
-        message = 'Network error. Please check your connection and try again.';
-        console.error('Network error - no response received');
-      } else {
-        // Other error
-        message = err.message || 'An unexpected error occurred';
-      }
-      
-      setError(message);
-      toast.error(message);
+      console.error('Error updating farm:', err);
+      setError(err.response?.data?.message || 'Failed to update farm');
+      toast.error('Failed to update farm');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    navigate(`/farms/${farmId}`);
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
-      <Typography variant="h4" gutterBottom>
-        Create New Farm
-      </Typography>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-        Add a new farm to your management system
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Edit Farm
       </Typography>
 
-      <Paper elevation={2} sx={{ p: 4 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+      <Paper elevation={3} sx={{ p: 3 }}>
+        <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             {/* Basic Information */}
             <Grid item xs={12}>
@@ -193,11 +197,11 @@ const CreateFarmContent = () => {
                 Basic Information
               </Typography>
             </Grid>
-            
-            <Grid item xs={12} md={6}>
+
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Farm Name *"
+                label="Farm Name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -205,21 +209,19 @@ const CreateFarmContent = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Farm Type *</InputLabel>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>Farm Type</InputLabel>
                 <Select
                   name="farmType"
                   value={formData.farmType}
+                  label="Farm Type"
                   onChange={handleChange}
-                  label="Farm Type *"
-                  required
                 >
                   <MenuItem value="crop">Crop Farm</MenuItem>
                   <MenuItem value="livestock">Livestock Farm</MenuItem>
                   <MenuItem value="mixed">Mixed Farm</MenuItem>
-                  <MenuItem value="organic">Organic Farm</MenuItem>
-                  <MenuItem value="dairy">Dairy Farm</MenuItem>
+                  <MenuItem value="aquaculture">Aquaculture</MenuItem>
                   <MenuItem value="poultry">Poultry Farm</MenuItem>
                 </Select>
               </FormControl>
@@ -237,11 +239,45 @@ const CreateFarmContent = () => {
               />
             </Grid>
 
-            {/* Location */}
+            {/* Location Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Location
+                Location Information
               </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>District</InputLabel>
+                <Select
+                  name="district"
+                  value={formData.district}
+                  label="District"
+                  onChange={handleChange}
+                >
+                  {SRI_LANKAN_DISTRICTS.map((district) => (
+                    <MenuItem key={district.name} value={district.name}>
+                      {district.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Cultivation Zone"
+                name="cultivationZone"
+                value={formData.cultivationZone}
+                onChange={handleChange}
+                InputProps={{
+                  readOnly: true,
+                }}
+                helperText={
+                  formData.district ? getZoneDescription(formData.district) : 'Select district first'
+                }
+              />
             </Grid>
 
             <Grid item xs={12}>
@@ -251,72 +287,18 @@ const CreateFarmContent = () => {
                 name="location.address"
                 value={formData.location.address}
                 onChange={handleChange}
+                multiline
+                rows={2}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>District *</InputLabel>
-                <Select
-                  name="district"
-                  value={formData.district}
-                  onChange={handleChange}
-                  label="District *"
-                  required
-                >
-                  {SRI_LANKAN_DISTRICTS.map(district => (
-                    <MenuItem key={district.name} value={district.name}>
-                      {district.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Cultivation Zone"
-                name="cultivationZone"
-                value={getZoneDescription(formData.cultivationZone)}
-                InputProps={{ readOnly: true }}
-                helperText="Auto-populated based on district selection"
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="ZIP Code"
+                label="Zip Code"
                 name="location.zipCode"
                 value={formData.location.zipCode}
                 onChange={handleChange}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Latitude (Optional)"
-                name="location.coordinates.latitude"
-                type="number"
-                value={formData.location.coordinates.latitude}
-                onChange={handleChange}
-                placeholder="e.g., 6.9271"
-                inputProps={{ step: "any" }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Longitude (Optional)"
-                name="location.coordinates.longitude"
-                type="number"
-                value={formData.location.coordinates.longitude}
-                onChange={handleChange}
-                placeholder="e.g., 79.8612"
-                inputProps={{ step: "any" }}
               />
             </Grid>
 
@@ -327,10 +309,10 @@ const CreateFarmContent = () => {
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Total Area *"
+                label="Total Area Value"
                 name="totalArea.value"
                 type="number"
                 value={formData.totalArea.value}
@@ -340,14 +322,14 @@ const CreateFarmContent = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} sm={2}>
               <FormControl fullWidth required>
                 <InputLabel>Unit</InputLabel>
                 <Select
                   name="totalArea.unit"
                   value={formData.totalArea.unit}
-                  onChange={handleChange}
                   label="Unit"
+                  onChange={handleChange}
                 >
                   <MenuItem value="acres">Acres</MenuItem>
                   <MenuItem value="hectares">Hectares</MenuItem>
@@ -357,10 +339,10 @@ const CreateFarmContent = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Cultivated Area"
+                label="Cultivated Area Value"
                 name="cultivatedArea.value"
                 type="number"
                 value={formData.cultivatedArea.value}
@@ -369,14 +351,14 @@ const CreateFarmContent = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={2}>
+            <Grid item xs={12} sm={2}>
               <FormControl fullWidth>
                 <InputLabel>Unit</InputLabel>
                 <Select
                   name="cultivatedArea.unit"
                   value={formData.cultivatedArea.unit}
-                  onChange={handleChange}
                   label="Unit"
+                  onChange={handleChange}
                 >
                   <MenuItem value="acres">Acres</MenuItem>
                   <MenuItem value="hectares">Hectares</MenuItem>
@@ -386,7 +368,7 @@ const CreateFarmContent = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Soil Type</InputLabel>
                 <Select
@@ -407,41 +389,71 @@ const CreateFarmContent = () => {
               </Typography>
             </Grid>
 
+            {/* Coordinates */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                Coordinates (Optional)
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Latitude"
+                name="location.coordinates.latitude"
+                type="number"
+                value={formData.location.coordinates.latitude}
+                onChange={handleChange}
+                inputProps={{ step: 'any' }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Longitude"
+                name="location.coordinates.longitude"
+                type="number"
+                value={formData.location.coordinates.longitude}
+                onChange={handleChange}
+                inputProps={{ step: 'any' }}
+              />
+            </Grid>
+
             {/* Action Buttons */}
-            <Grid item xs={12} sx={{ mt: 3 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/dashboard')}
-                  disabled={loading}
+                  onClick={handleCancel}
+                  disabled={saving}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={loading}
-                  startIcon={loading && <CircularProgress size={20} />}
+                  disabled={saving}
                 >
-                  {loading ? 'Creating...' : 'Create Farm'}
+                  {saving ? <CircularProgress size={20} /> : 'Update Farm'}
                 </Button>
               </Box>
             </Grid>
           </Grid>
-        </Box>
+        </form>
       </Paper>
     </Box>
   );
 };
 
-const CreateFarm = () => {
+const EditFarm = (props) => {
   return (
     <AppProviders>
       <Layout>
-        <CreateFarmContent />
+        <EditFarmContent farmId={props.params?.id} />
       </Layout>
     </AppProviders>
   );
 };
 
-export default CreateFarm;
+export default EditFarm;

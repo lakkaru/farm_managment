@@ -7,7 +7,12 @@ const {
   deleteFarm,
   addManager,
   removeManager,
-  getFarmsInRadius
+  getFarmsInRadius,
+  getDistricts,
+  getSoilTypes,
+  getCultivationZoneDetails,
+  getFarmsByDistrict,
+  getFarmsByZone
 } = require('../controllers/farmController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -15,12 +20,30 @@ const { validateFarm } = require('../middleware/validation');
 
 const router = express.Router();
 
+// Public routes (no auth required for basic data)
+router.get('/districts', getDistricts);
+router.get('/soil-types', getSoilTypes);
+router.get('/cultivation-zones/:zoneCode', getCultivationZoneDetails);
+
+// Protected routes
 router.use(protect);
 
 router
   .route('/')
   .get(getFarms)
   .post(authorize('farm_owner', 'admin'), validateFarm, createFarm);
+
+router
+  .route('/by-district/:district')
+  .get(getFarmsByDistrict);
+
+router
+  .route('/by-zone/:zoneCode')
+  .get(getFarmsByZone);
+
+router
+  .route('/radius/:zipcode/:distance')
+  .get(getFarmsInRadius);
 
 router
   .route('/:id')
@@ -35,9 +58,5 @@ router
 router
   .route('/:id/managers/:managerId')
   .delete(authorize('farm_owner', 'admin'), removeManager);
-
-router
-  .route('/radius/:zipcode/:distance')
-  .get(getFarmsInRadius);
 
 module.exports = router;

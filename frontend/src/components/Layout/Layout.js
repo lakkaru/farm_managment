@@ -1,16 +1,39 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const Layout = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading spinner while authentication is being checked
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={40} />
+        <Typography variant="body2" color="textSecondary">
+          Loading...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // If not authenticated and not loading, return children without layout
   if (!isAuthenticated) {
     return children;
   }
 
+  // If authenticated, render full layout with sidebar and header
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <Sidebar />

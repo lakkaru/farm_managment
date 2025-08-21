@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 
 const FarmContext = createContext();
 
@@ -66,39 +66,39 @@ const farmReducer = (state, action) => {
 export const FarmProvider = ({ children }) => {
   const [state, dispatch] = useReducer(farmReducer, initialState);
 
-  const setLoading = (isLoading) => {
+  const setLoading = useCallback((isLoading) => {
     dispatch({ type: 'SET_LOADING', payload: isLoading });
-  };
+  }, []);
 
-  const setFarms = (farms) => {
+  const setFarms = useCallback((farms) => {
     dispatch({ type: 'SET_FARMS', payload: farms });
-  };
+  }, []);
 
-  const setSelectedFarm = (farm) => {
+  const setSelectedFarm = useCallback((farm) => {
     dispatch({ type: 'SET_SELECTED_FARM', payload: farm });
-  };
+  }, []);
 
-  const addFarm = (farm) => {
+  const addFarm = useCallback((farm) => {
     dispatch({ type: 'ADD_FARM', payload: farm });
-  };
+  }, []);
 
-  const updateFarm = (farm) => {
+  const updateFarm = useCallback((farm) => {
     dispatch({ type: 'UPDATE_FARM', payload: farm });
-  };
+  }, []);
 
-  const deleteFarm = (farmId) => {
+  const deleteFarm = useCallback((farmId) => {
     dispatch({ type: 'DELETE_FARM', payload: farmId });
-  };
+  }, []);
 
-  const setError = (error) => {
+  const setError = useCallback((error) => {
     dispatch({ type: 'SET_ERROR', payload: error });
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     setLoading,
     setFarms,
@@ -108,7 +108,7 @@ export const FarmProvider = ({ children }) => {
     deleteFarm,
     setError,
     clearError,
-  };
+  }), [state, setLoading, setFarms, setSelectedFarm, addFarm, updateFarm, deleteFarm, setError, clearError]);
 
   return <FarmContext.Provider value={value}>{children}</FarmContext.Provider>;
 };

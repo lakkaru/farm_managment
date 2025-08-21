@@ -35,8 +35,10 @@ import {
   Agriculture as AgricultureIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
+import Layout from '../components/Layout/Layout';
+import AppProviders from '../providers/AppProviders';
 
-const PlanSeason = () => {
+const PlanSeasonContent = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [seasonData, setSeasonData] = useState({
     season: '',
@@ -517,6 +519,16 @@ const PlanSeason = () => {
         </CardContent>
       </Card>
     </Box>
+  );
+};
+
+const PlanSeason = () => {
+  return (
+    <AppProviders>
+      <Layout>
+        <PlanSeasonContent />
+      </Layout>
+    </AppProviders>
   );
 };
 

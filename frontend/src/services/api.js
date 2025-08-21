@@ -27,14 +27,23 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Don't show toast errors for login/register endpoints - let the auth context handle them
+    const isAuthEndpoint = error.config?.url?.includes('/users/login') || error.config?.url?.includes('/users/register');
+    
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      toast.error('Session expired. Please login again.');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        toast.error('Session expired. Please login again.');
+      }
     } else if (error.response?.status === 403) {
-      toast.error('You do not have permission to perform this action.');
+      if (!isAuthEndpoint) {
+        toast.error('You do not have permission to perform this action.');
+      }
     } else if (error.response?.status >= 500) {
-      toast.error('Server error. Please try again later.');
+      if (!isAuthEndpoint) {
+        toast.error('Server error. Please try again later.');
+      }
     }
     return Promise.reject(error);
   }
@@ -61,6 +70,12 @@ export const farmAPI = {
   addManager: (id, managerId) => api.post(`/farms/${id}/managers`, { managerId }),
   removeManager: (id, managerId) => api.delete(`/farms/${id}/managers/${managerId}`),
   getFarmsInRadius: (zipcode, distance, params) => api.get(`/farms/radius/${zipcode}/${distance}`, { params }),
+  // New district-related endpoints
+  getDistricts: () => api.get('/farms/districts'),
+  getSoilTypes: () => api.get('/farms/soil-types'),
+  getCultivationZoneDetails: (zoneCode) => api.get(`/farms/cultivation-zones/${zoneCode}`),
+  getFarmsByDistrict: (district, params) => api.get(`/farms/by-district/${district}`, { params }),
+  getFarmsByZone: (zoneCode, params) => api.get(`/farms/by-zone/${zoneCode}`, { params }),
 };
 
 // Crop API

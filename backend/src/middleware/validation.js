@@ -1,26 +1,47 @@
 const Joi = require('joi');
 const AppError = require('../utils/AppError');
+const { SRI_LANKAN_DISTRICTS } = require('../constants/districts');
+const { SOIL_TYPE_NAMES } = require('../constants/soilTypes');
+
+// Get list of valid district names
+const validDistricts = SRI_LANKAN_DISTRICTS.map(d => d.name);
 
 // Farm validation schema
 const farmSchema = Joi.object({
   name: Joi.string().required().max(100).trim(),
+  description: Joi.string().max(500).allow(''), // Allow empty strings
+  farmType: Joi.string().required().valid('crop', 'livestock', 'mixed', 'organic', 'dairy', 'poultry'),
+  
+  // Root level district and zone fields (new structure)
+  district: Joi.string().required().valid(...validDistricts).trim(),
+  cultivationZone: Joi.string().valid(
+    'WL1', 'WL2', 'WL3', 'WM1', 'WM2', 'WM3', 'WU1',
+    'DL1', 'DL2', 'DL3', 'IL1', 'IM1'
+  ).trim(),
+  
+  // Soil type field (new)
+  soilType: Joi.string().valid(...SOIL_TYPE_NAMES).trim(),
+  
   location: Joi.object({
     address: Joi.string().required().trim(),
     coordinates: Joi.object({
       latitude: Joi.number().min(-90).max(90),
       longitude: Joi.number().min(-180).max(180)
     }),
-    city: Joi.string().required().trim(),
-    state: Joi.string().required().trim(),
-    country: Joi.string().trim().default('USA'),
-    zipCode: Joi.string().required().trim()
+    country: Joi.string().trim().default('Sri Lanka'),
+    zipCode: Joi.string().trim().allow('')
   }).required(),
+  
   totalArea: Joi.object({
     value: Joi.number().required().min(0),
-    unit: Joi.string().valid('acres', 'hectares', 'square_feet', 'square_meters').default('acres')
+    unit: Joi.string().valid('acres', 'hectares', 'sq meters', 'sq feet').default('acres')
   }).required(),
-  farmType: Joi.string().required().valid('crop', 'livestock', 'mixed', 'organic', 'dairy', 'poultry'),
-  description: Joi.string().max(500),
+  
+  cultivatedArea: Joi.object({
+    value: Joi.number().min(0),
+    unit: Joi.string().valid('acres', 'hectares', 'sq meters', 'sq feet').default('acres')
+  }),
+  
   establishedDate: Joi.date(),
   certifications: Joi.array().items(Joi.object({
     name: Joi.string(),

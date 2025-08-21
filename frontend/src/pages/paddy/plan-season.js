@@ -29,6 +29,12 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import Layout from '../../components/Layout/Layout';
+import PrivateRoute from '../../components/PrivateRoute';
+import AppProviders from '../../providers/AppProviders';
+import { paddyVarietyAPI, seasonPlanAPI } from '../../services/api';
+import { useFarm } from '../../contexts/FarmContext';
+import { toast } from 'react-toastify';
 import { 
   CalendarToday as CalendarIcon,
   LocationOn as LocationIcon,
@@ -37,11 +43,8 @@ import {
   Agriculture as AgricultureIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { paddyVarietyAPI, seasonPlanAPI } from '../../services/api';
-import { useFarm } from '../../contexts/FarmContext';
-import { toast } from 'react-toastify';
 
-const PlanSeason = () => {
+const PlanSeasonContent = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paddyVarieties, setPaddyVarieties] = useState([]);
@@ -58,6 +61,26 @@ const PlanSeason = () => {
   const [growingStages, setGrowingStages] = useState([]);
   const [fertilizerSchedule, setFertilizerSchedule] = useState([]);
   const { selectedFarm } = useFarm();
+
+  // Auto-populate data from selected farm
+  useEffect(() => {
+    if (selectedFarm) {
+      // Extract district from farm location
+      const farmDistrict = selectedFarm.location?.city || '';
+      const matchedDistrict = districts.find(d => 
+        d.name.toLowerCase().includes(farmDistrict.toLowerCase()) ||
+        farmDistrict.toLowerCase().includes(d.name.toLowerCase())
+      );
+      
+      // Auto-populate form data from farm
+      setSeasonData(prev => ({
+        ...prev,
+        district: matchedDistrict ? matchedDistrict.name : farmDistrict,
+        climateZone: matchedDistrict ? matchedDistrict.zone : '',
+        cultivatingArea: selectedFarm.totalArea?.value || '',
+      }));
+    }
+  }, [selectedFarm]);
 
   // Sri Lankan districts and their climate zones
   const districts = [
@@ -128,15 +151,42 @@ const PlanSeason = () => {
     const fetchPaddyVarieties = async () => {
       try {
         const response = await paddyVarietyAPI.getPaddyVarieties();
-        setPaddyVarieties(response.data.data);
+        if (response.data.data && response.data.data.length > 0) {
+          setPaddyVarieties(response.data.data);
+        } else {
+          // Fallback to default varieties if API doesn't have data
+          setDefaultPaddyVarieties();
+        }
       } catch (error) {
         console.error('Error fetching paddy varieties:', error);
-        toast.error('Failed to load paddy varieties');
+        // Fallback to default varieties
+        setDefaultPaddyVarieties();
+        if (error.response?.status !== 401) { // Don't show error for auth issues
+          toast.error('Using default paddy varieties - API connection failed');
+        }
       }
     };
 
-    fetchPaddyVarieties();
-  }, []);
+    const setDefaultPaddyVarieties = () => {
+      const defaultVarieties = [
+        { _id: 'bg300', name: 'BG 300', duration: 105, type: 'Short Duration' },
+        { _id: 'bg350', name: 'BG 350', duration: 110, type: 'Short Duration' },
+        { _id: 'bg360', name: 'BG 360', duration: 115, type: 'Medium Duration' },
+        { _id: 'bg380', name: 'BG 380', duration: 120, type: 'Medium Duration' },
+        { _id: 'bg400-1', name: 'BG 400-1', duration: 125, type: 'Medium Duration' },
+        { _id: 'at362', name: 'AT 362', duration: 110, type: 'Short Duration' },
+        { _id: 'at405', name: 'AT 405', duration: 120, type: 'Medium Duration' },
+        { _id: 'bw272-6b', name: 'BW 272-6B', duration: 105, type: 'Short Duration' },
+        { _id: 'bw351', name: 'BW 351', duration: 115, type: 'Medium Duration' },
+        { _id: 'h4', name: 'H 4', duration: 100, type: 'Short Duration' },
+      ];
+      setPaddyVarieties(defaultVarieties);
+    };
+
+    if (paddyVarieties.length === 0) { // Only fetch if not already loaded
+      fetchPaddyVarieties();
+    }
+  }, []); // Empty dependency array to prevent multiple calls
 
   const handleInputChange = (field, value) => {
     setSeasonData(prev => ({
@@ -318,6 +368,11 @@ const PlanSeason = () => {
                   ))}
                 </Select>
               </FormControl>
+              {selectedFarm && (
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Auto-populated from farm location: {selectedFarm.location?.city}
+                </Typography>
+              )}
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -391,6 +446,11 @@ const PlanSeason = () => {
                 onChange={(e) => handleInputChange('cultivatingArea', e.target.value)}
                 inputProps={{ min: 0.1, step: 0.1 }}
               />
+              {selectedFarm && selectedFarm.totalArea?.value && (
+                <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Farm total area: {selectedFarm.totalArea.value} {selectedFarm.totalArea.unit}
+                </Typography>
+              )}
             </Grid>
             {seasonData.paddyVariety && (
               <Grid item xs={12}>
@@ -538,6 +598,18 @@ const PlanSeason = () => {
         </CardContent>
       </Card>
     </Box>
+  );
+};
+
+const PlanSeason = () => {
+  return (
+    <AppProviders>
+      <PrivateRoute>
+        <Layout>
+          <PlanSeasonContent />
+        </Layout>
+      </PrivateRoute>
+    </AppProviders>
   );
 };
 

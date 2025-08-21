@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../components/Layout/Layout';
+import PrivateRoute from '../components/PrivateRoute';
 import AppProviders from '../providers/AppProviders';
 import { useAuth } from '../contexts/AuthContext';
 import { farmAPI, cropAPI, livestockAPI, inventoryAPI } from '../services/api';
@@ -332,9 +333,11 @@ const DashboardContent = () => {
 const Dashboard = () => {
   return (
     <AppProviders>
-      <Layout>
-        <DashboardContent />
-      </Layout>
+      <PrivateRoute>
+        <Layout>
+          <DashboardContent />
+        </Layout>
+      </PrivateRoute>
     </AppProviders>
   );
 };
