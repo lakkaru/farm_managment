@@ -13,6 +13,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
@@ -36,7 +40,7 @@ const EditSeasonPlanContent = ({ id }) => {
     soilCondition: '',
     paddyVariety: '',
     cultivatingArea: '',
-    cultivationDate: '',
+    cultivationDate: null, // Change to null for DatePicker
     status: '',
   });
 
@@ -54,8 +58,8 @@ const EditSeasonPlanContent = ({ id }) => {
       const planData = response.data.data;
       setPlan(planData);
       
-      // Convert date to YYYY-MM-DD format for input
-      const cultivationDate = new Date(planData.cultivationDate).toISOString().split('T')[0];
+      // Convert date to dayjs object for DatePicker
+      const cultivationDate = dayjs(planData.cultivationDate);
       
       setFormData({
         farmId: planData.farmId._id,
@@ -116,6 +120,13 @@ const EditSeasonPlanContent = ({ id }) => {
     }
   };
 
+  const handleDateChange = (date) => {
+    setFormData(prev => ({
+      ...prev,
+      cultivationDate: date,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -123,7 +134,7 @@ const EditSeasonPlanContent = ({ id }) => {
 
     try {
       // Validate required fields
-      const requiredFields = ['farmId', 'season', 'climateZone', 'irrigationMethod', 'soilCondition', 'paddyVariety', 'cultivatingArea', 'cultivationDate'];
+      const requiredFields = ['farmId', 'season', 'climateZone', 'irrigationMethod', 'soilCondition', 'paddyVariety', 'cultivatingArea'];
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
@@ -131,10 +142,16 @@ const EditSeasonPlanContent = ({ id }) => {
         return;
       }
 
-      // Convert cultivatingArea to number
+      if (!formData.cultivationDate) {
+        setError('Please select a cultivation date');
+        return;
+      }
+
+      // Convert cultivatingArea to number and date to ISO string
       const planData = {
         ...formData,
         cultivatingArea: parseFloat(formData.cultivatingArea),
+        cultivationDate: formData.cultivationDate ? dayjs(formData.cultivationDate).toISOString() : null,
       };
 
       console.log('Updating season plan data:', planData);
@@ -332,7 +349,7 @@ const EditSeasonPlanContent = ({ id }) => {
                 >
                   {paddyVarieties.map(variety => (
                     <MenuItem key={variety._id} value={variety._id}>
-                      {variety.name} ({variety.type} - {variety.duration} days)
+                      {variety.name} ({variety.type} - {variety.duration})
                     </MenuItem>
                   ))}
                 </Select>
@@ -356,16 +373,20 @@ const EditSeasonPlanContent = ({ id }) => {
 
             {/* Cultivation Date */}
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Cultivation Date *"
-                name="cultivationDate"
-                type="date"
-                value={formData.cultivationDate}
-                onChange={handleChange}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Cultivation Date *"
+                  value={formData.cultivationDate}
+                  onChange={handleDateChange}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      helperText: "Select cultivation date"
+                    }
+                  }}
+                />
+              </LocalizationProvider>
             </Grid>
           </Grid>
 

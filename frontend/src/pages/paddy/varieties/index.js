@@ -165,7 +165,7 @@ const PaddyVarietiesContent = () => {
                       );
                     }
                     return null;
-                  })()} */}
+                  })()}
 
                   {/* Year of Release */}
                   {variety.yearOfRelease && (

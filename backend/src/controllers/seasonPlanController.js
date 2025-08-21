@@ -124,9 +124,17 @@ const createSeasonPlan = async (req, res) => {
       req.body.soilCondition
     );
 
-    // Set expected harvest date
+    // Set expected harvest date - extract numeric duration from string
+    const durationMatch = paddyVariety.duration.match(/(\d+)(?:-(\d+))?/);
+    let durationDays = 105; // default fallback
+    if (durationMatch) {
+      const minDuration = parseInt(durationMatch[1]);
+      const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+      durationDays = Math.round((minDuration + maxDuration) / 2);
+    }
+    
     const harvestDate = new Date(req.body.cultivationDate);
-    harvestDate.setDate(harvestDate.getDate() + paddyVariety.duration);
+    harvestDate.setDate(harvestDate.getDate() + durationDays);
     planData.expectedHarvest = {
       date: harvestDate,
       estimatedYield: calculateEstimatedYield(req.body.cultivatingArea, paddyVariety.characteristics?.yield || 4),
@@ -247,7 +255,16 @@ const deleteSeasonPlan = async (req, res) => {
 };
 
 // Helper functions
-const generateGrowingStages = (cultivationDate, duration) => {
+const generateGrowingStages = (cultivationDate, durationString) => {
+  // Extract numeric duration from string (e.g., "90-95 days" -> 92.5)
+  let duration = 105; // default fallback
+  const durationMatch = durationString.match(/(\d+)(?:-(\d+))?/);
+  if (durationMatch) {
+    const minDuration = parseInt(durationMatch[1]);
+    const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+    duration = Math.round((minDuration + maxDuration) / 2);
+  }
+
   const stages = [
     { stage: 'Land Preparation', startDay: -14, endDay: 0, description: 'Plowing, harrowing, and field preparation' },
     { stage: 'Nursery/Sowing', startDay: 0, endDay: 21, description: 'Seed sowing in nursery or direct seeding' },
