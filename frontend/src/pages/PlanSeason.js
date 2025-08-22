@@ -88,11 +88,8 @@ const PlanSeasonContent = () => {
   ];
 
   const irrigationMethods = [
-    'Rain-fed',
-    'Irrigated (Tank)',
-    'Irrigated (River)',
-    'Irrigated (Tube well)',
-    'Irrigated (Canal)',
+    'Rain fed',
+    'Under irrigation',
   ];
 
   const soilTypes = [
@@ -230,19 +227,10 @@ const PlanSeasonContent = () => {
       return {
         ...app,
         date: applicationDate.toLocaleDateString(),
-        totalCost: calculateFertilizerCost(app.fertilizers),
       };
     });
 
     setFertilizerSchedule(schedule);
-  };
-
-  const calculateFertilizerCost = (fertilizers) => {
-    // Approximate prices in LKR per kg
-    const prices = { urea: 80, tsp: 120, mop: 100 };
-    return Object.entries(fertilizers).reduce((total, [type, amount]) => {
-      return total + (amount * prices[type]);
-    }, 0);
   };
 
   const handleNext = () => {
@@ -441,7 +429,7 @@ const PlanSeasonContent = () => {
                         <TableCell>Urea (kg)</TableCell>
                         <TableCell>TSP (kg)</TableCell>
                         <TableCell>MOP (kg)</TableCell>
-                        <TableCell>Est. Cost (LKR)</TableCell>
+                        <TableCell>Zinc Sulphate (kg)</TableCell>
                         <TableCell>Description</TableCell>
                       </TableRow>
                     </TableHead>
@@ -452,10 +440,10 @@ const PlanSeasonContent = () => {
                             <Chip label={app.stage} color="secondary" variant="outlined" />
                           </TableCell>
                           <TableCell>{app.date}</TableCell>
-                          <TableCell>{app.fertilizers.urea}</TableCell>
-                          <TableCell>{app.fertilizers.tsp}</TableCell>
-                          <TableCell>{app.fertilizers.mop}</TableCell>
-                          <TableCell>{app.totalCost.toLocaleString()}</TableCell>
+                          <TableCell>{app.fertilizers.urea > 0 ? app.fertilizers.urea : '-'}</TableCell>
+                          <TableCell>{app.fertilizers.tsp > 0 ? app.fertilizers.tsp : '-'}</TableCell>
+                          <TableCell>{app.fertilizers.mop > 0 ? app.fertilizers.mop : '-'}</TableCell>
+                          <TableCell>{(app.fertilizers.zincSulphate || 0) > 0 ? (app.fertilizers.zincSulphate || 0) : '-'}</TableCell>
                           <TableCell>{app.description}</TableCell>
                         </TableRow>
                       ))}
@@ -466,7 +454,7 @@ const PlanSeasonContent = () => {
                 <Alert severity="info" sx={{ mt: 2 }}>
                   <Typography variant="body2">
                     <strong>Note:</strong> Fertilizer recommendations are based on Sri Lanka Agriculture Department guidelines. 
-                    Adjust quantities based on soil test results and local conditions. Prices are approximate and may vary by location.
+                    Adjust quantities based on soil test results and local conditions.
                   </Typography>
                 </Alert>
               </>

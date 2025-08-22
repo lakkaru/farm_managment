@@ -20,7 +20,7 @@ const seasonPlanValidation = [
     .withMessage('Season must be either maha or yala'),
   // climateZone will be auto-populated from farm
   body('irrigationMethod')
-    .isIn(['Rain-fed', 'Irrigated (Tank)', 'Irrigated (River)', 'Irrigated (Tube well)', 'Irrigated (Canal)'])
+    .isIn(['Rain fed', 'Under irrigation'])
     .withMessage('Invalid irrigation method'),
   body('soilCondition')
     .isIn(['Sandy', 'Clay', 'Loam', 'Sandy Loam', 'Clay Loam', 'Silt Loam'])

@@ -24,7 +24,7 @@ const seasonPlanSchema = new mongoose.Schema({
   irrigationMethod: {
     type: String,
     required: [true, 'Irrigation method is required'],
-    enum: ['Rain-fed', 'Irrigated (Tank)', 'Irrigated (River)', 'Irrigated (Tube well)', 'Irrigated (Canal)'],
+    enum: ['Rain fed', 'Under irrigation'],
   },
   soilCondition: {
     type: String,
@@ -63,8 +63,8 @@ const seasonPlanSchema = new mongoose.Schema({
       urea: Number,
       tsp: Number,
       mop: Number,
+      zincSulphate: Number,
     },
-    totalCost: Number,
     description: String,
     applied: {
       type: Boolean,
@@ -92,11 +92,6 @@ const seasonPlanSchema = new mongoose.Schema({
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
-});
-
-// Virtual for calculating total fertilizer cost
-seasonPlanSchema.virtual('totalFertilizerCost').get(function() {
-  return this.fertilizerSchedule.reduce((total, app) => total + (app.totalCost || 0), 0);
 });
 
 // Virtual for calculating plan duration

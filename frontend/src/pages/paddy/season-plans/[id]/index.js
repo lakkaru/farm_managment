@@ -357,9 +357,6 @@ const SeasonPlanViewContent = ({ id }) => {
               <Typography variant="h6" gutterBottom>
                 Fertilizer Schedule
               </Typography>
-              <Typography variant="body2" color="primary" sx={{ mb: 2 }}>
-                Total Cost: {formatCurrency(plan.totalFertilizerCost)}
-              </Typography>
               <Grid container spacing={2}>
                 {plan.fertilizerSchedule?.map((app, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
@@ -381,18 +378,26 @@ const SeasonPlanViewContent = ({ id }) => {
                           {app.description}
                         </Typography>
                         <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption" display="block">
-                            Urea: {app.fertilizers?.urea || 0} kg
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            TSP: {app.fertilizers?.tsp || 0} kg
-                          </Typography>
-                          <Typography variant="caption" display="block">
-                            MOP: {app.fertilizers?.mop || 0} kg
-                          </Typography>
-                          <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold' }}>
-                            Cost: {formatCurrency(app.totalCost)}
-                          </Typography>
+                          {app.fertilizers?.urea > 0 && (
+                            <Typography variant="caption" display="block">
+                              Urea: {app.fertilizers.urea} kg
+                            </Typography>
+                          )}
+                          {app.fertilizers?.tsp > 0 && (
+                            <Typography variant="caption" display="block">
+                              TSP: {app.fertilizers.tsp} kg
+                            </Typography>
+                          )}
+                          {app.fertilizers?.mop > 0 && (
+                            <Typography variant="caption" display="block">
+                              MOP: {app.fertilizers.mop} kg
+                            </Typography>
+                          )}
+                          {app.fertilizers?.zincSulphate > 0 && (
+                            <Typography variant="caption" display="block">
+                              Zinc Sulphate: {app.fertilizers.zincSulphate} kg
+                            </Typography>
+                          )}
                         </Box>
                         {app.notes && (
                           <Typography variant="caption" sx={{ mt: 1, display: 'block', fontStyle: 'italic' }}>

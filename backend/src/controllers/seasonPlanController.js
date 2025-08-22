@@ -121,7 +121,9 @@ const createSeasonPlan = async (req, res) => {
     planData.fertilizerSchedule = generateFertilizerSchedule(
       req.body.cultivationDate, 
       req.body.cultivatingArea,
-      req.body.soilCondition
+      req.body.irrigationMethod,
+      farm.district,
+      paddyVariety.duration
     );
 
     // Set expected harvest date - extract numeric duration from string
@@ -266,9 +268,10 @@ const generateGrowingStages = (cultivationDate, durationString) => {
   }
 
   const stages = [
-    { stage: 'Land Preparation', startDay: -14, endDay: 0, description: 'Plowing, harrowing, and field preparation' },
+    { stage: 'First Plowing', startDay: -21, endDay: -21, description: 'First plowing - breaking the soil' },
+    { stage: 'Second Plowing & Field Leveling', startDay: -7, endDay: -1, description: 'Second plowing and field leveling for proper water management' },
     { stage: 'Nursery/Sowing', startDay: 0, endDay: 21, description: 'Seed sowing in nursery or direct seeding' },
-    { stage: 'Transplanting', startDay: 21, endDay: 28, description: 'Transplanting seedlings to main field' },
+    { stage: 'Transplanting', startDay: 11, endDay: 14, description: 'Transplanting seedlings to main field' },
     { stage: 'Tillering', startDay: 28, endDay: 45, description: 'Formation of tillers and vegetative growth' },
     { stage: 'Panicle Initiation', startDay: 45, endDay: 65, description: 'Panicle development begins' },
     { stage: 'Flowering', startDay: 65, endDay: 85, description: 'Flowering and pollination' },
@@ -292,74 +295,200 @@ const generateGrowingStages = (cultivationDate, durationString) => {
   });
 };
 
-const generateFertilizerSchedule = (cultivationDate, area, soilCondition) => {
-  // Base fertilizer recommendations (kg per acre)
-  let baseFertilizer = {
-    urea: 50,
-    tsp: 25,
-    mop: 25,
-  };
-
-  // Adjust based on soil condition
-  const soilAdjustments = {
-    'Sandy': { urea: 1.2, tsp: 1.1, mop: 1.0 },
-    'Clay': { urea: 0.9, tsp: 1.0, mop: 1.1 },
-    'Loam': { urea: 1.0, tsp: 1.0, mop: 1.0 },
-    'Sandy Loam': { urea: 1.1, tsp: 1.0, mop: 1.0 },
-    'Clay Loam': { urea: 0.95, tsp: 1.0, mop: 1.05 },
-    'Silt Loam': { urea: 1.0, tsp: 0.9, mop: 1.0 },
-  };
-
-  if (soilAdjustments[soilCondition]) {
-    const adj = soilAdjustments[soilCondition];
-    baseFertilizer.urea *= adj.urea;
-    baseFertilizer.tsp *= adj.tsp;
-    baseFertilizer.mop *= adj.mop;
+const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMethod, district, durationString) => {
+  // Convert area from acres to hectares (1 acre = 0.404686 hectares)
+  const areaHa = areaInAcres * 0.404686;
+  
+  // Determine zone based on district
+  const wetZoneDistricts = ['Kegalle', 'Gampaha', 'Colombo', 'Galle', 'Kalutara'];
+  const isWetZone = wetZoneDistricts.includes(district);
+  
+  // Determine if irrigated or rainfed - simplified to only two methods
+  const isIrrigated = irrigationMethod === 'Under irrigation';
+  
+  // Extract duration in days and categorize
+  let durationDays = 105; // default fallback
+  const durationMatch = durationString.match(/(\d+)(?:-(\d+))?/);
+  if (durationMatch) {
+    const minDuration = parseInt(durationMatch[1]);
+    const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+    durationDays = Math.round((minDuration + maxDuration) / 2);
+  }
+  
+  // Categorize duration: 3 months (~90 days), 3.5 months (~105 days), 4 months (~120 days)
+  let ageGroup;
+  if (durationDays <= 95) {
+    ageGroup = '3_month';
+  } else if (durationDays <= 110) {
+    ageGroup = '3_5_month';
+  } else {
+    ageGroup = '4_month';
   }
 
-  const applications = [
-    {
-      stage: 'Basal Application',
-      days: -1,
-      description: 'Apply before transplanting',
-      percentage: { urea: 0.3, tsp: 1.0, mop: 0.5 },
+  // Fertilizer recommendations (kg/ha)
+  const recommendations = {
+    wet_zone: {
+      rainfed: {
+        '3_month': {
+          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '3_5_month': {
+          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
+            { week: 8, stage: '8 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '4_month': {
+          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
+            { week: 9, stage: '9 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        }
+      },
+      irrigated: {
+        '3_month': {
+          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '3_5_month': {
+          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
+            { week: 8, stage: '8 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '4_month': {
+          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
+            { week: 9, stage: '9 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        }
+      }
     },
-    {
-      stage: 'First Top Dressing',
-      days: 21,
-      description: 'Active tillering stage',
-      percentage: { urea: 0.35, tsp: 0, mop: 0.5 },
-    },
-    {
-      stage: 'Second Top Dressing',
-      days: 45,
-      description: 'Panicle initiation stage',
-      percentage: { urea: 0.35, tsp: 0, mop: 0 },
-    },
-  ];
+    intermediate_dry_zone: {
+      rainfed: {
+        '3_month': {
+          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '3_5_month': {
+          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
+            { week: 8, stage: '8 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '4_month': {
+          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
+            { week: 9, stage: '9 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        }
+      },
+      irrigated: {
+        '3_month': {
+          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '3_5_month': {
+          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
+            { week: 6, stage: '6 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
+            { week: 8, stage: '8 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        },
+        '4_month': {
+          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
+          schedule: [
+            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
+            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
+            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
+            { week: 7, stage: '7 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
+            { week: 9, stage: '9 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
+          ]
+        }
+      }
+    }
+  };
 
-  const prices = { urea: 80, tsp: 120, mop: 100 }; // LKR per kg
+  // Select appropriate recommendation
+  const zoneType = isWetZone ? 'wet_zone' : 'intermediate_dry_zone';
+  const conditionType = isIrrigated ? 'irrigated' : 'rainfed';
+  const selectedRecommendation = recommendations[zoneType][conditionType][ageGroup];
 
-  return applications.map(app => {
+  // Generate schedule
+  return selectedRecommendation.schedule.map(app => {
     const applicationDate = new Date(cultivationDate);
-    applicationDate.setDate(applicationDate.getDate() + app.days);
+    applicationDate.setDate(applicationDate.getDate() + (app.week * 7)); // Convert weeks to days
 
     const fertilizers = {
-      urea: Math.round(baseFertilizer.urea * app.percentage.urea * area),
-      tsp: Math.round(baseFertilizer.tsp * app.percentage.tsp * area),
-      mop: Math.round(baseFertilizer.mop * app.percentage.mop * area),
+      urea: Math.round(app.urea * areaHa * 100) / 100, // kg for the area
+      tsp: Math.round(app.tsp * areaHa * 100) / 100,
+      mop: Math.round(app.mop * areaHa * 100) / 100,
+      zincSulphate: Math.round(app.zinc * areaHa * 100) / 100
     };
-
-    const totalCost = Object.entries(fertilizers).reduce((total, [type, amount]) => {
-      return total + (amount * prices[type]);
-    }, 0);
 
     return {
       stage: app.stage,
       date: applicationDate,
       fertilizers,
-      totalCost,
-      description: app.description,
+      description: `${app.stage} - Apply as per Sri Lankan fertilizer recommendations for ${zoneType.replace('_', ' ')} ${conditionType} conditions`,
+      recommendations: {
+        zone: zoneType.replace('_', ' ').toUpperCase(),
+        condition: conditionType.charAt(0).toUpperCase() + conditionType.slice(1),
+        ageGroup: ageGroup.replace('_', '.') + ' months',
+        totalRecommended: selectedRecommendation.total
+      }
     };
   });
 };

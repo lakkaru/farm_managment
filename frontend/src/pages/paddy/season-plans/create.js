@@ -321,11 +321,8 @@ const CreateSeasonPlanContent = () => {
                   onChange={handleChange}
                   label="Irrigation Method *"
                 >
-                  <MenuItem value="Rain-fed">Rain-fed</MenuItem>
-                  <MenuItem value="Irrigated (Tank)">Irrigated (Tank)</MenuItem>
-                  <MenuItem value="Irrigated (River)">Irrigated (River)</MenuItem>
-                  <MenuItem value="Irrigated (Tube well)">Irrigated (Tube well)</MenuItem>
-                  <MenuItem value="Irrigated (Canal)">Irrigated (Canal)</MenuItem>
+                  <MenuItem value="Rain fed">Rain fed</MenuItem>
+                  <MenuItem value="Under irrigation">Under irrigation</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
