@@ -130,6 +130,12 @@ export const seasonPlanAPI = {
   createSeasonPlan: (planData) => api.post('/season-plans', planData),
   updateSeasonPlan: (id, planData) => api.put(`/season-plans/${id}`, planData),
   deleteSeasonPlan: (id) => api.delete(`/season-plans/${id}`),
+  updateFertilizerImplementation: (id, applicationIndex, data) => 
+    api.put(`/season-plans/${id}/fertilizer/${applicationIndex}`, data),
+  updateStageImplementation: (id, stageIndex, data) => 
+    api.put(`/season-plans/${id}/stage/${stageIndex}`, data),
+  updateHarvest: (id, harvestData) => 
+    api.put(`/season-plans/${id}/harvest`, harvestData),
 };
 
 // File upload API

@@ -530,10 +530,211 @@ const getDefaultClimateZone = (district) => {
   return zoneMapping[district] || 'WL1'; // Default to WL1 if district not found
 };
 
+// @desc    Update fertilizer application implementation
+// @route   PUT /api/season-plans/:id/fertilizer/:applicationIndex
+// @access  Private
+const updateFertilizerImplementation = async (req, res) => {
+  try {
+    const { id, applicationIndex } = req.params;
+    const { applied, implementedDate, notes, actualFertilizers } = req.body;
+
+    const plan = await SeasonPlan.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check ownership
+    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this season plan',
+      });
+    }
+
+    // Check if application index exists
+    if (!plan.fertilizerSchedule[applicationIndex]) {
+      return res.status(404).json({
+        success: false,
+        message: 'Fertilizer application not found',
+      });
+    }
+
+    // Update the specific fertilizer application
+    if (applied !== undefined) plan.fertilizerSchedule[applicationIndex].applied = applied;
+    if (implementedDate) plan.fertilizerSchedule[applicationIndex].implementedDate = implementedDate;
+    if (notes !== undefined) plan.fertilizerSchedule[applicationIndex].notes = notes;
+    if (actualFertilizers) {
+      plan.fertilizerSchedule[applicationIndex].actualFertilizers = actualFertilizers;
+    }
+
+    // Set status to active if it's still planned and something has been implemented
+    if (plan.status === 'planned' && applied) {
+      plan.status = 'active';
+    }
+
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name district cultivationZone')
+      .populate('paddyVariety', 'name duration type');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Fertilizer implementation updated successfully',
+    });
+  } catch (error) {
+    console.error('Update fertilizer implementation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating fertilizer implementation',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update growing stage implementation
+// @route   PUT /api/season-plans/:id/stage/:stageIndex
+// @access  Private
+const updateStageImplementation = async (req, res) => {
+  try {
+    const { id, stageIndex } = req.params;
+    const { completed, notes, actualStartDate, actualEndDate } = req.body;
+
+    const plan = await SeasonPlan.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check ownership
+    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this season plan',
+      });
+    }
+
+    // Check if stage index exists
+    if (!plan.growingStages[stageIndex]) {
+      return res.status(404).json({
+        success: false,
+        message: 'Growing stage not found',
+      });
+    }
+
+    // Update the specific growing stage
+    if (completed !== undefined) plan.growingStages[stageIndex].completed = completed;
+    if (notes !== undefined) plan.growingStages[stageIndex].notes = notes;
+    if (actualStartDate) plan.growingStages[stageIndex].actualStartDate = actualStartDate;
+    if (actualEndDate) plan.growingStages[stageIndex].actualEndDate = actualEndDate;
+
+    // Set status to active if it's still planned and a stage has been completed
+    if (plan.status === 'planned' && completed) {
+      plan.status = 'active';
+    }
+
+    // Check if all growing stages are completed and update plan status
+    const allStagesCompleted = plan.growingStages.every(stage => stage.completed);
+    if (allStagesCompleted && plan.status !== 'completed') {
+      plan.status = 'completed';
+    } else if (!allStagesCompleted && plan.status === 'completed') {
+      // If a stage was unmarked as completed, revert status to active
+      plan.status = 'active';
+    }
+
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name district cultivationZone')
+      .populate('paddyVariety', 'name duration type');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Growing stage implementation updated successfully',
+    });
+  } catch (error) {
+    console.error('Update stage implementation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating growing stage implementation',
+      error: error.message,
+    });
+  }
+};
+
+// Update harvest data
+const updateHarvest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, actualYield, quality, notes } = req.body;
+
+    const plan = await SeasonPlan.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check ownership
+    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this season plan',
+      });
+    }
+
+    // Update harvest data
+    plan.actualHarvest = {
+      date: date || plan.actualHarvest?.date,
+      actualYield: actualYield !== undefined ? actualYield : plan.actualHarvest?.actualYield,
+      quality: quality !== undefined ? quality : plan.actualHarvest?.quality,
+      notes: notes !== undefined ? notes : plan.actualHarvest?.notes,
+    };
+
+    // If harvest is recorded and all stages are completed, ensure status is completed
+    if (date && plan.growingStages.every(stage => stage.completed)) {
+      plan.status = 'completed';
+    }
+
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name district cultivationZone')
+      .populate('paddyVariety', 'name duration type');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Harvest data updated successfully',
+    });
+  } catch (error) {
+    console.error('Update harvest error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating harvest data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   getSeasonPlans,
   getSeasonPlan,
   createSeasonPlan,
   updateSeasonPlan,
   deleteSeasonPlan,
+  updateFertilizerImplementation,
+  updateStageImplementation,
+  updateHarvest,
 };

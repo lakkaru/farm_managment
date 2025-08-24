@@ -27,6 +27,8 @@ import {
   CalendarToday as CalendarIcon,
   LocationOn as LocationIcon,
   WaterDrop as WaterIcon,
+  CheckCircle as CheckCircleIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
@@ -161,8 +163,24 @@ const SeasonPlansContent = () => {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
+                  background: plan.status === 'completed' 
+                    ? 'linear-gradient(135deg, #E8F5E8, #F0FFF0)'
+                    : plan.status === 'active'
+                    ? 'linear-gradient(135deg, #E3F2FD, #F3E5F5)'
+                    : 'linear-gradient(135deg, #F5F5F5, #FAFAFA)',
+                  borderLeft: `4px solid ${
+                    plan.status === 'completed' ? '#4CAF50' :
+                    plan.status === 'active' ? '#2196F3' :
+                    plan.status === 'cancelled' ? '#F44336' : '#FFC107'
+                  }`,
+                  transition: 'all 0.3s ease',
                   '&:hover': {
-                    boxShadow: 4,
+                    boxShadow: plan.status === 'completed' 
+                      ? '0 4px 12px rgba(76, 175, 80, 0.3)'
+                      : plan.status === 'active'
+                      ? '0 4px 12px rgba(33, 150, 243, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    transform: 'translateY(-2px)',
                   },
                 }}
               >
@@ -229,6 +247,55 @@ const SeasonPlansContent = () => {
                       )}
                     </Typography>
                   )}
+
+                  {/* Actual Harvest - Show for completed plans */}
+                  {plan.status === 'completed' && plan.actualHarvest?.date && (
+                    <Box sx={{ 
+                      mt: 1, 
+                      p: 1.5, 
+                      backgroundColor: 'success.50', 
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'success.200'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                        <CheckCircleIcon sx={{ fontSize: 16, mr: 1, color: 'success.main' }} />
+                        <Typography variant="body2" sx={{ color: 'success.dark', fontWeight: 'bold' }}>
+                          Harvest Completed
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem' }}>
+                        <strong>Date:</strong> {formatDate(plan.actualHarvest.date)}
+                      </Typography>
+                      {plan.actualHarvest.actualYield && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                          <TrendingUpIcon sx={{ fontSize: 14, mr: 0.5, color: 'success.main' }} />
+                          <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem' }}>
+                            <strong>Yield:</strong> {plan.actualHarvest.actualYield} kg
+                            {plan.expectedHarvest?.estimatedYield && (
+                              <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                                {' '}({((plan.actualHarvest.actualYield / (plan.expectedHarvest.estimatedYield * 1000)) * 100).toFixed(1)}% of expected)
+                              </span>
+                            )}
+                          </Typography>
+                        </Box>
+                      )}
+                      {plan.actualHarvest.quality && (
+                        <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem', mt: 0.5 }}>
+                          <strong>Quality:</strong> {plan.actualHarvest.quality}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Show progress for active plans */}
+                  {plan.status === 'active' && plan.growingStages && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'info.main' }}>
+                        Progress: {plan.growingStages.filter(stage => stage.completed).length}/{plan.growingStages.length} stages completed
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
 
                 <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
@@ -236,6 +303,7 @@ const SeasonPlansContent = () => {
                     <Tooltip title="View Details">
                       <IconButton
                         size="small"
+                        color="primary"
                         onClick={() => navigate(`/paddy/season-plans/${plan._id}`)}
                       >
                         <ViewIcon />
@@ -244,6 +312,7 @@ const SeasonPlansContent = () => {
                     <Tooltip title="Edit Plan">
                       <IconButton
                         size="small"
+                        color="info"
                         onClick={() => navigate(`/paddy/season-plans/${plan._id}/edit`)}
                       >
                         <EditIcon />

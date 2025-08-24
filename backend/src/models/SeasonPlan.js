@@ -54,6 +54,9 @@ const seasonPlanSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
+    actualStartDate: Date,
+    actualEndDate: Date,
+    implementedDate: Date, // Single date for when the stage was actually implemented
     notes: String,
   }],
   fertilizerSchedule: [{
@@ -70,7 +73,8 @@ const seasonPlanSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
-    applicationDate: Date,
+    applicationDate: Date, // Planned date
+    implementedDate: Date, // Actual date when applied
     notes: String,
   }],
   status: {

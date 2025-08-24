@@ -7,6 +7,9 @@ const {
   createSeasonPlan,
   updateSeasonPlan,
   deleteSeasonPlan,
+  updateFertilizerImplementation,
+  updateStageImplementation,
+  updateHarvest,
 } = require('../controllers/seasonPlanController');
 const { protect } = require('../middleware/auth');
 
@@ -50,5 +53,19 @@ router
   .get(getSeasonPlan)
   .put(seasonPlanValidation, updateSeasonPlan)
   .delete(deleteSeasonPlan);
+
+// Implementation tracking routes
+router
+  .route('/:id/fertilizer/:applicationIndex')
+  .put(updateFertilizerImplementation);
+
+router
+  .route('/:id/stage/:stageIndex')
+  .put(updateStageImplementation);
+
+// Harvest tracking route
+router
+  .route('/:id/harvest')
+  .put(updateHarvest);
 
 module.exports = router;
