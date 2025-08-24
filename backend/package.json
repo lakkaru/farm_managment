@@ -6,8 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "prod": "NODE_ENV=production node server.js",
     "test": "jest",
-    "seed": "node scripts/seedDatabase.js"
+    "seed": "node scripts/seedDatabase.js",
+    "seed:prod": "NODE_ENV=production node scripts/seedDatabase.js",
+    "backup": "node scripts/backup.js",
+    "logs": "pm2 logs farm-management-backend",
+    "monitor": "pm2 monit"
   },
   "keywords": [
     "farm-management",

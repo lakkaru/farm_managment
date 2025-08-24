@@ -35,14 +35,6 @@ import AppProviders from '../../providers/AppProviders';
 import { paddyVarietyAPI, seasonPlanAPI } from '../../services/api';
 import { useFarm } from '../../contexts/FarmContext';
 import { toast } from 'react-toastify';
-import { 
-  CalendarToday as CalendarIcon,
-  LocationOn as LocationIcon,
-  Water as WaterIcon,
-  Terrain as SoilIcon,
-  Agriculture as AgricultureIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
 
 const PlanSeasonContent = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -80,7 +72,7 @@ const PlanSeasonContent = () => {
         cultivatingArea: selectedFarm.totalArea?.value || '',
       }));
     }
-  }, [selectedFarm]);
+  }, [selectedFarm, districts]);
 
   // Sri Lankan districts and their climate zones
   const districts = [
@@ -236,60 +228,6 @@ const PlanSeasonContent = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateFertilizerSchedule = (cultivationDate, area) => {
-    // Fertilizer recommendations based on Sri Lanka Agriculture Department guidelines
-    const baseFertilizer = {
-      urea: 50, // kg per acre
-      tsp: 25,  // kg per acre
-      mop: 25,  // kg per acre
-    };
-
-    const applications = [
-      {
-        stage: 'Basal Application',
-        days: -1,
-        description: 'Apply before transplanting',
-        fertilizers: {
-          urea: Math.round(baseFertilizer.urea * 0.3 * area),
-          tsp: Math.round(baseFertilizer.tsp * 1.0 * area),
-          mop: Math.round(baseFertilizer.mop * 0.5 * area),
-        },
-      },
-      {
-        stage: 'First Top Dressing',
-        days: 21,
-        description: 'Active tillering stage',
-        fertilizers: {
-          urea: Math.round(baseFertilizer.urea * 0.35 * area),
-          tsp: 0,
-          mop: Math.round(baseFertilizer.mop * 0.5 * area),
-        },
-      },
-      {
-        stage: 'Second Top Dressing',
-        days: 45,
-        description: 'Panicle initiation stage',
-        fertilizers: {
-          urea: Math.round(baseFertilizer.urea * 0.35 * area),
-          tsp: 0,
-          mop: 0,
-        },
-      },
-    ];
-
-    const schedule = applications.map(app => {
-      const applicationDate = new Date(cultivationDate);
-      applicationDate.setDate(applicationDate.getDate() + app.days);
-
-      return {
-        ...app,
-        date: applicationDate.toLocaleDateString(),
-      };
-    });
-
-    setFertilizerSchedule(schedule);
   };
 
   const handleNext = () => {

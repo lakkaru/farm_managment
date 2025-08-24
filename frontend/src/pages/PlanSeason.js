@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -27,14 +27,6 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { 
-  CalendarToday as CalendarIcon,
-  LocationOn as LocationIcon,
-  Water as WaterIcon,
-  Terrain as SoilIcon,
-  Agriculture as AgricultureIcon,
-  Schedule as ScheduleIcon,
-} from '@mui/icons-material';
 import Layout from '../components/Layout/Layout';
 import AppProviders from '../providers/AppProviders';
 

@@ -50,7 +50,7 @@ const EditSeasonPlanContent = ({ id }) => {
       loadPaddyVarieties();
       loadFarms();
     }
-  }, [id]);
+  }, [id, loadSeasonPlan]);
 
   const loadSeasonPlan = async () => {
     try {
