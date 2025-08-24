@@ -17,17 +17,18 @@ import {
 } from '@mui/material';
 import {
   Agriculture as AgricultureIcon,
-  Pets as PetsIcon,
-  Inventory as InventoryIcon,
+  Grass as PaddyIcon,
+  Schedule as PlanSeasonIcon,
   TrendingUp as TrendingUpIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../components/Layout/Layout';
 import PrivateRoute from '../components/PrivateRoute';
+import PhaseNotification from '../components/PhaseNotification';
 import AppProviders from '../providers/AppProviders';
 import { useAuth } from '../contexts/AuthContext';
-import { farmAPI, cropAPI, livestockAPI, inventoryAPI } from '../services/api';
+import { farmAPI, seasonPlanAPI, paddyVarietyAPI } from '../services/api';
 
 const DashboardContent = () => {
   const theme = useTheme();
@@ -36,9 +37,9 @@ const DashboardContent = () => {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     farms: 0,
-    crops: 0,
-    livestock: 0,
-    inventory: 0,
+    seasonPlans: 0,
+    paddyVarieties: 0,
+    activeSeasons: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
@@ -50,59 +51,63 @@ const DashboardContent = () => {
     try {
       setLoading(true);
       
-      // Fetch data from APIs
-      const [farmsRes, cropsRes, livestockRes, inventoryRes] = await Promise.allSettled([
+      // Fetch paddy-focused data from APIs
+      const [farmsRes, seasonPlansRes, paddyVarietiesRes] = await Promise.allSettled([
         farmAPI.getFarms(),
-        cropAPI.getCrops(),
-        livestockAPI.getLivestock(),
-        inventoryAPI.getInventory(),
+        seasonPlanAPI.getSeasonPlans(),
+        paddyVarietyAPI.getPaddyVarieties(),
       ]);
 
       // Extract successful results
       const farms = farmsRes.status === 'fulfilled' ? farmsRes.value.data.data || [] : [];
-      const crops = cropsRes.status === 'fulfilled' ? cropsRes.value.data.data || [] : [];
-      const livestock = livestockRes.status === 'fulfilled' ? livestockRes.value.data.data || [] : [];
-      const inventory = inventoryRes.status === 'fulfilled' ? inventoryRes.value.data.data || [] : [];
+      const seasonPlans = seasonPlansRes.status === 'fulfilled' ? seasonPlansRes.value.data.data || [] : [];
+      const paddyVarieties = paddyVarietiesRes.status === 'fulfilled' ? paddyVarietiesRes.value.data.data || [] : [];
+
+      // Count active seasons (current or future seasons)
+      const now = new Date();
+      const activeSeasons = seasonPlans.filter(plan => 
+        new Date(plan.expectedHarvest?.date || plan.cultivationDate) >= now
+      );
 
       setStats({
         farms: farms.length,
-        crops: crops.length,
-        livestock: livestock.length,
-        inventory: inventory.length,
+        seasonPlans: seasonPlans.length,
+        paddyVarieties: paddyVarieties.length,
+        activeSeasons: activeSeasons.length,
       });
 
-      // Generate recent activity
+      // Generate recent activity focused on paddy cultivation
       const activities = [];
       
       if (farms.length > 0) {
         activities.push({
           icon: <AgricultureIcon color="success" />,
-          text: `You have ${farms.length} farm${farms.length !== 1 ? 's' : ''} registered`,
+          text: `You have ${farms.length} farm${farms.length !== 1 ? 's' : ''} registered for paddy cultivation`,
           time: 'Active',
         });
       }
 
-      if (crops.length > 0) {
+      if (activeSeasons.length > 0) {
         activities.push({
-          icon: <TrendingUpIcon color="primary" />,
-          text: `${crops.length} crop${crops.length !== 1 ? 's' : ''} currently being tracked`,
-          time: 'Active',
+          icon: <PaddyIcon color="primary" />,
+          text: `${activeSeasons.length} active paddy season${activeSeasons.length !== 1 ? 's' : ''} in progress`,
+          time: 'Current Season',
         });
       }
 
-      if (livestock.length > 0) {
+      if (seasonPlans.length > 0) {
         activities.push({
-          icon: <PetsIcon color="warning" />,
-          text: `${livestock.length} livestock animal${livestock.length !== 1 ? 's' : ''} in your farms`,
-          time: 'Active',
+          icon: <PlanSeasonIcon color="info" />,
+          text: `${seasonPlans.length} total season plan${seasonPlans.length !== 1 ? 's' : ''} created`,
+          time: 'Historical',
         });
       }
 
-      if (inventory.length > 0) {
+      if (paddyVarieties.length > 0) {
         activities.push({
-          icon: <InventoryIcon color="secondary" />,
-          text: `${inventory.length} inventory item${inventory.length !== 1 ? 's' : ''} tracked`,
-          time: 'Active',
+          icon: <TrendingUpIcon color="secondary" />,
+          text: `${paddyVarieties.length} paddy varietie${paddyVarieties.length !== 1 ? 's' : ''} available for selection`,
+          time: 'Database',
         });
       }
 
@@ -110,13 +115,13 @@ const DashboardContent = () => {
       if (activities.length === 0) {
         activities.push(
           {
-            icon: <AgricultureIcon color="primary" />,
-            text: 'Welcome to your farm management system!',
+            icon: <PaddyIcon color="primary" />,
+            text: 'Welcome to your paddy farm management system!',
             time: 'Getting started',
           },
           {
             icon: <AddIcon color="action" />,
-            text: 'Create your first farm to begin tracking your operations',
+            text: 'Create your first farm and start planning your paddy seasons',
             time: 'Next step',
           }
         );
@@ -129,11 +134,11 @@ const DashboardContent = () => {
       setError('Failed to load dashboard data. Some features may be limited.');
       
       // Set default values on error
-      setStats({ farms: 0, crops: 0, livestock: 0, inventory: 0 });
+      setStats({ farms: 0, seasonPlans: 0, paddyVarieties: 0, activeSeasons: 0 });
       setRecentActivity([
         {
-          icon: <AgricultureIcon color="primary" />,
-          text: 'Welcome to your farm management system!',
+          icon: <PaddyIcon color="primary" />,
+          text: 'Welcome to your paddy farm management system!',
           time: 'Getting started',
         },
       ]);
@@ -147,7 +152,7 @@ const DashboardContent = () => {
   };
 
   const handlePlanSeason = () => {
-    navigate('/paddy/plan-season');
+    navigate('/paddy/season-plans/create');
   };
 
   const statCards = [
@@ -158,22 +163,22 @@ const DashboardContent = () => {
       icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
     },
     {
-      title: 'Active Crops',
-      value: stats.crops,
+      title: 'Season Plans',
+      value: stats.seasonPlans,
       color: theme.palette.primary.main,
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
+      icon: <PlanSeasonIcon sx={{ fontSize: 40 }} />,
     },
     {
-      title: 'Livestock',
-      value: stats.livestock,
+      title: 'Active Seasons',
+      value: stats.activeSeasons,
       color: theme.palette.warning.main,
-      icon: <PetsIcon sx={{ fontSize: 40 }} />,
+      icon: <PaddyIcon sx={{ fontSize: 40 }} />,
     },
     {
-      title: 'Inventory Items',
-      value: stats.inventory,
+      title: 'Paddy Varieties',
+      value: stats.paddyVarieties,
       color: theme.palette.secondary.main,
-      icon: <InventoryIcon sx={{ fontSize: 40 }} />,
+      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
     }
   ];
 
@@ -197,9 +202,11 @@ const DashboardContent = () => {
           Welcome back, {user?.profile?.firstName || 'Farmer'}!
         </Typography>
         <Typography variant="body1" color="textSecondary">
-          Here's an overview of your farm operations
+          Here's an overview of your paddy cultivation operations
         </Typography>
       </Box>
+
+      <PhaseNotification />
 
       {error && (
         <Alert severity="warning" sx={{ mb: 3 }}>
@@ -300,27 +307,27 @@ const DashboardContent = () => {
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<TrendingUpIcon />}
+                startIcon={<PlanSeasonIcon />}
                 onClick={handlePlanSeason}
                 fullWidth
               >
-                Plan Season
+                Plan Paddy Season
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/crops/create')}
+                startIcon={<PaddyIcon />}
+                onClick={() => navigate('/paddy/varieties')}
                 fullWidth
               >
-                Add Crop
+                View Paddy Varieties
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<PetsIcon />}
-                onClick={() => navigate('/livestock/create')}
+                startIcon={<TrendingUpIcon />}
+                onClick={() => navigate('/paddy/season-plans')}
                 fullWidth
               >
-                Add Livestock
+                View Season Plans
               </Button>
             </Box>
           </Paper>

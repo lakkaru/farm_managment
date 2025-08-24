@@ -87,7 +87,27 @@ const CreateSeasonPlanContent = () => {
       console.log('Paddy varieties response:', response.data);
       console.log('First variety details:', response.data.data?.[0]);
       console.log('First variety duration:', response.data.data?.[0]?.duration);
-      setPaddyVarieties(response.data.data || []);
+      
+      // Sort varieties by name first (A-Z), then by duration (ascending)
+      const sortedVarieties = (response.data.data || []).sort((a, b) => {
+        const nameCompare = a.name.localeCompare(b.name);
+        if (nameCompare !== 0) return nameCompare;
+        
+        // Extract numeric duration for comparison
+        const getDuration = (durationStr) => {
+          const match = durationStr.match(/(\d+)(?:-(\d+))?/);
+          if (match) {
+            const min = parseInt(match[1]);
+            const max = match[2] ? parseInt(match[2]) : min;
+            return (min + max) / 2;
+          }
+          return 0;
+        };
+        
+        return getDuration(a.duration) - getDuration(b.duration);
+      });
+      
+      setPaddyVarieties(sortedVarieties);
     } catch (error) {
       console.error('Error loading paddy varieties:', error);
       toast.error('Failed to load paddy varieties');

@@ -29,23 +29,23 @@ const LandingPage = () => {
   const features = [
     {
       icon: <AgricultureIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'Crop Management',
-      description: 'Track your crops from planting to harvest with detailed growth stages and care schedules.',
+      title: 'Paddy Management',
+      description: 'Comprehensive paddy cultivation management from variety selection to harvest tracking.',
     },
     {
       icon: <CloudIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'Weather Integration',
-      description: 'Get weather forecasts and climate-based recommendations for optimal farming decisions.',
+      title: 'Sri Lankan Focus',
+      description: 'Built specifically for Sri Lankan agriculture with local climate zones and farming practices.',
     },
     {
       icon: <TrendingUpIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      title: 'Yield Tracking',
-      description: 'Monitor and analyze your farm productivity with comprehensive reporting tools.',
+      title: 'Yield Optimization',
+      description: 'Maximize your paddy yield with zone-based fertilizer recommendations and growth tracking.',
     },
     {
       icon: <AssessmentIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
       title: 'Season Planning',
-      description: 'Plan your paddy cultivation with variety selection and fertilizer scheduling.',
+      description: 'Plan your paddy seasons with variety selection, fertilizer scheduling, and harvest forecasting.',
     },
   ];
 
@@ -73,13 +73,13 @@ const LandingPage = () => {
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
-                Farm Management System
+                Paddy Farm Management System
               </Typography>
               <Typography variant="h5" paragraph sx={{ opacity: 0.9 }}>
-                A comprehensive solution for managing your farm operations with modern technology and agricultural best practices.
+                A specialized solution for managing your paddy cultivation operations with modern technology and Sri Lankan agricultural expertise.
               </Typography>
               <Typography variant="body1" paragraph sx={{ opacity: 0.8 }}>
-                Plan your seasons, track crops, manage livestock, monitor inventory, and get expert recommendations - all in one platform.
+                Plan your paddy seasons, track growth stages, manage fertilizer applications, and get expert recommendations - all in one platform designed for Sri Lankan farmers.
               </Typography>
               <Box sx={{ mt: 4 }}>
                 <Button
@@ -138,7 +138,7 @@ const LandingPage = () => {
       {/* Features Section */}
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Typography variant="h3" align="center" gutterBottom sx={{ mb: 6 }}>
-          Powerful Features for Modern Farming
+          Powerful Features for Modern Paddy Farming
         </Typography>
         <Grid container spacing={4}>
           {features.map((feature, index) => (

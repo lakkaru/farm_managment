@@ -36,7 +36,7 @@ const CreateCropContent = () => {
           </Button>
           <Button
             variant="contained"
-            onClick={() => navigate('/paddy/plan-season')}
+            onClick={() => navigate('/paddy/season-plans/create')}
           >
             Plan Season Instead
           </Button>

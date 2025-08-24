@@ -28,7 +28,6 @@ import {
   Menu as MenuIcon,
   Close as CloseIcon,
   Grass as PaddyIcon,
-  Schedule as PlanSeasonIcon,
   ExpandLess,
   ExpandMore,
   Add as AddIcon,
@@ -95,23 +94,23 @@ const Sidebar = () => {
       label: 'Crops',
       hasSubmenu: true,
       submenu: [
-        { path: '/crops', icon: ViewIcon, label: 'View All Crops' },
-        { path: '/crops/create', icon: AddIcon, label: 'Create Crop' },
         { 
           label: 'Paddy', 
           icon: PaddyIcon, 
           isSubmenuGroup: true,
           submenu: [
             { path: '/paddy/varieties', icon: PaddyIcon, label: 'Paddy Varieties' },
-            { path: '/paddy/season-plans', icon: PlanSeasonIcon, label: 'Season Plans' },
+            { path: '/paddy/season-plans', icon: ViewIcon, label: 'Season Plans' },
+            { path: '/paddy/season-plans/create', icon: AddIcon, label: 'Create Season Plan' },
           ]
         },
       ]
     },
-    { path: '/livestock', icon: PetsIcon, label: 'Livestock' },
-    { path: '/inventory', icon: InventoryIcon, label: 'Inventory' },
-    { path: '/reports', icon: BarChartIcon, label: 'Reports' },
-    { path: '/settings', icon: SettingsIcon, label: 'Settings' },
+    // Disabled for Phase 1 - Paddy Only Implementation
+    // { path: '/livestock', icon: PetsIcon, label: 'Livestock' },
+    // { path: '/inventory', icon: InventoryIcon, label: 'Inventory' },
+    // { path: '/reports', icon: BarChartIcon, label: 'Reports' },
+    // { path: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
   const handleNavigation = (path) => {
