@@ -728,6 +728,155 @@ const updateHarvest = async (req, res) => {
   }
 };
 
+// @desc    Add LCC-based urea application to fertilizer schedule
+// @route   POST /api/season-plans/:id/lcc-fertilizer
+// @access  Private
+const addLCCFertilizerApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { plantAge, leafColorIndex, recommendedUrea, notes } = req.body;
+
+    const plan = await SeasonPlan.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check ownership
+    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this season plan',
+      });
+    }
+
+    // Calculate the application date based on plant age (weeks from cultivation date)
+    const applicationDate = new Date(plan.cultivationDate);
+    applicationDate.setDate(applicationDate.getDate() + (plantAge * 7)); // Convert weeks to days
+
+    // Calculate urea amount for the cultivating area (convert from per acre to total amount)
+    const totalUreaAmount = recommendedUrea * plan.cultivatingArea;
+
+    // Create new LCC-based fertilizer application
+    const lccApplication = {
+      stage: `LCC Application - Week ${plantAge}`,
+      date: applicationDate,
+      fertilizers: {
+        urea: Math.round(totalUreaAmount * 100) / 100,
+        tsp: 0,
+        mop: 0,
+        zincSulphate: 0
+      },
+      description: `Urea application based on Leaf Color Chart - Plant Age: ${plantAge} weeks, Leaf Color Index: ${leafColorIndex}`,
+      applied: false,
+      implementedDate: null,
+      notes: notes || '',
+      lccData: {
+        plantAge: plantAge,
+        leafColorIndex: leafColorIndex,
+        recommendedPerAcre: recommendedUrea,
+        totalArea: plan.cultivatingArea
+      },
+      isLCCBased: true
+    };
+
+    // Add to fertilizer schedule
+    plan.fertilizerSchedule.push(lccApplication);
+
+    // Sort fertilizer schedule by date
+    plan.fertilizerSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name district cultivationZone')
+      .populate('paddyVariety', 'name duration type');
+
+    res.status(201).json({
+      success: true,
+      data: populatedPlan,
+      message: 'LCC-based urea application added successfully',
+    });
+  } catch (error) {
+    console.error('Add LCC fertilizer application error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding LCC-based fertilizer application',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+// @desc    Delete fertilizer application
+// @route   DELETE /api/season-plans/:id/fertilizer/:applicationIndex
+// @access  Private
+const deleteFertilizerApplication = async (req, res) => {
+  try {
+    const { id, applicationIndex } = req.params;
+    
+    const plan = await SeasonPlan.findById(id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns the season plan
+    if (plan.userId.toString() !== req.user.id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const appIndex = parseInt(applicationIndex);
+    
+    if (appIndex < 0 || appIndex >= plan.fertilizerSchedule.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid fertilizer application index',
+      });
+    }
+
+    // Check if the application has been implemented (applied)
+    const application = plan.fertilizerSchedule[appIndex];
+    if (application.applied) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete an applied fertilizer application',
+      });
+    }
+
+    // Remove the fertilizer application
+    plan.fertilizerSchedule.splice(appIndex, 1);
+    
+    await plan.save();
+    
+    // Populate the response
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name location district cultivationZone totalArea')
+      .populate('paddyVariety', 'name duration type characteristics');
+    
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Fertilizer application deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete fertilizer application error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting fertilizer application',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   getSeasonPlans,
   getSeasonPlan,
@@ -737,4 +886,6 @@ module.exports = {
   updateFertilizerImplementation,
   updateStageImplementation,
   updateHarvest,
+  addLCCFertilizerApplication,
+  deleteFertilizerApplication,
 };

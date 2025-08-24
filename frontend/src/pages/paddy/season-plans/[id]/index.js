@@ -48,6 +48,11 @@ import {
   Grass as GrassIcon,
   SquareFoot as AreaIcon,
   Science as ScienceIcon,
+  Colorize as ColorizeIcon,
+  ToggleOn as ToggleOnIcon,
+  ToggleOff as ToggleOffIcon,
+  Close as CloseIcon,
+  Spa as SpaIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
@@ -82,6 +87,16 @@ const SeasonPlanViewContent = ({ id }) => {
     actualYield: '',
     quality: '',
     notes: '',
+  });
+
+  // Leaf Color Chart states
+  const [leafColorEnabled, setLeafColorEnabled] = useState(false);
+  const [leafColorDialog, setLeafColorDialog] = useState(false);
+  const [leafColorData, setLeafColorData] = useState({
+    currentDate: '',
+    plantAge: '',
+    leafColorIndex: '',
+    recommendedUrea: 0,
   });
 
   const loadSeasonPlan = useCallback(async () => {
@@ -142,6 +157,136 @@ const SeasonPlanViewContent = ({ id }) => {
     const totalStages = plan?.growingStages?.length || 1;
     const completedStages = getCompletedStages();
     return (completedStages / totalStages) * 100;
+  };
+
+  // Leaf Color Chart calculation
+  const leafColorChart = {
+    2: { 2: 25 },
+    3: { 2: 25 },
+    4: { 2: 60, 3: 20 },
+    5: { 2: 80, 3: 40 },
+    6: { 2: 37, 3: 22, 4: 7.5 },
+    7: { 2: 30, 3: 15 },
+    8: { 2: 30, 3: 15 },
+  };
+
+  const calculateUreaRecommendation = (plantAge, leafColorIndex) => {
+    const ageData = leafColorChart[plantAge];
+    if (!ageData) return 0;
+    return ageData[leafColorIndex] || 0;
+  };
+
+  const calculatePlantAge = (currentDate, cultivationDate) => {
+    if (!currentDate || !cultivationDate) return 0;
+    const current = new Date(currentDate);
+    const cultivation = new Date(cultivationDate);
+    const diffTime = current - cultivation; // Remove Math.abs to handle direction
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    
+    // Use center of week (3.5 days) as breakpoint for age calculation
+    // Week 1: 0-6 days (center at 3.5), Week 2: 7-13 days (center at 10.5), etc.
+    if (diffDays < 0) return 0; // Before cultivation date
+    
+    const ageWeeks = Math.floor((diffDays + 3.5) / 7);
+    return Math.max(0, ageWeeks); // Ensure non-negative
+  };
+
+  const handleLeafColorCalculation = () => {
+    if (leafColorData.currentDate && plan?.cultivationDate) {
+      const calculatedAge = calculatePlantAge(leafColorData.currentDate, plan.cultivationDate);
+      setLeafColorData(prev => ({
+        ...prev,
+        plantAge: calculatedAge.toString()
+      }));
+      
+      if (calculatedAge && leafColorData.leafColorIndex) {
+        const recommended = calculateUreaRecommendation(calculatedAge, parseInt(leafColorData.leafColorIndex));
+        setLeafColorData(prev => ({
+          ...prev,
+          plantAge: calculatedAge.toString(),
+          recommendedUrea: recommended
+        }));
+      }
+    }
+  };
+
+  // Save LCC-based fertilizer application to database
+  const saveLCCFertilizerApplication = async () => {
+    if (saving) return;
+    setSaving(true);
+    toastShownRef.current = false;
+
+    try {
+      const response = await seasonPlanAPI.addLCCFertilizerApplication(id, {
+        plantAge: leafColorData.plantAge,
+        leafColorIndex: leafColorData.leafColorIndex,
+        recommendedUrea: leafColorData.recommendedUrea,
+        notes: `LCC-based urea application - ${leafColorData.recommendedUrea}kg per acre recommended for plant age ${leafColorData.plantAge} weeks with leaf color index ${leafColorData.leafColorIndex}`
+      });
+
+      setPlan(response.data.data);
+      setLeafColorDialog(false);
+      setLeafColorData({ plantAge: '', leafColorIndex: '', recommendedUrea: 0 });
+
+      // Reload plan data to get updated fertilizer schedule
+      await loadSeasonPlan();
+
+      if (!toastShownRef.current) {
+        toastShownRef.current = true;
+        toast.success(`🌱 LCC-based urea application added: ${leafColorData.recommendedUrea * plan.cultivatingArea}kg total`);
+      }
+    } catch (error) {
+      console.error('Error saving LCC fertilizer application:', error);
+      toast.error('Failed to save LCC-based fertilizer application');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Reset leaf color dialog data
+  const resetLeafColorDialog = () => {
+    setLeafColorDialog(false);
+    setLeafColorData({ 
+      currentDate: '', 
+      plantAge: '', 
+      leafColorIndex: '', 
+      recommendedUrea: 0 
+    });
+  };
+
+  // Delete fertilizer application
+  const deleteFertilizerApplication = async (applicationIndex) => {
+    if (saving) return;
+    setSaving(true);
+    toastShownRef.current = false;
+
+    try {
+      const application = plan.fertilizerSchedule[applicationIndex];
+      
+      // Check if application is already applied
+      if (application.applied) {
+        toast.error('Cannot delete an applied fertilizer application');
+        setSaving(false);
+        return;
+      }
+
+      const response = await seasonPlanAPI.deleteFertilizerApplication(id, applicationIndex);
+      setPlan(response.data.data);
+      
+      // Reload plan data to get updated fertilizer schedule
+      await loadSeasonPlan();
+      
+      if (!toastShownRef.current) {
+        toastShownRef.current = true;
+        const deletedType = application.isLCCBased ? 'LCC-based' : 'Scheduled';
+        toast.success(`🗑️ ${deletedType} fertilizer application deleted successfully`);
+      }
+    } catch (error) {
+      console.error('Error deleting fertilizer application:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete fertilizer application');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Implementation tracking functions
@@ -414,7 +559,7 @@ const SeasonPlanViewContent = ({ id }) => {
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>
-                    <TerrainIcon />
+                    <SpaIcon />
                   </ListItemIcon>
                   <ListItemText
                     primary="Soil Condition"
@@ -676,9 +821,49 @@ const SeasonPlanViewContent = ({ id }) => {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                🌿 Fertilizer Schedule
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">
+                  🌿 Fertilizer Schedule
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2">Leaf Color Chart:</Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => setLeafColorEnabled(!leafColorEnabled)}
+                      sx={{ color: leafColorEnabled ? 'success.main' : 'grey.400' }}
+                    >
+                      {leafColorEnabled ? <ToggleOnIcon /> : <ToggleOffIcon />}
+                    </IconButton>
+                  </Box>
+                  {leafColorEnabled && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<ColorizeIcon />}
+                      onClick={() => {
+                        setLeafColorData({
+                          currentDate: dayjs().format('YYYY-MM-DD'),
+                          plantAge: '',
+                          leafColorIndex: '',
+                          recommendedUrea: 0
+                        });
+                        setLeafColorDialog(true);
+                      }}
+                      sx={{
+                        borderColor: '#90EE90',
+                        color: '#228B22',
+                        '&:hover': {
+                          borderColor: '#228B22',
+                          backgroundColor: '#F0FFF0'
+                        }
+                      }}
+                    >
+                      Check Leaf Color
+                    </Button>
+                  )}
+                </Box>
+              </Box>
               <Grid container spacing={2}>
                 {plan.fertilizerSchedule?.map((app, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
@@ -688,23 +873,38 @@ const SeasonPlanViewContent = ({ id }) => {
                           height: '100%',
                           background: app.applied 
                             ? 'linear-gradient(135deg, #98FB98, #90EE90)'
-                            : 'linear-gradient(135deg, #F5F5F5, #FFF8E7)',
-                          borderLeft: `4px solid ${app.applied ? '#006400' : '#FFD700'}`,
+                            : app.isLCCBased 
+                              ? 'linear-gradient(135deg, #E3F2FD, #BBDEFB)'
+                              : 'linear-gradient(135deg, #F5F5F5, #FFF8E7)',
+                          borderLeft: `4px solid ${app.applied ? '#006400' : app.isLCCBased ? '#1976D2' : '#FFD700'}`,
                           transition: 'all 0.3s ease',
                           '&:hover': {
                             transform: 'translateY(-2px)',
-                            boxShadow: '0 4px 12px rgba(255, 215, 0, 0.4)'
+                            boxShadow: app.isLCCBased 
+                              ? '0 4px 12px rgba(25, 118, 210, 0.4)'
+                              : '0 4px 12px rgba(255, 215, 0, 0.4)'
                           }
                         }}
                       >
                       <CardContent>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                          <ScienceIcon sx={{ mr: 1, color: app.applied ? 'success.main' : 'grey.400' }} />
+                          {app.isLCCBased ? (
+                            <ColorizeIcon sx={{ mr: 1, color: app.applied ? 'success.main' : 'primary.main' }} />
+                          ) : (
+                            <ScienceIcon sx={{ mr: 1, color: app.applied ? 'success.main' : 'grey.400' }} />
+                          )}
                           <Typography variant="subtitle2">
                             {app.stage}
                           </Typography>
                           {app.applied && (
                             <CheckCircleIcon sx={{ ml: 'auto', color: 'success.main' }} />
+                          )}
+                          {app.isLCCBased && !app.applied && (
+                            <Chip 
+                              label="LCC" 
+                              size="small" 
+                              sx={{ ml: 'auto', bgcolor: 'primary.main', color: 'white', fontSize: '0.6rem' }} 
+                            />
                           )}
                         </Box>
                         <Typography variant="body2" color="textSecondary" gutterBottom>
@@ -718,6 +918,26 @@ const SeasonPlanViewContent = ({ id }) => {
                         <Typography variant="body2" gutterBottom>
                           {app.description}
                         </Typography>
+                        
+                        {/* LCC Data Display */}
+                        {app.isLCCBased && app.lccData && (
+                          <Box sx={{ 
+                            mt: 1, 
+                            p: 1, 
+                            backgroundColor: '#E3F2FD', 
+                            borderRadius: 1, 
+                            borderLeft: 3, 
+                            borderColor: 'primary.main' 
+                          }}>
+                            <Typography variant="caption" sx={{ color: 'primary.dark', fontWeight: 'bold' }}>
+                              📊 LCC Data: Age {app.lccData.plantAge}w, Color Index {app.lccData.leafColorIndex}
+                            </Typography>
+                            <Typography variant="caption" display="block" sx={{ color: 'primary.dark' }}>
+                              Recommended: {app.lccData.recommendedPerAcre}kg/acre × {app.lccData.totalArea} acres
+                            </Typography>
+                          </Box>
+                        )}
+
                         <Box sx={{ mt: 1 }}>
                           {app.fertilizers?.urea > 0 && (
                             <Typography variant="caption" display="block">
@@ -766,6 +986,18 @@ const SeasonPlanViewContent = ({ id }) => {
                               <NotesIcon />
                             </IconButton>
                           </Tooltip>
+                          {!app.applied && (
+                            <Tooltip title={`Delete ${app.isLCCBased ? 'LCC-based' : 'scheduled'} fertilizer application`}>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => deleteFertilizerApplication(index)}
+                                disabled={saving}
+                              >
+                                <CloseIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </CardContent>
                     </Card>
@@ -1063,6 +1295,200 @@ const SeasonPlanViewContent = ({ id }) => {
           }}>
             {saving ? 'Saving...' : 'Save Harvest'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Leaf Color Chart Dialog */}
+      <Dialog open={leafColorDialog} onClose={resetLeafColorDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          🌱 Leaf Color Chart - Urea Recommendation
+          <Typography variant="subtitle2" color="textSecondary">
+            Check leaf color and get urea recommendation for your paddy field
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Current Date"
+                value={leafColorData.currentDate ? dayjs(leafColorData.currentDate) : dayjs()}
+                onChange={(newValue) => {
+                  const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
+                  setLeafColorData(prev => ({ 
+                    ...prev, 
+                    currentDate: dateString,
+                    plantAge: '',
+                    recommendedUrea: 0
+                  }));
+                  
+                  // Auto-calculate plant age when date changes
+                  if (dateString && plan?.cultivationDate) {
+                    const calculatedAge = calculatePlantAge(dateString, plan.cultivationDate);
+                    setLeafColorData(prev => ({
+                      ...prev,
+                      currentDate: dateString,
+                      plantAge: calculatedAge.toString()
+                    }));
+                  }
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    sx: { mb: 3 },
+                    helperText: plan?.cultivationDate 
+                      ? `Cultivation started: ${formatDate(plan.cultivationDate)}`
+                      : 'Cultivation date not available'
+                  }
+                }}
+              />
+            </LocalizationProvider>
+
+            <TextField
+              label="Plant Age"
+              value={leafColorData.plantAge ? `${leafColorData.plantAge} weeks` : ''}
+              fullWidth
+              disabled
+              sx={{ mb: 3 }}
+              helperText="Plant age is automatically calculated from current date and cultivation date"
+              InputProps={{
+                style: {
+                  backgroundColor: '#f5f5f5'
+                }
+              }}
+            />
+
+            {leafColorData.plantAge && parseInt(leafColorData.plantAge) >= 2 && parseInt(leafColorData.plantAge) <= 8 && (
+              <TextField
+                label="Leaf Color Index"
+                select
+                value={leafColorData.leafColorIndex}
+                onChange={(e) => {
+                  const newIndex = e.target.value;
+                  setLeafColorData(prev => ({ ...prev, leafColorIndex: newIndex }));
+                  if (newIndex && leafColorData.plantAge) {
+                    const recommended = calculateUreaRecommendation(
+                      parseInt(leafColorData.plantAge),
+                      parseInt(newIndex)
+                    );
+                    setLeafColorData(prev => ({ ...prev, leafColorIndex: newIndex, recommendedUrea: recommended }));
+                  }
+                }}
+                fullWidth
+                sx={{ mb: 3 }}
+                SelectProps={{
+                  native: true,
+                  displayEmpty: true,
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                helperText="Compare your paddy leaves with the color chart and select the closest match"
+              >
+                <option value="" disabled>Select leaf color index</option>
+                {leafColorData.plantAge && leafColorChart[leafColorData.plantAge] && 
+                  Object.keys(leafColorChart[leafColorData.plantAge]).map(colorIndex => (
+                    <option key={colorIndex} value={colorIndex}>
+                      Index {colorIndex} - {colorIndex === '2' ? 'Light Green (Pale)' : 
+                                          colorIndex === '3' ? 'Medium Green (Normal)' : 
+                                          'Dark Green (Rich)'}
+                    </option>
+                  ))
+                }
+              </TextField>
+            )}
+
+            {leafColorData.plantAge && (parseInt(leafColorData.plantAge) < 2 || parseInt(leafColorData.plantAge) > 8) && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: '#FFF3E0', 
+                borderRadius: 2,
+                border: '2px solid #FFB74D',
+                mb: 3
+              }}>
+                <Typography variant="body2" sx={{ color: '#F57C00' }}>
+                  ⚠️ Leaf Color Chart is applicable only for plants aged 2-8 weeks. 
+                  Your plant is currently {leafColorData.plantAge} weeks old.
+                </Typography>
+              </Box>
+            )}
+
+            {leafColorData.recommendedUrea > 0 && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: '#E8F5E8', 
+                borderRadius: 2,
+                border: '2px solid #90EE90',
+                mb: 2
+              }}>
+                <Typography variant="h6" sx={{ color: '#006400', mb: 1, display: 'flex', alignItems: 'center' }}>
+                  <ColorizeIcon sx={{ mr: 1 }} />
+                  Urea Recommendation
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#228B22', fontWeight: 'bold', mb: 1 }}>
+                  Apply {leafColorData.recommendedUrea} kg of Urea per acre
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                  Based on {leafColorData.plantAge} weeks plant age and leaf color index {leafColorData.leafColorIndex}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#228B22', fontWeight: 'bold' }}>
+                  Total for {plan?.cultivatingArea} acres: {(leafColorData.recommendedUrea * (plan?.cultivatingArea || 0)).toFixed(1)} kg
+                </Typography>
+              </Box>
+            )}
+
+            {leafColorData.plantAge && leafColorData.leafColorIndex && leafColorData.recommendedUrea === 0 && (
+              <Box sx={{ 
+                p: 2, 
+                backgroundColor: '#E3F2FD', 
+                borderRadius: 2,
+                border: '2px solid #90CAF9',
+                mb: 2
+              }}>
+                <Typography variant="body1" sx={{ color: '#1976D2' }}>
+                  ✅ No urea application needed for this combination of plant age and leaf color index.
+                  Your paddy appears to have adequate nitrogen levels.
+                </Typography>
+              </Box>
+            )}
+
+            <Box sx={{ mt: 3, p: 2, backgroundColor: '#F5F5F5', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                📋 Leaf Color Chart Guide:
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
+                • <strong>Index 2 (Light Green):</strong> Leaves appear pale, yellowish-green
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
+                • <strong>Index 3 (Medium Green):</strong> Normal healthy green color
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
+                • <strong>Index 4 (Dark Green):</strong> Deep, rich green color
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic', color: '#666' }}>
+                Compare the youngest fully expanded leaf with the standard color chart
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={resetLeafColorDialog}>
+            Close
+          </Button>
+          {leafColorData.recommendedUrea > 0 && (
+            <Button 
+              variant="contained" 
+              disabled={saving}
+              sx={{
+                background: 'linear-gradient(45deg, #228B22, #32CD32)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #006400, #228B22)',
+                }
+              }}
+              onClick={saveLCCFertilizerApplication}
+            >
+              {saving ? 'Adding...' : 'Add to Fertilizer Schedule'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

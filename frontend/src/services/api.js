@@ -136,6 +136,10 @@ export const seasonPlanAPI = {
     api.put(`/season-plans/${id}/stage/${stageIndex}`, data),
   updateHarvest: (id, harvestData) => 
     api.put(`/season-plans/${id}/harvest`, harvestData),
+  addLCCFertilizerApplication: (id, lccData) =>
+    api.post(`/season-plans/${id}/lcc-fertilizer`, lccData),
+  deleteFertilizerApplication: (id, applicationIndex) =>
+    api.delete(`/season-plans/${id}/fertilizer/${applicationIndex}`),
 };
 
 // File upload API

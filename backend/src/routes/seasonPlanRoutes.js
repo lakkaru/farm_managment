@@ -10,6 +10,8 @@ const {
   updateFertilizerImplementation,
   updateStageImplementation,
   updateHarvest,
+  addLCCFertilizerApplication,
+  deleteFertilizerApplication,
 } = require('../controllers/seasonPlanController');
 const { protect } = require('../middleware/auth');
 
@@ -67,5 +69,19 @@ router
 router
   .route('/:id/harvest')
   .put(updateHarvest);
+
+// LCC-based fertilizer application route
+router
+  .route('/:id/lcc-fertilizer')
+  .post([
+    body('plantAge').isInt({ min: 2, max: 8 }).withMessage('Plant age must be between 2-8 weeks'),
+    body('leafColorIndex').isInt({ min: 2, max: 4 }).withMessage('Leaf color index must be between 2-4'),
+    body('recommendedUrea').isFloat({ min: 0 }).withMessage('Recommended urea must be a positive number'),
+  ], addLCCFertilizerApplication);
+
+// Delete fertilizer application route
+router
+  .route('/:id/fertilizer/:applicationIndex')
+  .delete(deleteFertilizerApplication);
 
 module.exports = router;
