@@ -15,6 +15,7 @@ import { navigate } from 'gatsby';
 import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
+import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 
 const FarmDetailContent = ({ farmId }) => {
@@ -91,13 +92,7 @@ const FarmDetailContent = ({ farmId }) => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
-          onClick={handleBack}
-          variant="outlined"
-        >
-          Back to Farms
-        </Button>
+        <BackButton to="/farms" variant="button" label="Back to Farms" />
       </Box>
     );
   }
@@ -108,13 +103,7 @@ const FarmDetailContent = ({ farmId }) => {
         <Alert severity="warning" sx={{ mb: 3 }}>
           Farm not found
         </Alert>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
-          onClick={handleBack}
-          variant="outlined"
-        >
-          Back to Farms
-        </Button>
+        <BackButton to="/farms" variant="button" label="Back to Farms" />
       </Box>
     );
   }
@@ -124,13 +113,7 @@ const FarmDetailContent = ({ farmId }) => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box component="div">
-          <Button 
-            startIcon={<ArrowBackIcon />} 
-            onClick={handleBack}
-            sx={{ mb: 2 }}
-          >
-            Back to Farms
-          </Button>
+          <BackButton to="/farms" variant="button" label="Back to Farms" sx={{ mb: 2 }} />
           <Typography variant="h4" component="h1">
             {farm.name}
           </Typography>

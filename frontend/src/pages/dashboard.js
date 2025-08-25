@@ -155,30 +155,57 @@ const DashboardContent = () => {
     navigate('/paddy/season-plans/create');
   };
 
+  const handleCardClick = (cardType) => {
+    switch (cardType) {
+      case 'farms':
+        navigate('/farms');
+        break;
+      case 'seasonPlans':
+        navigate('/paddy/season-plans');
+        break;
+      case 'activeSeasons':
+        navigate('/paddy/season-plans?status=active');
+        break;
+      case 'paddyVarieties':
+        navigate('/paddy/varieties');
+        break;
+      default:
+        break;
+    }
+  };
+
   const statCards = [
     {
       title: 'Total Farms',
       value: stats.farms,
       color: theme.palette.success.main,
       icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
+      type: 'farms',
+      subtitle: stats.farms === 0 ? 'Create your first farm' : `${stats.farms} farm${stats.farms !== 1 ? 's' : ''} registered`,
     },
     {
       title: 'Season Plans',
       value: stats.seasonPlans,
       color: theme.palette.primary.main,
       icon: <PlanSeasonIcon sx={{ fontSize: 40 }} />,
+      type: 'seasonPlans',
+      subtitle: stats.seasonPlans === 0 ? 'Plan your first season' : `${stats.seasonPlans} plan${stats.seasonPlans !== 1 ? 's' : ''} created`,
     },
     {
       title: 'Active Seasons',
       value: stats.activeSeasons,
       color: theme.palette.warning.main,
       icon: <PaddyIcon sx={{ fontSize: 40 }} />,
+      type: 'activeSeasons',
+      subtitle: stats.activeSeasons === 0 ? 'No active seasons' : `${stats.activeSeasons} season${stats.activeSeasons !== 1 ? 's' : ''} ongoing`,
     },
     {
       title: 'Paddy Varieties',
       value: stats.paddyVarieties,
       color: theme.palette.secondary.main,
       icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
+      type: 'paddyVarieties',
+      subtitle: stats.paddyVarieties === 0 ? 'No varieties available' : `${stats.paddyVarieties} varietie${stats.paddyVarieties !== 1 ? 's' : ''} available`,
     }
   ];
 
@@ -219,9 +246,11 @@ const DashboardContent = () => {
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card 
               elevation={2}
+              onClick={() => handleCardClick(stat.type)}
               sx={{ 
                 borderLeft: `4px solid ${stat.color}`,
                 height: '100%',
+                cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 '&:hover': {
                   transform: 'translateY(-2px)',
@@ -253,6 +282,13 @@ const DashboardContent = () => {
                     }}
                   >
                     {stat.value}
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="textSecondary"
+                    sx={{ mt: 0.5 }}
+                  >
+                    {stat.subtitle}
                   </Typography>
                 </Box>
               </CardContent>

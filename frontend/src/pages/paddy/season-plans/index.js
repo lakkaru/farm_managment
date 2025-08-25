@@ -33,6 +33,7 @@ import {
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
+import BackButton from '../../../components/BackButton';
 import { seasonPlanAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
@@ -107,13 +108,16 @@ const SeasonPlansContent = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Season Plans
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Manage your paddy cultivation season plans
-          </Typography>
+        <Box display="flex" alignItems="center">
+          <BackButton to="/dashboard" variant="icon" />
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Season Plans
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Manage your paddy cultivation season plans
+            </Typography>
+          </Box>
         </Box>
         <Button
           variant="contained"

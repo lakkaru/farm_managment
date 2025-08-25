@@ -21,6 +21,7 @@ import dayjs from 'dayjs';
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
+import BackButton from '../../../components/BackButton';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
@@ -248,9 +249,12 @@ const CreateSeasonPlanContent = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Create Season Plan
-      </Typography>
+      <Box display="flex" alignItems="center" mb={2}>
+        <BackButton to="/paddy/season-plans" variant="icon" />
+        <Typography variant="h4" gutterBottom>
+          Create Season Plan
+        </Typography>
+      </Box>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
         Plan your next paddy cultivation season
       </Typography>

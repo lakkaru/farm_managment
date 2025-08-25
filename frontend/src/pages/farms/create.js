@@ -16,6 +16,7 @@ import {
 import { navigate } from 'gatsby';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
+import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/districts';
@@ -171,9 +172,12 @@ const CreateFarmContent = () => {
 
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
-      <Typography variant="h4" gutterBottom>
-        Create New Farm
-      </Typography>
+      <Box display="flex" alignItems="center" mb={2}>
+        <BackButton to="/farms" variant="icon" />
+        <Typography variant="h4" gutterBottom>
+          Create New Farm
+        </Typography>
+      </Box>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
         Add a new farm to your management system
       </Typography>

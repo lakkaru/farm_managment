@@ -57,6 +57,7 @@ import {
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
 import AppProviders from '../../../../providers/AppProviders';
+import BackButton from '../../../../components/BackButton';
 import { seasonPlanAPI } from '../../../../services/api';
 import { toast } from 'react-toastify';
 
@@ -482,13 +483,7 @@ const SeasonPlanViewContent = ({ id }) => {
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/paddy/season-plans')}
-            sx={{ mr: 2 }}
-          >
-            Back
-          </Button>
+          <BackButton to="/paddy/season-plans" variant="button" label="Back" />
           <Box>
             <Typography variant="h4" gutterBottom>
               {plan.farmId?.name} - {plan.season.toUpperCase()} Season

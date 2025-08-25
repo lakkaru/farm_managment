@@ -27,6 +27,7 @@ import { navigate } from 'gatsby';
 import { toast } from 'react-toastify';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
+import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 
 const FarmsPageContent = () => {
@@ -128,9 +129,12 @@ const FarmsPageContent = () => {
     <Box>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Farm Management
-        </Typography>
+        <Box display="flex" alignItems="center">
+          <BackButton to="/dashboard" variant="icon" />
+          <Typography variant="h4" component="h1">
+            Farm Management
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}

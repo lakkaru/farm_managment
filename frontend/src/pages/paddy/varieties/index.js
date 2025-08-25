@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
+import BackButton from '../../../components/BackButton';
 import { paddyVarietyAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
 
@@ -78,13 +79,16 @@ const PaddyVarietiesContent = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Paddy Varieties
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Browse available paddy varieties for your cultivation plans
-          </Typography>
+        <Box display="flex" alignItems="center">
+          <BackButton to="/dashboard" variant="icon" />
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Paddy Varieties
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Browse available paddy varieties for your cultivation plans
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
