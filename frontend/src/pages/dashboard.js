@@ -21,6 +21,7 @@ import {
   Schedule as PlanSeasonIcon,
   TrendingUp as TrendingUpIcon,
   Add as AddIcon,
+  BugReport as DiseaseIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../components/Layout/Layout';
@@ -356,6 +357,15 @@ const DashboardContent = () => {
                 fullWidth
               >
                 View Paddy Varieties
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<DiseaseIcon />}
+                onClick={() => navigate('/paddy/disease-detection')}
+                fullWidth
+                color="warning"
+              >
+                Plant Disease Detection
               </Button>
               <Button
                 variant="outlined"

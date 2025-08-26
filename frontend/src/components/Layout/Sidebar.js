@@ -33,6 +33,7 @@ import {
   Add as AddIcon,
   Visibility as ViewIcon,
   Business as FarmIcon,
+  BugReport as DiseaseIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import { useAuth } from '../../contexts/AuthContext';
@@ -101,7 +102,7 @@ const Sidebar = () => {
           submenu: [
             { path: '/paddy/varieties', icon: PaddyIcon, label: 'Paddy Varieties' },
             { path: '/paddy/season-plans', icon: ViewIcon, label: 'Season Plans' },
-            { path: '/paddy/season-plans/create', icon: AddIcon, label: 'Create Season Plan' },
+            { path: '/paddy/disease-detection', icon: DiseaseIcon, label: 'Disease Detection' },
           ]
         },
       ]

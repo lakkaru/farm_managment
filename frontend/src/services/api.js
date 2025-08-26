@@ -164,4 +164,22 @@ export const uploadAPI = {
   },
 };
 
+// Disease Detection API
+export const diseaseDetectionAPI = {
+  analyzeImage: (imageFile) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    return api.post('/disease-detection/analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, // 30 seconds for AI processing
+    });
+  },
+  getDiseases: () => api.get('/disease-detection/diseases'),
+  getDiseaseDetails: (id) => api.get(`/disease-detection/diseases/${id}`),
+  getAnalysisHistory: () => api.get('/disease-detection/history'),
+  getImageUrl: (filename) => `${api.defaults.baseURL}/disease-detection/image/${filename}`,
+};
+
 export default api;

@@ -1,7 +1,12 @@
 const Joi = require('joi');
+const multer = require('multer');
 const AppError = require('../utils/AppError');
 const { SRI_LANKAN_DISTRICTS } = require('../constants/districts');
 const { SOIL_TYPE_NAMES } = require('../constants/soilTypes');
+
+// Image validation constants
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/heic'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Get list of valid district names
 const validDistricts = SRI_LANKAN_DISTRICTS.map(d => d.name);
@@ -143,6 +148,47 @@ const validate = (schema) => {
   };
 };
 
+// Image validation middleware
+const validateImageUpload = (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(new AppError('No image file provided', 400));
+    }
+
+    const { mimetype, size } = req.file;
+
+    // Check file type
+    if (!ALLOWED_IMAGE_TYPES.includes(mimetype)) {
+      return next(new AppError('Invalid file type. Only JPEG, PNG, and HEIC images are allowed', 400));
+    }
+
+    // Check file size
+    if (size > MAX_IMAGE_SIZE) {
+      return next(new AppError('File size too large. Maximum size is 5MB', 400));
+    }
+
+    next();
+  } catch (error) {
+    next(new AppError('Image validation failed', 400));
+  }
+};
+
+// Handle validation errors middleware
+const handleValidationErrors = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return next(new AppError('File size too large. Maximum size is 5MB', 400));
+    }
+    return next(new AppError(`Upload error: ${error.message}`, 400));
+  }
+  
+  if (error.message === 'Only image files are allowed!') {
+    return next(new AppError('Invalid file type. Only image files are allowed', 400));
+  }
+  
+  next(error);
+};
+
 // Specific validation middleware functions
 const validateFarm = validate(farmSchema);
 const validateCrop = validate(cropSchema);
@@ -155,6 +201,8 @@ module.exports = {
   validateCrop,
   validateUserRegistration,
   validateUserLogin,
+  validateImageUpload,
+  handleValidationErrors,
   farmSchema,
   cropSchema,
   userRegistrationSchema,
