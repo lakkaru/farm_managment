@@ -182,4 +182,53 @@ export const diseaseDetectionAPI = {
   getImageUrl: (filename) => `${api.defaults.baseURL}/disease-detection/image/${filename}`,
 };
 
+// NEW: Admin Disease Reference API
+export const adminDiseaseAPI = {
+  // Get all disease references
+  getReferences: () => api.get('/admin/diseases/references'),
+  
+  // Get references for specific disease
+  getDiseaseReferences: (diseaseId) => api.get(`/admin/diseases/references/${diseaseId}`),
+  
+  // Upload reference images
+  uploadReferenceImages: (diseaseId, diseaseName, files, metadata) => {
+    const formData = new FormData();
+    
+    // Add files
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+    
+    // Add metadata
+    formData.append('diseaseId', diseaseId);
+    formData.append('diseaseName', diseaseName);
+    formData.append('descriptions', JSON.stringify(metadata.descriptions));
+    formData.append('severities', JSON.stringify(metadata.severities));
+    formData.append('stages', JSON.stringify(metadata.stages));
+    formData.append('affectedAreas', JSON.stringify(metadata.affectedAreas));
+    
+    return api.post('/admin/diseases/references', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // 60 seconds for large file uploads
+    });
+  },
+  
+  // Delete reference image
+  deleteReferenceImage: (diseaseId, imageId) => 
+    api.delete(`/admin/diseases/references/${diseaseId}/images/${imageId}`),
+  
+  // Compare image with disease references
+  compareWithDisease: (diseaseId, imagePath) => 
+    api.post(`/admin/diseases/compare/${diseaseId}`, { imagePath }),
+  
+  // Compare image with all disease references
+  compareWithAllDiseases: (imagePath) => 
+    api.post('/admin/diseases/compare-all', { imagePath }),
+  
+  // Get reference image URL
+  getReferenceImageUrl: (filename) => `${api.defaults.baseURL}/admin/diseases/reference-image/${filename}`,
+};
+
 export default api;

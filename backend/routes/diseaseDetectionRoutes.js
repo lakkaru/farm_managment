@@ -2,11 +2,14 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const axios = require('axios');
 const { protect } = require('../src/middleware/auth');
 const { 
   validateImageUpload, 
   handleValidationErrors 
 } = require('../src/middleware/validation');
+const DiseaseReference = require('../models/DiseaseReference');
+const AnalysisHistory = require('../models/AnalysisHistory');
 
 const router = express.Router();
 
@@ -296,46 +299,128 @@ const diseaseDatabase = [
   }
 ];
 
-// Enhanced image analysis with more sophisticated logic
-function analyzeImage(imagePath, imageMetadata = {}) {
-  // Simulate more advanced image analysis
-  // In production, this would involve:
-  // 1. Image preprocessing (resize, normalize, enhance)
-  // 2. Feature extraction using CNN models
-  // 3. Disease classification with confidence scoring
-  // 4. Environmental factor consideration
-  // 5. Historical data correlation
-  
-  const { size, type, timestamp = Date.now() } = imageMetadata;
-  
-  // Simulate image quality assessment
-  const imageQuality = assessImageQuality(size, type);
-  
-  // Enhanced disease selection logic based on various factors
-  const seasonalFactors = getCurrentSeasonalFactors();
-  const possibleDiseases = diseaseDatabase.filter(disease => 
-    isSeasonallyRelevant(disease, seasonalFactors)
-  );
-  
-  // Simulate more realistic disease detection
-  const detectedDiseases = simulateAdvancedDiseaseDetection(possibleDiseases, imageQuality);
-  
-  // Calculate overall health score with multiple factors
-  const healthScore = calculateHealthScore(detectedDiseases, seasonalFactors, imageQuality);
-  
-  return {
-    isHealthy: detectedDiseases.length === 0 && healthScore > 80,
-    healthScore,
-    diseases: detectedDiseases,
-    recommendations: generateAdvancedRecommendations(detectedDiseases, healthScore, seasonalFactors),
-    analysisMetadata: {
-      imageQuality,
-      processingTime: Math.random() * 3000 + 2000, // 2-5 seconds
-      modelVersion: '2.1.0',
-      confidenceLevel: calculateOverallConfidence(detectedDiseases),
-      environmentalFactors: seasonalFactors
+// Enhanced image analysis with reference image comparison
+async function analyzeImage(imagePath, imageMetadata = {}) {
+  try {
+    const { size, type, timestamp = Date.now() } = imageMetadata;
+    
+    // Simulate image quality assessment
+    const imageQuality = assessImageQuality(size, type);
+    
+    // Enhanced disease selection logic based on various factors
+    const seasonalFactors = getCurrentSeasonalFactors();
+    
+    // NEW: Attempt reference image comparison first
+    let referenceBasedResults = null;
+    try {
+      referenceBasedResults = await performReferenceImageComparison(imagePath);
+    } catch (error) {
+      console.error('Reference comparison failed, falling back to traditional analysis:', error);
     }
-  };
+    
+    let detectedDiseases = [];
+    let analysisMethod = 'traditional_ai';
+    
+    if (referenceBasedResults && referenceBasedResults.matches.length > 0) {
+      // Use reference-based analysis
+      detectedDiseases = processReferenceComparisonResults(referenceBasedResults);
+      analysisMethod = 'reference_matching';
+    } else {
+      // Fall back to traditional analysis
+      const possibleDiseases = diseaseDatabase.filter(disease => 
+        isSeasonallyRelevant(disease, seasonalFactors)
+      );
+      detectedDiseases = simulateAdvancedDiseaseDetection(possibleDiseases, imageQuality);
+      analysisMethod = 'traditional_ai';
+    }
+    
+    // Calculate overall health score with multiple factors
+    const healthScore = calculateHealthScore(detectedDiseases, seasonalFactors, imageQuality);
+    
+    return {
+      isHealthy: detectedDiseases.length === 0 && healthScore > 80,
+      healthScore,
+      diseases: detectedDiseases,
+      recommendations: generateAdvancedRecommendations(detectedDiseases, healthScore, seasonalFactors),
+      analysisMetadata: {
+        imageQuality,
+        processingTime: Math.random() * 3000 + 2000, // 2-5 seconds
+        modelVersion: '2.1.0',
+        confidenceLevel: calculateOverallConfidence(detectedDiseases),
+        environmentalFactors: seasonalFactors,
+        analysisMethod, // NEW: Track which method was used
+        referenceMatches: referenceBasedResults ? referenceBasedResults.matches.length : 0
+      }
+    };
+  } catch (error) {
+    console.error('Error in image analysis:', error);
+    throw error;
+  }
+}
+
+// NEW: Reference image comparison function
+async function performReferenceImageComparison(imagePath) {
+  try {
+    // This would call our admin disease routes for comparison
+    const filename = path.basename(imagePath);
+    
+    // Simulate API call to reference comparison
+    // In production, this might be an internal service call
+    const comparisonResponse = await axios.post(`http://localhost:5000/api/admin/diseases/compare-all`, {
+      imagePath: filename
+    }, {
+      headers: {
+        'Authorization': 'Bearer internal_service_token' // Would use proper auth
+      }
+    });
+    
+    return comparisonResponse.data.data;
+  } catch (error) {
+    console.error('Reference comparison API call failed:', error);
+    return null;
+  }
+}
+
+// NEW: Process reference comparison results into our expected format
+function processReferenceComparisonResults(referenceResults) {
+  const diseases = [];
+  
+  // Convert reference matching results to disease format
+  referenceResults.results.forEach((result, index) => {
+    if (result.bestMatch.similarity.overallScore > 50) { // Minimum threshold
+      const diseaseFromDb = diseaseDatabase.find(d => d.id === result.diseaseId);
+      
+      if (diseaseFromDb) {
+        diseases.push({
+          ...diseaseFromDb,
+          confidence: result.bestMatch.similarity.confidence,
+          severity: adjustSeverityByReferenceMatch(diseaseFromDb.severity, result.bestMatch.similarity.overallScore),
+          matchingFeatures: result.bestMatch.similarity.strongMatches,
+          referenceMatchScore: result.bestMatch.similarity.overallScore,
+          matchedReferenceImage: result.bestMatch.referenceImage.filename
+        });
+      }
+    }
+  });
+  
+  return diseases;
+}
+
+// NEW: Adjust severity based on reference matching score
+function adjustSeverityByReferenceMatch(originalSeverity, matchScore) {
+  if (matchScore > 85) return originalSeverity; // High confidence, keep original
+  if (matchScore > 70) {
+    // Good match, might reduce severity slightly
+    if (originalSeverity === 'high') return 'medium';
+    return originalSeverity;
+  }
+  if (matchScore > 50) {
+    // Moderate match, reduce severity
+    if (originalSeverity === 'high') return 'medium';
+    if (originalSeverity === 'medium') return 'low';
+    return 'low';
+  }
+  return 'low'; // Low match confidence
 }
 
 // Assess image quality for better analysis
@@ -603,28 +688,62 @@ router.post('/analyze', protect, upload.single('image'), validateImageUpload, ha
       timestamp: Date.now()
     };
     
-    // Analyze the image with enhanced logic
-    const analysis = analyzeImage(imagePath, imageMetadata);
+    // Analyze the image with enhanced logic (now includes reference comparison)
+    const analysis = await analyzeImage(imagePath, imageMetadata);
     
-    // Save analysis to database (optional - for history tracking)
-    const detectionRecord = {
+    // Save analysis to database for history tracking
+    const detectionRecord = new AnalysisHistory({
       userId: req.user.id,
-      imagePath: req.file.filename,
-      analysis: analysis,
-      timestamp: new Date(),
-      imageSize: req.file.size,
-      imageType: req.file.mimetype
-    };
+      uploadedImage: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype
+      },
+      analysisResults: {
+        isHealthy: analysis.isHealthy,
+        healthScore: analysis.healthScore,
+        detectedDiseases: analysis.diseases.map(disease => ({
+          diseaseId: disease.id,
+          name: disease.name,
+          scientificName: disease.scientificName,
+          confidence: disease.confidence,
+          severity: disease.severity,
+          matchedReferences: disease.matchedReferenceImage ? [{
+            referenceImageId: disease.matchedReferenceImage,
+            similarityScore: disease.referenceMatchScore,
+            matchingFeatures: disease.matchingFeatures || []
+          }] : []
+        })),
+        recommendations: analysis.recommendations
+      },
+      analysisMetadata: {
+        processingTime: analysis.analysisMetadata.processingTime,
+        modelVersion: analysis.analysisMetadata.modelVersion,
+        imageQuality: analysis.analysisMetadata.imageQuality,
+        confidenceLevel: analysis.analysisMetadata.confidenceLevel,
+        environmentalFactors: analysis.analysisMetadata.environmentalFactors,
+        comparisonMethod: analysis.analysisMetadata.analysisMethod
+      },
+      location: {
+        farmId: req.body.farmId || null
+      }
+    });
 
-    // In a real app, save to database
-    // await DetectionHistory.create(detectionRecord);
+    // Save to database
+    try {
+      await detectionRecord.save();
+    } catch (dbError) {
+      console.error('Error saving analysis history:', dbError);
+      // Don't fail the request if history save fails
+    }
 
     res.json({
       success: true,
       data: {
         ...analysis,
         imageUrl: `/api/disease-detection/image/${req.file.filename}`,
-        analysisId: `analysis_${Date.now()}`
+        analysisId: detectionRecord._id || `analysis_${Date.now()}`
       }
     });
 

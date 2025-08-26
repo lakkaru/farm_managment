@@ -26,7 +26,8 @@ const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {
-    logout();
+    handleUserMenuClose(); // Close the menu first
+    logout(); // Then logout (which will navigate to home)
   };
 
   const handleUserMenuOpen = (event) => {

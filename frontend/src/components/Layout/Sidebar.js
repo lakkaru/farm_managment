@@ -51,6 +51,7 @@ const Sidebar = () => {
   const [paddyMenuOpen, setPaddyMenuOpen] = useState(false);
   const [farmsMenuOpen, setFarmsMenuOpen] = useState(false);
   const [cropsMenuOpen, setCropsMenuOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [currentPath, setCurrentPath] = useState('/dashboard');
 
   // Load farms when component mounts
@@ -107,6 +108,19 @@ const Sidebar = () => {
         },
       ]
     },
+    // Admin Section - Only visible to admin and expert users
+    ...(user && ['admin', 'expert'].includes(user.role) ? [
+      { 
+        path: '/admin', 
+        icon: SettingsIcon, 
+        label: 'Administration',
+        hasSubmenu: true,
+        submenu: [
+          { path: '/admin/disease-references', icon: DiseaseIcon, label: 'Disease References' },
+          { path: '/admin/users', icon: ViewIcon, label: 'User Management' },
+        ]
+      },
+    ] : []),
     // Disabled for Phase 1 - Paddy Only Implementation
     // { path: '/livestock', icon: PetsIcon, label: 'Livestock' },
     // { path: '/inventory', icon: InventoryIcon, label: 'Inventory' },
@@ -129,6 +143,8 @@ const Sidebar = () => {
       setFarmsMenuOpen(!farmsMenuOpen);
     } else if (menuType === 'crops') {
       setCropsMenuOpen(!cropsMenuOpen);
+    } else if (menuType === 'admin') {
+      setAdminMenuOpen(!adminMenuOpen);
     }
   };
 
@@ -136,6 +152,7 @@ const Sidebar = () => {
     if (item.label === 'Paddy') return paddyMenuOpen;
     if (item.label === 'Farms') return farmsMenuOpen;
     if (item.label === 'Crops') return cropsMenuOpen;
+    if (item.label === 'Administration') return adminMenuOpen;
     return false;
   };
 
@@ -143,6 +160,7 @@ const Sidebar = () => {
     if (item.label === 'Paddy') return 'paddy';
     if (item.label === 'Farms') return 'farms';
     if (item.label === 'Crops') return 'crops';
+    if (item.label === 'Administration') return 'admin';
     return null;
   };
 

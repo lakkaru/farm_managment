@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { navigate } from 'gatsby';
 import { authAPI } from '../services/api';
 import { toast } from 'react-toastify';
 
@@ -162,9 +163,21 @@ export const AuthProvider = ({ children }) => {
 
   // Logout user
   const logout = () => {
+    // Clear local storage first
     localStorage.removeItem('token');
+    
+    // Update state immediately to prevent any redirects to login
     dispatch({ type: 'LOGOUT' });
-    toast.success('Logged out successfully!');
+    
+    // Navigate to home page
+    if (typeof window !== 'undefined') {
+      navigate('/');
+    }
+    
+    // Show success message after a short delay
+    setTimeout(() => {
+      toast.success('Logged out successfully!');
+    }, 500);
   };
 
   // Update user profile
