@@ -128,6 +128,10 @@ const SeasonPlanViewContent = ({ id }) => {
   });
   const [remarkImages, setRemarkImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [deleteRemarkDialog, setDeleteRemarkDialog] = useState(false);
+  const [deleteRemarkId, setDeleteRemarkId] = useState(null);
+  const [removeImageDialog, setRemoveImageDialog] = useState(false);
+  const [removeImageData, setRemoveImageData] = useState({ remarkId: null, imageFilename: null });
 
   const loadSeasonPlan = useCallback(async () => {
     try {
@@ -486,15 +490,19 @@ const SeasonPlanViewContent = ({ id }) => {
 
   // Daily Remarks functions
   const openRemarkDialog = (remark = null) => {
+    console.log('Opening remark dialog with remark:', remark);
     if (remark) {
       setEditingRemark(remark);
-      setRemarkData({
+      console.log('Remark images:', remark.images);
+      const remarkDataToSet = {
         date: dayjs(remark.date).format('YYYY-MM-DD'),
         category: remark.category,
         title: remark.title,
         description: remark.description,
         images: remark.images || []
-      });
+      };
+      console.log('Setting remarkData:', remarkDataToSet);
+      setRemarkData(remarkDataToSet);
     } else {
       setEditingRemark(null);
       setRemarkData({
@@ -551,7 +559,7 @@ const SeasonPlanViewContent = ({ id }) => {
     event.target.value = '';
   };
 
-  const removeRemarkImage = (index) => {
+  const removeDialogImage = (index) => {
     setRemarkImages(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -602,12 +610,19 @@ const SeasonPlanViewContent = ({ id }) => {
   };
 
   const deleteRemark = async (remarkId) => {
-    if (!window.confirm('Are you sure you want to delete this remark?')) return;
+    setDeleteRemarkId(remarkId);
+    setDeleteRemarkDialog(true);
+  };
+
+  const confirmDeleteRemark = async () => {
+    if (!deleteRemarkId) return;
 
     try {
-      const response = await seasonPlanAPI.deleteDailyRemark(id, remarkId);
+      const response = await seasonPlanAPI.deleteDailyRemark(id, deleteRemarkId);
       setPlan(response.data.data);
       toast.success('🗑️ Daily remark deleted successfully');
+      setDeleteRemarkDialog(false);
+      setDeleteRemarkId(null);
     } catch (error) {
       console.error('Error deleting daily remark:', error);
       toast.error('Failed to delete daily remark');
@@ -615,12 +630,32 @@ const SeasonPlanViewContent = ({ id }) => {
   };
 
   const removeRemarkImage = async (remarkId, imageFilename) => {
-    if (!window.confirm('Are you sure you want to remove this image?')) return;
+    setRemoveImageData({ remarkId, imageFilename });
+    setRemoveImageDialog(true);
+  };
+
+  const confirmRemoveImage = async () => {
+    const { remarkId, imageFilename } = removeImageData;
+    if (!remarkId || !imageFilename) return;
 
     try {
       const response = await seasonPlanAPI.removeRemarkImage(id, remarkId, imageFilename);
       setPlan(response.data.data);
+      
+      // Update remarkData if we're currently editing this remark
+      if (editingRemark && editingRemark._id === remarkId) {
+        const updatedRemark = response.data.data.dailyRemarks.find(r => r._id === remarkId);
+        if (updatedRemark) {
+          setRemarkData(prev => ({
+            ...prev,
+            images: updatedRemark.images || []
+          }));
+        }
+      }
+      
       toast.success('🖼️ Image removed successfully');
+      setRemoveImageDialog(false);
+      setRemoveImageData({ remarkId: null, imageFilename: null });
     } catch (error) {
       console.error('Error removing image:', error);
       toast.error('Failed to remove image');
@@ -2046,13 +2081,82 @@ const SeasonPlanViewContent = ({ id }) => {
                                   backgroundColor: 'error.dark',
                                 }
                               }}
-                              onClick={() => removeRemarkImage(index)}
+                              onClick={() => removeDialogImage(index)}
                             >
                               <CloseIcon fontSize="small" />
                             </IconButton>
                           </Box>
                         </Grid>
                       ))}
+                    </Grid>
+                  </Box>
+                )}
+                
+                {editingRemark && remarkData.images && remarkData.images.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="caption" color="textSecondary" gutterBottom display="block">
+                      Existing Images ({remarkData.images.length}):
+                    </Typography>
+                    <Grid container spacing={1}>
+                      {remarkData.images.map((image, index) => {
+                        const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
+                        console.log('Edit dialog - Loading image:', imageUrl);
+                        console.log('Edit dialog - Image data:', image);
+                        return (
+                          <Grid item key={index}>
+                            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                              <Box
+                                component="img"
+                                src={imageUrl}
+                                alt={image.originalName || image.filename}
+                                sx={{
+                                  width: 80,
+                                  height: 80,
+                                  objectFit: 'cover',
+                                  borderRadius: 1,
+                                  border: '1px solid #ddd',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => {
+                                  console.log('Edit dialog - Opening image in new tab:', imageUrl);
+                                  window.open(imageUrl, '_blank');
+                                }}
+                                onLoad={() => {
+                                  console.log('✅ Edit dialog - Thumbnail loaded successfully:', imageUrl);
+                                }}
+                                onError={(e) => {
+                                  console.error('❌ Edit dialog - Thumbnail failed to load:', imageUrl);
+                                  console.error('Edit dialog - Error event:', e);
+                                  e.target.style.display = 'none';
+                                  const parent = e.target.parentElement;
+                                  if (parent.querySelector('.fallback-icon')) return;
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'fallback-icon';
+                                  fallback.style.cssText = 'width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 4px; border: 1px solid #ddd; color: #999; font-size: 24px;';
+                                  fallback.textContent = '📷';
+                                  parent.appendChild(fallback);
+                                }}
+                              />
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: -8,
+                                  right: -8,
+                                  backgroundColor: 'error.main',
+                                  color: 'white',
+                                  '&:hover': {
+                                    backgroundColor: 'error.dark',
+                                  }
+                                }}
+                                onClick={() => removeRemarkImage(editingRemark._id, image.filename)}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          </Grid>
+                        );
+                      })}
                     </Grid>
                   </Box>
                 )}
@@ -2076,6 +2180,38 @@ const SeasonPlanViewContent = ({ id }) => {
             }}
           >
             {saving ? 'Saving...' : (editingRemark ? 'Update' : 'Add Remark')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Remark Confirmation Dialog */}
+      <Dialog open={deleteRemarkDialog} onClose={() => setDeleteRemarkDialog(false)}>
+        <DialogTitle>Confirm Delete Daily Remark</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this daily remark? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteRemarkDialog(false)}>Cancel</Button>
+          <Button onClick={confirmDeleteRemark} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Remove Image Confirmation Dialog */}
+      <Dialog open={removeImageDialog} onClose={() => setRemoveImageDialog(false)}>
+        <DialogTitle>Confirm Remove Image</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove this image? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemoveImageDialog(false)}>Cancel</Button>
+          <Button onClick={confirmRemoveImage} color="error" variant="contained">
+            Remove
           </Button>
         </DialogActions>
       </Dialog>
