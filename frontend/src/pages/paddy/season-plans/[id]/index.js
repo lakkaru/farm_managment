@@ -2098,7 +2098,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       Existing Images ({remarkData.images.length}):
                     </Typography>
                     <Grid container spacing={1}>
-                      {remarkData.images.map((image, index) => {
+                      {remarkData.images.filter(image => image && image.filename).map((image, index) => {
                         const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                         console.log('Edit dialog - Loading image:', imageUrl);
                         console.log('Edit dialog - Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
@@ -2128,6 +2128,7 @@ const SeasonPlanViewContent = ({ id }) => {
                                 onError={(e) => {
                                   console.error('❌ Edit dialog - Thumbnail failed to load:', imageUrl);
                                   console.error('Edit dialog - Error event:', e);
+                                  console.error('Edit dialog - Image src:', e.target.src);
                                   e.target.style.display = 'none';
                                   const parent = e.target.parentElement;
                                   if (parent.querySelector('.fallback-icon')) return;

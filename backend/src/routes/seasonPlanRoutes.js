@@ -81,6 +81,11 @@ router.get('/remark-image/:filename', (req, res) => {
   console.log('Serving remark image:', req.params.filename);
   console.log('Image path:', imagePath);
   
+  // Set CORS headers for images
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  
   // Check if file exists
   const fs = require('fs');
   if (!fs.existsSync(imagePath)) {
