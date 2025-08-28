@@ -78,6 +78,16 @@ const seasonPlanValidation = [
 // Serve remark images (no authentication required)
 router.get('/remark-image/:filename', (req, res) => {
   const imagePath = path.join(__dirname, '../../uploads/remarks', req.params.filename);
+  console.log('Serving remark image:', req.params.filename);
+  console.log('Image path:', imagePath);
+  
+  // Check if file exists
+  const fs = require('fs');
+  if (!fs.existsSync(imagePath)) {
+    console.log('Image file not found:', imagePath);
+    return res.status(404).json({ error: 'Image not found' });
+  }
+  
   res.sendFile(imagePath);
 });
 

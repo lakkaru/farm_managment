@@ -2101,6 +2101,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       {remarkData.images.map((image, index) => {
                         const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                         console.log('Edit dialog - Loading image:', imageUrl);
+                        console.log('Edit dialog - Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
                         console.log('Edit dialog - Image data:', image);
                         return (
                           <Grid item key={index}>
