@@ -13,6 +13,9 @@ import {
   Alert,
   CircularProgress,
   InputAdornment,
+  ToggleButton,
+  ToggleButtonGroup,
+  Chip,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -42,7 +45,11 @@ const CreateSeasonPlanContent = () => {
     paddyVariety: '',
     cultivatingArea: '',
     cultivationDate: null, // Change to null for DatePicker
+    expectedHarvestDate: null, // Add for bidirectional calculation
   });
+
+  // Add state for calculation mode
+  const [calculationMode, setCalculationMode] = useState('from-cultivation'); // 'from-cultivation' or 'from-harvest'
 
   // Display info from selected farm
   const [selectedFarmInfo, setSelectedFarmInfo] = useState({
@@ -153,6 +160,25 @@ const CreateSeasonPlanContent = () => {
         }));
       }
     }
+
+    // Recalculate dates when paddy variety changes
+    if (name === 'paddyVariety') {
+      if (calculationMode === 'from-cultivation' && formData.cultivationDate) {
+        const harvestDate = calculateHarvestDate(formData.cultivationDate, value);
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          expectedHarvestDate: harvestDate,
+        }));
+      } else if (calculationMode === 'from-harvest' && formData.expectedHarvestDate) {
+        const cultivationDate = calculateCultivationDate(formData.expectedHarvestDate, value);
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          cultivationDate: cultivationDate,
+        }));
+      }
+    }
   };
 
   const handleDateChange = (date) => {
@@ -162,22 +188,98 @@ const CreateSeasonPlanContent = () => {
     }));
   };
 
-  // Function to calculate expected harvest date
-  const getExpectedHarvestDate = () => {
-    if (formData.cultivationDate && formData.paddyVariety) {
-      const selectedVariety = paddyVarieties.find(v => v._id === formData.paddyVariety);
-      if (selectedVariety && selectedVariety.duration) {
-        // Extract numeric duration from string (e.g., "125-130 days" -> 127.5)
-        const durationMatch = selectedVariety.duration.match(/(\d+)(?:-(\d+))?/);
-        if (durationMatch) {
-          const minDuration = parseInt(durationMatch[1]);
-          const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
-          const avgDuration = (minDuration + maxDuration) / 2;
-          
-          const harvestDate = dayjs(formData.cultivationDate).add(avgDuration, 'day');
-          return harvestDate.format('MMM DD, YYYY');
-        }
+  // Handle cultivation date change
+  const handleCultivationDateChange = (date) => {
+    setFormData(prev => ({
+      ...prev,
+      cultivationDate: date,
+    }));
+
+    // If in cultivation mode, calculate harvest date
+    if (calculationMode === 'from-cultivation' && date && formData.paddyVariety) {
+      const harvestDate = calculateHarvestDate(date, formData.paddyVariety);
+      setFormData(prev => ({
+        ...prev,
+        expectedHarvestDate: harvestDate,
+      }));
+    }
+  };
+
+  // Handle harvest date change
+  const handleHarvestDateChange = (date) => {
+    setFormData(prev => ({
+      ...prev,
+      expectedHarvestDate: date,
+    }));
+
+    // If in harvest mode, calculate cultivation date
+    if (calculationMode === 'from-harvest' && date && formData.paddyVariety) {
+      const cultivationDate = calculateCultivationDate(date, formData.paddyVariety);
+      setFormData(prev => ({
+        ...prev,
+        cultivationDate: cultivationDate,
+      }));
+    }
+  };
+
+  // Handle calculation mode change
+  const handleCalculationModeChange = (event, newMode) => {
+    if (newMode !== null) {
+      setCalculationMode(newMode);
+      
+      // Recalculate based on new mode
+      if (newMode === 'from-cultivation' && formData.cultivationDate && formData.paddyVariety) {
+        const harvestDate = calculateHarvestDate(formData.cultivationDate, formData.paddyVariety);
+        setFormData(prev => ({
+          ...prev,
+          expectedHarvestDate: harvestDate,
+        }));
+      } else if (newMode === 'from-harvest' && formData.expectedHarvestDate && formData.paddyVariety) {
+        const cultivationDate = calculateCultivationDate(formData.expectedHarvestDate, formData.paddyVariety);
+        setFormData(prev => ({
+          ...prev,
+          cultivationDate: cultivationDate,
+        }));
       }
+    }
+  };
+
+  // Calculate harvest date from cultivation date
+  const calculateHarvestDate = (cultivationDate, varietyId) => {
+    const selectedVariety = paddyVarieties.find(v => v._id === varietyId);
+    if (selectedVariety && selectedVariety.duration) {
+      const durationMatch = selectedVariety.duration.match(/(\d+)(?:-(\d+))?/);
+      if (durationMatch) {
+        const minDuration = parseInt(durationMatch[1]);
+        const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+        const avgDuration = (minDuration + maxDuration) / 2;
+        
+        return dayjs(cultivationDate).add(avgDuration, 'day');
+      }
+    }
+    return null;
+  };
+
+  // Calculate cultivation date from harvest date
+  const calculateCultivationDate = (harvestDate, varietyId) => {
+    const selectedVariety = paddyVarieties.find(v => v._id === varietyId);
+    if (selectedVariety && selectedVariety.duration) {
+      const durationMatch = selectedVariety.duration.match(/(\d+)(?:-(\d+))?/);
+      if (durationMatch) {
+        const minDuration = parseInt(durationMatch[1]);
+        const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+        const avgDuration = (minDuration + maxDuration) / 2;
+        
+        return dayjs(harvestDate).subtract(avgDuration, 'day');
+      }
+    }
+    return null;
+  };
+
+  // Calculate first plowing date (typically 7-10 days before cultivation)
+  const getFirstPlowingDate = () => {
+    if (formData.cultivationDate) {
+      return dayjs(formData.cultivationDate).subtract(21, 'day').format('MMM DD, YYYY');
     }
     return null;
   };
@@ -202,6 +304,24 @@ const CreateSeasonPlanContent = () => {
         return;
       }
 
+      if (!formData.expectedHarvestDate) {
+        setError('Please ensure both cultivation and harvest dates are set');
+        return;
+      }
+
+      // Validate harvest date is after cultivation date
+      if (dayjs(formData.expectedHarvestDate).isBefore(dayjs(formData.cultivationDate))) {
+        setError('Harvest date must be after cultivation date');
+        return;
+      }
+
+      // Validate season duration is reasonable (at least 60 days)
+      const seasonDuration = dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day');
+      if (seasonDuration < 60) {
+        setError('Season duration must be at least 60 days');
+        return;
+      }
+
       // Validate cultivating area doesn't exceed farm area
       if (selectedFarmInfo.totalArea && parseFloat(formData.cultivatingArea) > parseFloat(selectedFarmInfo.totalArea)) {
         // Add a small tolerance for floating point comparison (0.01 acres)
@@ -215,12 +335,18 @@ const CreateSeasonPlanContent = () => {
         }
       }
 
-      // Convert cultivatingArea to number and date to ISO string
+      // Convert cultivatingArea to number and dates to ISO strings
       const planData = {
         ...formData,
         cultivatingArea: parseFloat(formData.cultivatingArea),
         cultivationDate: formData.cultivationDate ? dayjs(formData.cultivationDate).toISOString() : null,
+        expectedHarvest: {
+          date: formData.expectedHarvestDate ? dayjs(formData.expectedHarvestDate).toISOString() : null,
+        },
       };
+
+      // Remove the frontend-only field
+      delete planData.expectedHarvestDate;
 
       console.log('Sending season plan data:', planData);
 
@@ -449,41 +575,208 @@ const CreateSeasonPlanContent = () => {
               />
             </Grid>
 
+            {/* Date Calculation Mode Toggle */}
+            <Grid item xs={12}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Date Planning
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Choose how you want to plan your season dates
+                </Typography>
+                <ToggleButtonGroup
+                  value={calculationMode}
+                  exclusive
+                  onChange={handleCalculationModeChange}
+                  aria-label="date calculation mode"
+                  size="small"
+                >
+                  <ToggleButton value="from-cultivation" aria-label="from cultivation date">
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2">Set Cultivation Date</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Calculate harvest date
+                      </Typography>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="from-harvest" aria-label="from harvest date">
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2">Set Harvest Date</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Calculate cultivation date
+                      </Typography>
+                    </Box>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Grid>
+
             {/* Cultivation Date */}
             <Grid item xs={12} md={6}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Cultivation Date *"
                   value={formData.cultivationDate}
-                  onChange={handleDateChange}
-                  minDate={dayjs()}
+                  onChange={calculationMode === 'from-cultivation' ? handleCultivationDateChange : handleDateChange}
+                  disabled={calculationMode === 'from-harvest' && !formData.paddyVariety}
                   slotProps={{
                     textField: {
                       fullWidth: true,
                       required: true,
-                      helperText: "Select your planned cultivation date"
+                      helperText: calculationMode === 'from-cultivation' 
+                        ? "Select cultivation date (past or future dates allowed for records)"
+                        : formData.paddyVariety 
+                          ? "Auto-calculated from harvest date"
+                          : "Select paddy variety first",
+                      InputProps: calculationMode === 'from-harvest' ? { readOnly: true } : {}
                     }
                   }}
                 />
               </LocalizationProvider>
+              {calculationMode === 'from-cultivation' && formData.cultivationDate && (
+                <Chip 
+                  size="small" 
+                  label="Primary Date" 
+                  color="primary" 
+                  sx={{ mt: 1 }} 
+                />
+              )}
             </Grid>
 
-            {/* Expected Harvest Date (Read-only calculated field) */}
-            {getExpectedHarvestDate() && (
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Expected Harvest Date"
-                  value={getExpectedHarvestDate()}
-                  InputProps={{ readOnly: true }}
-                  helperText="Calculated based on variety duration"
-                  sx={{
-                    '& .MuiInputBase-input': {
-                      color: 'success.main',
-                      fontWeight: 'medium',
+            {/* Expected Harvest Date */}
+            <Grid item xs={12} md={6}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Expected Harvest Date *"
+                  value={formData.expectedHarvestDate}
+                  onChange={calculationMode === 'from-harvest' ? handleHarvestDateChange : () => {}}
+                  disabled={calculationMode === 'from-cultivation' && !formData.paddyVariety}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      helperText: calculationMode === 'from-harvest' 
+                        ? "Select target harvest date (past or future dates allowed for records)"
+                        : formData.paddyVariety 
+                          ? "Auto-calculated from cultivation date"
+                          : "Select paddy variety first",
+                      InputProps: calculationMode === 'from-cultivation' ? { readOnly: true } : {},
+                      sx: calculationMode === 'from-cultivation' ? {
+                        '& .MuiInputBase-input': {
+                          color: 'success.main',
+                          fontWeight: 'medium',
+                        }
+                      } : {}
                     }
                   }}
                 />
+              </LocalizationProvider>
+              {calculationMode === 'from-harvest' && formData.expectedHarvestDate && (
+                <Chip 
+                  size="small" 
+                  label="Primary Date" 
+                  color="primary" 
+                  sx={{ mt: 1 }} 
+                />
+              )}
+            </Grid>
+
+            {/* Show variety duration info */}
+            {formData.paddyVariety && (
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>Selected Variety:</strong> {paddyVarieties.find(v => v._id === formData.paddyVariety)?.name} 
+                      {' '}({paddyVarieties.find(v => v._id === formData.paddyVariety)?.duration})
+                    </Typography>
+                    
+                    {formData.cultivationDate && formData.expectedHarvestDate && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          <strong>Season Timeline:</strong>
+                        </Typography>
+                        
+                        <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                          {/* First Plowing */}
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ 
+                              p: 1.5, 
+                              bgcolor: 'warning.light', 
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: 'warning.main',
+                              height: 85, // Fixed height for consistency
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between'
+                            }}>
+                              <Typography variant="caption" color="warning.dark" sx={{ fontWeight: 'bold' }}>
+                                FIRST PLOWING
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                                {getFirstPlowingDate()}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Start 10 days early
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          
+                          {/* Cultivation */}
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ 
+                              p: 1.5, 
+                              bgcolor: 'success.light', 
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: 'success.main',
+                              height: 85, // Fixed height for consistency
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between'
+                            }}>
+                              <Typography variant="caption" color="success.dark" sx={{ fontWeight: 'bold' }}>
+                                CULTIVATION DATE
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                                {dayjs(formData.cultivationDate).format('MMM DD, YYYY')}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Planting day
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          
+                          {/* Harvest */}
+                          <Grid item xs={12} sm={4}>
+                            <Box sx={{ 
+                              p: 1.5, 
+                              bgcolor: 'primary.light', 
+                              borderRadius: 1,
+                              border: '1px solid',
+                              borderColor: 'primary.main',
+                              height: 85, // Fixed height for consistency
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between'
+                            }}>
+                              <Typography variant="caption" color="primary.dark" sx={{ fontWeight: 'bold' }}>
+                                HARVEST DATE
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                                {dayjs(formData.expectedHarvestDate).format('MMM DD, YYYY')}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {Math.round(dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day'))} days total
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    )}
+                  </Box>
+                </Alert>
               </Grid>
             )}
           </Grid>

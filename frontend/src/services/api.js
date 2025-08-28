@@ -140,6 +140,18 @@ export const seasonPlanAPI = {
     api.post(`/season-plans/${id}/lcc-fertilizer`, lccData),
   deleteFertilizerApplication: (id, applicationIndex) =>
     api.delete(`/season-plans/${id}/fertilizer/${applicationIndex}`),
+  
+  // Daily Remarks API
+  addDailyRemark: (id, formData) => 
+    api.post(`/season-plans/${id}/daily-remarks`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  updateDailyRemark: (id, remarkId, formData) => 
+    api.put(`/season-plans/${id}/daily-remarks/${remarkId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  deleteDailyRemark: (id, remarkId) => 
+    api.delete(`/season-plans/${id}/daily-remarks/${remarkId}`),
 };
 
 // File upload API

@@ -126,19 +126,28 @@ const createSeasonPlan = async (req, res) => {
       paddyVariety.duration
     );
 
-    // Set expected harvest date - extract numeric duration from string
-    const durationMatch = paddyVariety.duration.match(/(\d+)(?:-(\d+))?/);
-    let durationDays = 105; // default fallback
-    if (durationMatch) {
-      const minDuration = parseInt(durationMatch[1]);
-      const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
-      durationDays = Math.round((minDuration + maxDuration) / 2);
+    // Set expected harvest date
+    let expectedHarvestDate;
+    
+    if (req.body.expectedHarvest && req.body.expectedHarvest.date) {
+      // Use provided expected harvest date
+      expectedHarvestDate = new Date(req.body.expectedHarvest.date);
+    } else {
+      // Calculate expected harvest date from cultivation date and variety duration
+      const durationMatch = paddyVariety.duration.match(/(\d+)(?:-(\d+))?/);
+      let durationDays = 105; // default fallback
+      if (durationMatch) {
+        const minDuration = parseInt(durationMatch[1]);
+        const maxDuration = durationMatch[2] ? parseInt(durationMatch[2]) : minDuration;
+        durationDays = Math.round((minDuration + maxDuration) / 2);
+      }
+      
+      expectedHarvestDate = new Date(req.body.cultivationDate);
+      expectedHarvestDate.setDate(expectedHarvestDate.getDate() + durationDays);
     }
     
-    const harvestDate = new Date(req.body.cultivationDate);
-    harvestDate.setDate(harvestDate.getDate() + durationDays);
     planData.expectedHarvest = {
-      date: harvestDate,
+      date: expectedHarvestDate,
       estimatedYield: calculateEstimatedYield(req.body.cultivatingArea, paddyVariety.characteristics?.yield || 4),
     };
 
@@ -877,6 +886,206 @@ const deleteFertilizerApplication = async (req, res) => {
   }
 };
 
+// Add daily remark
+// @route   POST /api/season-plans/:id/remarks
+// @access  Private
+const addDailyRemark = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, category, title, description } = req.body;
+
+    if (!date || !title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date, title, and description are required',
+      });
+    }
+
+    const plan = await SeasonPlan.findById(id);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    // Handle uploaded images
+    let imageObjects = [];
+    if (req.files && req.files.length > 0) {
+      imageObjects = req.files.map(file => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        uploadDate: new Date(),
+      }));
+    }
+
+    // Create new remark
+    const newRemark = {
+      date: new Date(date),
+      category: category || 'general',
+      title: title.trim(),
+      description: description.trim(),
+      images: imageObjects,
+    };
+
+    plan.dailyRemarks.push(newRemark);
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name location district cultivationZone totalArea')
+      .populate('paddyVariety', 'name duration type characteristics');
+
+    res.status(201).json({
+      success: true,
+      data: populatedPlan,
+      message: 'Daily remark added successfully',
+      remarkId: plan.dailyRemarks[plan.dailyRemarks.length - 1]._id,
+    });
+  } catch (error) {
+    console.error('Add daily remark error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding daily remark',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+// Update daily remark
+// @route   PUT /api/season-plans/:id/remarks/:remarkId
+// @access  Private
+const updateDailyRemark = async (req, res) => {
+  try {
+    const { id, remarkId } = req.params;
+    const { date, category, title, description } = req.body;
+
+    const plan = await SeasonPlan.findById(id);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const remark = plan.dailyRemarks.id(remarkId);
+    if (!remark) {
+      return res.status(404).json({
+        success: false,
+        message: 'Daily remark not found',
+      });
+    }
+
+    // Update remark fields if provided
+    if (date) remark.date = new Date(date);
+    if (category) remark.category = category;
+    if (title) remark.title = title.trim();
+    if (description) remark.description = description.trim();
+
+    // Handle uploaded images
+    if (req.files && req.files.length > 0) {
+      const newImageObjects = req.files.map(file => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        uploadDate: new Date(),
+      }));
+      // Add new images to existing ones (don't replace, append)
+      remark.images = [...(remark.images || []), ...newImageObjects];
+    }
+
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name location district cultivationZone totalArea')
+      .populate('paddyVariety', 'name duration type characteristics');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Daily remark updated successfully',
+    });
+  } catch (error) {
+    console.error('Update daily remark error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating daily remark',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+// Delete daily remark
+// @route   DELETE /api/season-plans/:id/remarks/:remarkId
+// @access  Private
+const deleteDailyRemark = async (req, res) => {
+  try {
+    const { id, remarkId } = req.params;
+
+    const plan = await SeasonPlan.findById(id);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const remark = plan.dailyRemarks.id(remarkId);
+    if (!remark) {
+      return res.status(404).json({
+        success: false,
+        message: 'Daily remark not found',
+      });
+    }
+
+    plan.dailyRemarks.pull(remarkId);
+    await plan.save();
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name location district cultivationZone totalArea')
+      .populate('paddyVariety', 'name duration type characteristics');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Daily remark deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete daily remark error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting daily remark',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   getSeasonPlans,
   getSeasonPlan,
@@ -888,4 +1097,7 @@ module.exports = {
   updateHarvest,
   addLCCFertilizerApplication,
   deleteFertilizerApplication,
+  addDailyRemark,
+  updateDailyRemark,
+  deleteDailyRemark,
 };

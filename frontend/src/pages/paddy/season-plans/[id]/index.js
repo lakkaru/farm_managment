@@ -23,8 +23,10 @@ import {
   Checkbox,
   IconButton,
   Tooltip,
-  Select,
   MenuItem,
+  Fab,
+  Avatar,
+  CircularProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -34,14 +36,12 @@ import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Agriculture as AgricultureIcon,
   LocationOn as LocationIcon,
   CalendarToday as CalendarIcon,
   WaterDrop as WaterIcon,
   Terrain as TerrainIcon,
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon,
-  LocalFlorist as FertilizerIcon,
   PlayArrow as PlayArrowIcon,
   Check as CheckIcon,
   Notes as NotesIcon,
@@ -53,6 +53,10 @@ import {
   ToggleOff as ToggleOffIcon,
   Close as CloseIcon,
   Spa as SpaIcon,
+  Add as AddIcon,
+  Comment as CommentIcon,
+  PhotoCamera as PhotoCameraIcon,
+  CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
@@ -66,6 +70,18 @@ const SeasonPlanViewContent = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [error, setError] = useState('');
+  
+  // Daily Remarks Categories
+  const remarkCategories = [
+    { value: 'general', label: 'General Observation', icon: '📝' },
+    { value: 'weather', label: 'Weather Conditions', icon: '🌤️' },
+    { value: 'pest', label: 'Pest Activity', icon: '🐛' },
+    { value: 'disease', label: 'Disease Symptoms', icon: '🦠' },
+    { value: 'fertilizer', label: 'Fertilizer Application', icon: '🌿' },
+    { value: 'irrigation', label: 'Irrigation & Water', icon: '💧' },
+    { value: 'growth', label: 'Plant Growth', icon: '🌱' },
+    { value: 'other', label: 'Other', icon: '📋' }
+  ];
   
   // Implementation tracking states
   const [fertilizerDialog, setFertilizerDialog] = useState({ open: false, index: null });
@@ -99,6 +115,19 @@ const SeasonPlanViewContent = ({ id }) => {
     leafColorIndex: '',
     recommendedUrea: 0,
   });
+
+  // Daily Remarks states
+  const [remarkDialog, setRemarkDialog] = useState(false);
+  const [editingRemark, setEditingRemark] = useState(null);
+  const [remarkData, setRemarkData] = useState({
+    date: dayjs().format('YYYY-MM-DD'),
+    category: 'general',
+    title: '',
+    description: '',
+    images: []
+  });
+  const [remarkImages, setRemarkImages] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const loadSeasonPlan = useCallback(async () => {
     try {
@@ -453,6 +482,140 @@ const SeasonPlanViewContent = ({ id }) => {
       quality: '',
       notes: '',
     });
+  };
+
+  // Daily Remarks functions
+  const openRemarkDialog = (remark = null) => {
+    if (remark) {
+      setEditingRemark(remark);
+      setRemarkData({
+        date: dayjs(remark.date).format('YYYY-MM-DD'),
+        category: remark.category,
+        title: remark.title,
+        description: remark.description,
+        images: remark.images || []
+      });
+    } else {
+      setEditingRemark(null);
+      setRemarkData({
+        date: dayjs().format('YYYY-MM-DD'),
+        category: 'general',
+        title: '',
+        description: '',
+        images: []
+      });
+    }
+    setRemarkImages([]);
+    setRemarkDialog(true);
+  };
+
+  const closeRemarkDialog = () => {
+    setRemarkDialog(false);
+    setEditingRemark(null);
+    setRemarkData({
+      date: dayjs().format('YYYY-MM-DD'),
+      category: 'general',
+      title: '',
+      description: '',
+      images: []
+    });
+    setRemarkImages([]);
+  };
+
+  const handleRemarkImageUpload = (event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    setUploadingImages(true);
+    const newImages = [];
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        newImages.push({
+          file,
+          preview: e.target.result,
+          name: file.name,
+          size: file.size
+        });
+        
+        if (newImages.length === files.length) {
+          setRemarkImages(prev => [...prev, ...newImages]);
+          setUploadingImages(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const removeRemarkImage = (index) => {
+    setRemarkImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const saveRemark = async () => {
+    if (!remarkData.title.trim() || !remarkData.description.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('date', remarkData.date);
+      formData.append('category', remarkData.category);
+      formData.append('title', remarkData.title);
+      formData.append('description', remarkData.description);
+
+      // Add images
+      remarkImages.forEach((imageObj, index) => {
+        if (imageObj.file) {
+          formData.append('images', imageObj.file);
+        }
+      });
+
+      let response;
+      if (editingRemark) {
+        // Update existing remark
+        response = await seasonPlanAPI.updateDailyRemark(id, editingRemark._id, formData);
+        toast.success('📝 Daily remark updated successfully');
+      } else {
+        // Add new remark
+        response = await seasonPlanAPI.addDailyRemark(id, formData);
+        toast.success('📝 Daily remark added successfully');
+      }
+
+      // Update plan data
+      setPlan(response.data.data);
+      closeRemarkDialog();
+      
+    } catch (error) {
+      console.error('Error saving daily remark:', error);
+      toast.error('Failed to save daily remark');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteRemark = async (remarkId) => {
+    if (!window.confirm('Are you sure you want to delete this remark?')) return;
+
+    try {
+      const response = await seasonPlanAPI.deleteDailyRemark(id, remarkId);
+      setPlan(response.data.data);
+      toast.success('🗑️ Daily remark deleted successfully');
+    } catch (error) {
+      console.error('Error deleting daily remark:', error);
+      toast.error('Failed to delete daily remark');
+    }
+  };
+
+  const getCategoryInfo = (category) => {
+    return remarkCategories.find(cat => cat.value === category) || remarkCategories[7]; // Default to 'other'
   };
 
   if (loading) {
@@ -1003,6 +1166,238 @@ const SeasonPlanViewContent = ({ id }) => {
           </Card>
         </Grid>
 
+        {/* Daily Remarks */}
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <CommentIcon sx={{ mr: 1 }} />
+                  Daily Remarks
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => openRemarkDialog()}
+                  sx={{
+                    background: 'linear-gradient(45deg, #4CAF50, #66BB6A)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #388E3C, #4CAF50)',
+                    }
+                  }}
+                >
+                  Add Remark
+                </Button>
+              </Box>
+              
+              {plan.dailyRemarks && plan.dailyRemarks.length > 0 ? (
+                <Grid container spacing={2}>
+                  {plan.dailyRemarks
+                    .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date, newest first
+                    .map((remark, index) => {
+                      const categoryInfo = getCategoryInfo(remark.category);
+                      return (
+                        <Grid item xs={12} sm={6} md={4} key={remark._id || index}>
+                          <Card 
+                            variant="outlined" 
+                            sx={{ 
+                              height: '100%',
+                              background: 'linear-gradient(135deg, #F8F9FA, #E9ECEF)',
+                              borderLeft: `4px solid #4CAF50`,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 4px 12px rgba(76, 175, 80, 0.2)'
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Avatar 
+                                  sx={{ 
+                                    width: 32, 
+                                    height: 32, 
+                                    backgroundColor: 'transparent',
+                                    fontSize: '1rem',
+                                    mr: 1 
+                                  }}
+                                >
+                                  {categoryInfo.icon}
+                                </Avatar>
+                                <Box sx={{ flexGrow: 1 }}>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                    {remark.title}
+                                  </Typography>
+                                  <Typography variant="caption" color="textSecondary">
+                                    {categoryInfo.label}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  <Tooltip title="Edit">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => openRemarkDialog(remark)}
+                                    >
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Delete">
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => deleteRemark(remark._id)}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Box>
+                              </Box>
+                              
+                              <Typography variant="body2" color="textSecondary" gutterBottom>
+                                📅 {formatDate(remark.date)}
+                              </Typography>
+                              
+                              <Typography variant="body2" sx={{ mb: 1 }}>
+                                {remark.description}
+                              </Typography>
+                              
+                              {remark.images && remark.images.length > 0 && (
+                                <Box sx={{ mt: 1 }}>
+                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <PhotoCameraIcon sx={{ fontSize: 14, mr: 0.5 }} />
+                                    {remark.images.length} image(s)
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    {remark.images.slice(0, 3).map((image, imgIndex) => {
+                                      const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
+                                      console.log('Loading thumbnail image:', imageUrl);
+                                      console.log('Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
+                                      console.log('Image filename:', image.filename);
+                                      
+                                      return (
+                                        <Box
+                                          key={imgIndex}
+                                          onClick={() => {
+                                            console.log('Opening image in new tab:', imageUrl);
+                                            window.open(imageUrl, '_blank');
+                                          }}
+                                          sx={{
+                                            width: 60,
+                                            height: 60,
+                                            border: '2px solid #ddd',
+                                            borderRadius: 1,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: '#f5f5f5',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            '&:hover': {
+                                              border: '2px solid #4CAF50'
+                                            }
+                                          }}
+                                          title={`Image: ${image.originalName || image.filename}`}
+                                        >
+                                          <img
+                                            src={imageUrl}
+                                            alt=""
+                                            crossOrigin="anonymous"
+                                            style={{
+                                              maxWidth: '100%',
+                                              maxHeight: '100%',
+                                              objectFit: 'cover',
+                                              width: '100%',
+                                              height: '100%'
+                                            }}
+                                            onLoad={() => {
+                                              console.log('✅ Thumbnail loaded successfully:', imageUrl);
+                                            }}
+                                            onError={(e) => {
+                                              console.error('❌ Thumbnail failed to load:', imageUrl);
+                                              console.error('Error event:', e);
+                                              // Hide the image and show fallback
+                                              e.target.style.display = 'none';
+                                              const parent = e.target.parentElement;
+                                              parent.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999;">📷</div>`;
+                                            }}
+                                          />
+                                        </Box>
+                                      );
+                                    })}
+                                    {remark.images.length > 3 && (
+                                      <Box
+                                        sx={{
+                                          width: 60,
+                                          height: 60,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          backgroundColor: '#f8f9fa',
+                                          borderRadius: 2,
+                                          border: '2px solid #e0e0e0',
+                                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                          fontSize: '0.8rem',
+                                          fontWeight: 'bold',
+                                          color: '#666',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease',
+                                          '&:hover': {
+                                            backgroundColor: '#e8f5e8',
+                                            border: '2px solid #4CAF50',
+                                            transform: 'scale(1.05)'
+                                          }
+                                        }}
+                                        onClick={() => {
+                                          // Show first additional image for now
+                                          if (remark.images[3]) {
+                                            window.open(`${process.env.GATSBY_API_URL}/season-plans/remark-image/${remark.images[3].filename}`, '_blank');
+                                          }
+                                        }}
+                                      >
+                                        +{remark.images.length - 3}
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Box>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      );
+                    })}
+                </Grid>
+              ) : (
+                <Box 
+                  sx={{ 
+                    textAlign: 'center', 
+                    py: 4, 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: 2,
+                    border: '2px dashed #dee2e6'
+                  }}
+                >
+                  <CommentIcon sx={{ fontSize: 48, color: '#6c757d', mb: 1 }} />
+                  <Typography variant="body1" color="textSecondary" gutterBottom>
+                    No daily remarks yet
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Start documenting your daily observations and notes about this season
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => openRemarkDialog()}
+                    sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
+                  >
+                    Add Your First Remark
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
         {/* Harvest Information */}
         {(plan.expectedHarvest || plan.actualHarvest) && (
           <Grid item xs={12}>
@@ -1484,6 +1879,164 @@ const SeasonPlanViewContent = ({ id }) => {
               {saving ? 'Adding...' : 'Add to Fertilizer Schedule'}
             </Button>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Daily Remarks Dialog */}
+      <Dialog open={remarkDialog} onClose={closeRemarkDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {editingRemark ? 'Edit Daily Remark' : 'Add Daily Remark'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Date"
+                    value={dayjs(remarkData.date)}
+                    onChange={(newValue) => setRemarkData({
+                      ...remarkData, 
+                      date: newValue.format('YYYY-MM-DD')
+                    })}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    sx={{ width: '100%' }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  select
+                  label="Category"
+                  value={remarkData.category}
+                  onChange={(e) => setRemarkData({ ...remarkData, category: e.target.value })}
+                  fullWidth
+                >
+                  {remarkCategories.map((category) => (
+                    <MenuItem key={category.value} value={category.value}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: 8 }}>{category.icon}</span>
+                        {category.label}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Title"
+                  value={remarkData.title}
+                  onChange={(e) => setRemarkData({ ...remarkData, title: e.target.value })}
+                  fullWidth
+                  required
+                  placeholder="Brief title for your observation"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Description"
+                  value={remarkData.description}
+                  onChange={(e) => setRemarkData({ ...remarkData, description: e.target.value })}
+                  fullWidth
+                  required
+                  multiline
+                  rows={4}
+                  placeholder="Detailed description of your observation or note"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Attach Images (Optional)
+                  </Typography>
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="remark-image-upload"
+                    multiple
+                    type="file"
+                    onChange={handleRemarkImageUpload}
+                  />
+                  <label htmlFor="remark-image-upload">
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      startIcon={uploadingImages ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+                      disabled={uploadingImages}
+                      sx={{ mr: 1 }}
+                    >
+                      {uploadingImages ? 'Uploading...' : 'Upload Images'}
+                    </Button>
+                  </label>
+                  <Typography variant="caption" color="textSecondary">
+                    Support JPG, PNG, GIF up to 5MB each
+                  </Typography>
+                </Box>
+                
+                {remarkImages.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="textSecondary" gutterBottom display="block">
+                      Selected Images:
+                    </Typography>
+                    <Grid container spacing={1}>
+                      {remarkImages.map((imageObj, index) => (
+                        <Grid item key={index}>
+                          <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                            <Box
+                              component="img"
+                              src={imageObj.preview}
+                              alt={imageObj.name}
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                objectFit: 'cover',
+                                borderRadius: 1,
+                                border: '1px solid #ddd'
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              sx={{
+                                position: 'absolute',
+                                top: -8,
+                                right: -8,
+                                backgroundColor: 'error.main',
+                                color: 'white',
+                                '&:hover': {
+                                  backgroundColor: 'error.dark',
+                                }
+                              }}
+                              onClick={() => removeRemarkImage(index)}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRemarkDialog}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={saveRemark} 
+            disabled={saving || !remarkData.title.trim() || !remarkData.description.trim()}
+            sx={{
+              background: 'linear-gradient(45deg, #4CAF50, #66BB6A)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #388E3C, #4CAF50)',
+              }
+            }}
+          >
+            {saving ? 'Saving...' : (editingRemark ? 'Update' : 'Add Remark')}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

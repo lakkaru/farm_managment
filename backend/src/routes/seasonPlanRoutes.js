@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
 const {
   getSeasonPlans,
   getSeasonPlan,
@@ -12,8 +14,39 @@ const {
   updateHarvest,
   addLCCFertilizerApplication,
   deleteFertilizerApplication,
+  addDailyRemark,
+  updateDailyRemark,
+  deleteDailyRemark,
 } = require('../controllers/seasonPlanController');
 const { protect } = require('../middleware/auth');
+
+// Configure multer for daily remark images
+const remarkStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, '../../uploads/remarks');
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1E9);
+    const uniqueName = `remark_${timestamp}_${random}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+const remarkUpload = multer({
+  storage: remarkStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit per image
+    files: 5 // Maximum 5 images per remark
+  },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
 
 // Validation rules
 const seasonPlanValidation = [
@@ -41,7 +74,13 @@ const seasonPlanValidation = [
     .withMessage('Valid cultivation date is required'),
 ];
 
-// Apply protect middleware to all routes
+// Serve remark images (no authentication required)
+router.get('/remark-image/:filename', (req, res) => {
+  const imagePath = path.join(__dirname, '../../uploads/remarks', req.params.filename);
+  res.sendFile(imagePath);
+});
+
+// Apply protect middleware to all other routes
 router.use(protect);
 
 // Routes
@@ -83,5 +122,25 @@ router
 router
   .route('/:id/fertilizer/:applicationIndex')
   .delete(deleteFertilizerApplication);
+
+// Daily remarks routes
+router
+  .route('/:id/daily-remarks')
+  .post(remarkUpload.array('images', 5), [
+    body('date').isISO8601().withMessage('Valid date is required'),
+    body('category').optional().isIn(['general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
+    body('title').isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
+    body('description').isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
+  ], addDailyRemark);
+
+router
+  .route('/:id/daily-remarks/:remarkId')
+  .put(remarkUpload.array('images', 5), [
+    body('date').optional().isISO8601().withMessage('Valid date is required'),
+    body('category').optional().isIn(['general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
+    body('title').optional().isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
+    body('description').optional().isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
+  ], updateDailyRemark)
+  .delete(deleteDailyRemark);
 
 module.exports = router;
