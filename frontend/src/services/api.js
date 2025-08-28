@@ -152,6 +152,8 @@ export const seasonPlanAPI = {
     }),
   deleteDailyRemark: (id, remarkId) => 
     api.delete(`/season-plans/${id}/daily-remarks/${remarkId}`),
+  removeRemarkImage: (id, remarkId, imageFilename) =>
+    api.delete(`/season-plans/${id}/daily-remarks/${remarkId}/images/${imageFilename}`),
 };
 
 // File upload API

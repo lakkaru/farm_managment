@@ -17,6 +17,7 @@ const {
   addDailyRemark,
   updateDailyRemark,
   deleteDailyRemark,
+  removeRemarkImage,
 } = require('../controllers/seasonPlanController');
 const { protect } = require('../middleware/auth');
 
@@ -142,5 +143,10 @@ router
     body('description').optional().isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
   ], updateDailyRemark)
   .delete(deleteDailyRemark);
+
+// Route to remove specific image from daily remark
+router
+  .route('/:id/daily-remarks/:remarkId/images/:imageFilename')
+  .delete(removeRemarkImage);
 
 module.exports = router;

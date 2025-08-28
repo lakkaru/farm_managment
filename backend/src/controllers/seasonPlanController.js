@@ -1086,6 +1086,82 @@ const deleteDailyRemark = async (req, res) => {
   }
 };
 
+// Remove specific image from daily remark
+const removeRemarkImage = async (req, res) => {
+  try {
+    const { id, remarkId, imageFilename } = req.params;
+    
+    const plan = await SeasonPlan.findById(id);
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check authorization
+    if (plan.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    // Find the daily remark
+    const remark = plan.dailyRemarks.id(remarkId);
+    if (!remark) {
+      return res.status(404).json({
+        success: false,
+        message: 'Daily remark not found',
+      });
+    }
+
+    // Find and remove the specific image
+    const imageIndex = remark.images.findIndex(img => img.filename === imageFilename);
+    if (imageIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found in remark',
+      });
+    }
+
+    // Remove the image from the array
+    remark.images.splice(imageIndex, 1);
+    
+    await plan.save();
+
+    // Optionally, delete the physical file
+    const fs = require('fs');
+    const path = require('path');
+    const imagePath = path.join(__dirname, '../../uploads/remarks', imageFilename);
+    
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.log('Warning: Could not delete image file:', imagePath);
+      } else {
+        console.log('Image file deleted:', imagePath);
+      }
+    });
+
+    const populatedPlan = await SeasonPlan.findById(id)
+      .populate('farmId', 'name district cultivationZone')
+      .populate('paddyVariety', 'name duration type');
+
+    res.json({
+      success: true,
+      data: populatedPlan,
+      message: 'Image removed successfully',
+    });
+  } catch (error) {
+    console.error('Remove remark image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing image',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   getSeasonPlans,
   getSeasonPlan,
@@ -1100,4 +1176,5 @@ module.exports = {
   addDailyRemark,
   updateDailyRemark,
   deleteDailyRemark,
+  removeRemarkImage,
 };
