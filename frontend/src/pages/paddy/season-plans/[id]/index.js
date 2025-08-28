@@ -2072,43 +2072,62 @@ const SeasonPlanViewContent = ({ id }) => {
                     </Typography>
                     <Grid container spacing={1}>
                       {remarkData.images.filter(image => image && image.filename).map((image, index) => {
+                        // Debug: Log the full image object structure
+                        console.log('=== EXISTING IMAGE DEBUG ===');
+                        console.log('Full image object:', JSON.stringify(image, null, 2));
+                        console.log('Image filename:', image.filename);
+                        console.log('Image originalName:', image.originalName);
+                        console.log('Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
+                        
                         const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
-                        console.log('Edit dialog - Loading image:', imageUrl);
-                        console.log('Edit dialog - Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
-                        console.log('Edit dialog - Image data:', image);
+                        console.log('Constructed imageUrl:', imageUrl);
+                        console.log('==========================');
+                        
                         return (
-                          <Grid item key={index}>
+                          <Grid item key={`existing-${index}`}>
                             <Box sx={{ position: 'relative', display: 'inline-block' }}>
                               <Box
                                 component="img"
                                 src={imageUrl}
                                 alt={image.originalName || image.filename}
+                                crossOrigin="anonymous"
                                 sx={{
                                   width: 80,
                                   height: 80,
                                   objectFit: 'cover',
                                   borderRadius: 1,
-                                  border: '1px solid #ddd',
-                                  cursor: 'pointer'
+                                  border: '2px solid #4CAF50',
+                                  cursor: 'pointer',
+                                  backgroundColor: '#f5f5f5'
                                 }}
                                 onClick={() => {
                                   console.log('Edit dialog - Opening image in new tab:', imageUrl);
                                   window.open(imageUrl, '_blank');
                                 }}
                                 onLoad={() => {
-                                  console.log('✅ Edit dialog - Thumbnail loaded successfully:', imageUrl);
+                                  console.log('✅ Edit dialog - Existing image loaded successfully:', imageUrl);
                                 }}
                                 onError={(e) => {
-                                  console.error('❌ Edit dialog - Thumbnail failed to load:', imageUrl);
-                                  console.error('Edit dialog - Error event:', e);
+                                  console.error('❌ Edit dialog - Existing image failed to load:', imageUrl);
                                   console.error('Edit dialog - Image src:', e.target.src);
+                                  console.error('Edit dialog - Error details:', {
+                                    filename: image.filename,
+                                    originalName: image.originalName,
+                                    imageObject: image
+                                  });
+                                  
+                                  // Show fallback
                                   e.target.style.display = 'none';
                                   const parent = e.target.parentElement;
                                   if (parent.querySelector('.fallback-icon')) return;
+                                  
                                   const fallback = document.createElement('div');
                                   fallback.className = 'fallback-icon';
-                                  fallback.style.cssText = 'width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 4px; border: 1px solid #ddd; color: #999; font-size: 24px;';
-                                  fallback.textContent = '📷';
+                                  fallback.style.cssText = 'width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: #ffebee; border: 2px solid #f44336; border-radius: 4px; color: #f44336; font-size: 24px; flex-direction: column;';
+                                  fallback.innerHTML = `
+                                    <div>❌</div>
+                                    <div style="font-size: 10px; margin-top: 4px;">Failed</div>
+                                  `;
                                   parent.appendChild(fallback);
                                 }}
                               />

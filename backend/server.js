@@ -33,7 +33,13 @@ app.use(compression());
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for image serving routes
+    return req.path.includes('/remark-image/') || 
+           req.path.includes('/disease-image/') ||
+           req.path.includes('/reference-image/');
+  }
 });
 app.use('/api', limiter);
 

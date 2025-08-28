@@ -44,14 +44,6 @@ const EditSeasonPlanContent = ({ id }) => {
     status: '',
   });
 
-  useEffect(() => {
-    if (id) {
-      loadSeasonPlan();
-      loadPaddyVarieties();
-      loadFarms();
-    }
-  }, [id, loadSeasonPlan]);
-
   const loadSeasonPlan = async () => {
     try {
       const response = await seasonPlanAPI.getSeasonPlan(id);
@@ -100,6 +92,14 @@ const EditSeasonPlanContent = ({ id }) => {
       toast.error('Failed to load farms');
     }
   };
+
+  useEffect(() => {
+    if (id) {
+      loadSeasonPlan();
+      loadPaddyVarieties();
+      loadFarms();
+    }
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
