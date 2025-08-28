@@ -1338,13 +1338,14 @@ const SeasonPlanViewContent = ({ id }) => {
                                             position: 'relative',
                                             overflow: 'hidden',
                                             '&:hover': {
-                                              border: '2px solid #4CAF50',
-                                              '& .remove-image-btn': {
-                                                opacity: 1
-                                              }
+                                              border: '2px solid #4CAF50'
                                             }
                                           }}
                                           title={`Image: ${image.originalName || image.filename}`}
+                                          onClick={() => {
+                                            console.log('Opening image in new tab:', imageUrl);
+                                            window.open(imageUrl, '_blank');
+                                          }}
                                         >
                                           <img
                                             src={imageUrl}
@@ -1356,10 +1357,6 @@ const SeasonPlanViewContent = ({ id }) => {
                                               objectFit: 'cover',
                                               width: '100%',
                                               height: '100%'
-                                            }}
-                                            onClick={() => {
-                                              console.log('Opening image in new tab:', imageUrl);
-                                              window.open(imageUrl, '_blank');
                                             }}
                                             onLoad={() => {
                                               console.log('✅ Thumbnail loaded successfully:', imageUrl);
@@ -1373,30 +1370,6 @@ const SeasonPlanViewContent = ({ id }) => {
                                               parent.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999;">📷</div>`;
                                             }}
                                           />
-                                          <IconButton
-                                            className="remove-image-btn"
-                                            size="small"
-                                            onClick={(e) => {
-                                              e.stopPropagation(); // Prevent opening image in new tab
-                                              removeRemarkImage(remark._id, image.filename);
-                                            }}
-                                            sx={{
-                                              position: 'absolute',
-                                              top: 2,
-                                              right: 2,
-                                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                              opacity: 0,
-                                              transition: 'opacity 0.2s',
-                                              width: 20,
-                                              height: 20,
-                                              '&:hover': {
-                                                backgroundColor: '#ffebee',
-                                                color: '#f44336'
-                                              }
-                                            }}
-                                          >
-                                            <CloseIcon sx={{ fontSize: 14 }} />
-                                          </IconButton>
                                         </Box>
                                       );
                                     })}
