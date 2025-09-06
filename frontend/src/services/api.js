@@ -154,6 +154,16 @@ export const seasonPlanAPI = {
     api.delete(`/season-plans/${id}/daily-remarks/${remarkId}`),
   removeRemarkImage: (id, remarkId, imageFilename) =>
     api.delete(`/season-plans/${id}/daily-remarks/${remarkId}/images/${imageFilename}`),
+  
+  // Expense Management API
+  addExpense: (id, expenseData) => 
+    api.post(`/season-plans/${id}/expenses`, expenseData),
+  updateExpense: (id, expenseId, expenseData) => 
+    api.put(`/season-plans/${id}/expenses/${expenseId}`, expenseData),
+  deleteExpense: (id, expenseId) => 
+    api.delete(`/season-plans/${id}/expenses/${expenseId}`),
+  getExpenseSummary: (id) => 
+    api.get(`/season-plans/${id}/expenses/summary`),
 };
 
 // File upload API

@@ -1162,6 +1162,322 @@ const removeRemarkImage = async (req, res) => {
   }
 };
 
+// @desc    Add expense to season plan
+// @route   POST /api/season-plans/:id/expenses
+// @access  Private
+const addExpense = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+
+    const plan = await SeasonPlan.findById(req.params.id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this season plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const { 
+      date, 
+      category, 
+      subcategory,
+      description, 
+      amount, 
+      quantity,
+      unit,
+      unitPrice,
+      vendor,
+      receiptNumber,
+      paymentMethod,
+      remarks 
+    } = req.body;
+
+    // Calculate unit price if not provided
+    let calculatedUnitPrice = unitPrice;
+    if (!calculatedUnitPrice && quantity && quantity > 0) {
+      calculatedUnitPrice = amount / quantity;
+    }
+
+    const newExpense = {
+      date: new Date(date),
+      category,
+      subcategory,
+      description,
+      amount: parseFloat(amount),
+      quantity: quantity ? parseFloat(quantity) : undefined,
+      unit,
+      unitPrice: calculatedUnitPrice,
+      vendor,
+      receiptNumber,
+      paymentMethod: paymentMethod || 'cash',
+      remarks,
+    };
+
+    plan.expenses.push(newExpense);
+    await plan.save();
+
+    // Get the added expense with its ID
+    const addedExpense = plan.expenses[plan.expenses.length - 1];
+
+    res.status(201).json({
+      success: true,
+      message: 'Expense added successfully',
+      data: {
+        expense: addedExpense,
+        totalExpenses: plan.totalExpenses,
+        expensesByCategory: plan.expensesByCategory,
+        costPerAcre: plan.costPerAcre,
+      },
+    });
+  } catch (error) {
+    console.error('Add expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding expense',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update expense in season plan
+// @route   PUT /api/season-plans/:id/expenses/:expenseId
+// @access  Private
+const updateExpense = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+
+    const plan = await SeasonPlan.findById(req.params.id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this season plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const expense = plan.expenses.id(req.params.expenseId);
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found',
+      });
+    }
+
+    const { 
+      date, 
+      category, 
+      subcategory,
+      description, 
+      amount, 
+      quantity,
+      unit,
+      unitPrice,
+      vendor,
+      receiptNumber,
+      paymentMethod,
+      remarks 
+    } = req.body;
+
+    // Calculate unit price if not provided
+    let calculatedUnitPrice = unitPrice;
+    if (!calculatedUnitPrice && quantity && quantity > 0) {
+      calculatedUnitPrice = amount / quantity;
+    }
+
+    // Update expense fields
+    expense.date = new Date(date);
+    expense.category = category;
+    expense.subcategory = subcategory;
+    expense.description = description;
+    expense.amount = parseFloat(amount);
+    expense.quantity = quantity ? parseFloat(quantity) : undefined;
+    expense.unit = unit;
+    expense.unitPrice = calculatedUnitPrice;
+    expense.vendor = vendor;
+    expense.receiptNumber = receiptNumber;
+    expense.paymentMethod = paymentMethod || expense.paymentMethod;
+    expense.remarks = remarks;
+    expense.updatedAt = new Date();
+
+    await plan.save();
+
+    res.json({
+      success: true,
+      message: 'Expense updated successfully',
+      data: {
+        expense,
+        totalExpenses: plan.totalExpenses,
+        expensesByCategory: plan.expensesByCategory,
+        costPerAcre: plan.costPerAcre,
+      },
+    });
+  } catch (error) {
+    console.error('Update expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating expense',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Delete expense from season plan
+// @route   DELETE /api/season-plans/:id/expenses/:expenseId
+// @access  Private
+const deleteExpense = async (req, res) => {
+  try {
+    const plan = await SeasonPlan.findById(req.params.id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this season plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this season plan',
+      });
+    }
+
+    const expense = plan.expenses.id(req.params.expenseId);
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: 'Expense not found',
+      });
+    }
+
+    expense.deleteOne();
+    await plan.save();
+
+    res.json({
+      success: true,
+      message: 'Expense deleted successfully',
+      data: {
+        totalExpenses: plan.totalExpenses,
+        expensesByCategory: plan.expensesByCategory,
+        costPerAcre: plan.costPerAcre,
+      },
+    });
+  } catch (error) {
+    console.error('Delete expense error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting expense',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get expense summary for season plan
+// @route   GET /api/season-plans/:id/expenses/summary
+// @access  Private
+const getExpenseSummary = async (req, res) => {
+  try {
+    const plan = await SeasonPlan.findById(req.params.id);
+    
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Season plan not found',
+      });
+    }
+
+    // Check if user owns this season plan
+    if (plan.userId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this season plan',
+      });
+    }
+
+    // Calculate monthly expenses
+    const monthlyExpenses = {};
+    plan.expenses.forEach(expense => {
+      const monthKey = expense.date.toISOString().substring(0, 7); // YYYY-MM
+      if (!monthlyExpenses[monthKey]) {
+        monthlyExpenses[monthKey] = 0;
+      }
+      monthlyExpenses[monthKey] += expense.amount;
+    });
+
+    // Calculate average expense per category
+    const categoryStats = {};
+    plan.expenses.forEach(expense => {
+      if (!categoryStats[expense.category]) {
+        categoryStats[expense.category] = { total: 0, count: 0, items: [] };
+      }
+      categoryStats[expense.category].total += expense.amount;
+      categoryStats[expense.category].count += 1;
+      categoryStats[expense.category].items.push({
+        description: expense.description,
+        amount: expense.amount,
+        date: expense.date,
+      });
+    });
+
+    // Calculate averages
+    Object.keys(categoryStats).forEach(category => {
+      categoryStats[category].average = categoryStats[category].total / categoryStats[category].count;
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalExpenses: plan.totalExpenses,
+        expensesByCategory: plan.expensesByCategory,
+        costPerAcre: plan.costPerAcre,
+        monthlyExpenses,
+        categoryStats,
+        expenseCount: plan.expenses.length,
+        cultivatingArea: plan.cultivatingArea,
+      },
+    });
+  } catch (error) {
+    console.error('Get expense summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching expense summary',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getSeasonPlans,
   getSeasonPlan,
@@ -1177,4 +1493,8 @@ module.exports = {
   updateDailyRemark,
   deleteDailyRemark,
   removeRemarkImage,
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  getExpenseSummary,
 };

@@ -127,6 +127,73 @@ const seasonPlanSchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  expenses: [{
+    date: {
+      type: Date,
+      required: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: [
+        'seeds', 'fertilizer', 'pesticide', 'herbicide', 'fungicide',
+        'labor', 'machinery', 'fuel', 'irrigation', 'transportation',
+        'equipment', 'land_preparation', 'harvesting', 'storage',
+        'certification', 'insurance', 'utilities', 'other'
+      ],
+    },
+    subcategory: {
+      type: String,
+      maxlength: 50,
+    },
+    description: {
+      type: String,
+      required: true,
+      maxlength: 200,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: [0, 'Amount must be positive'],
+    },
+    quantity: {
+      type: Number,
+      min: [0, 'Quantity must be positive'],
+    },
+    unit: {
+      type: String,
+      enum: ['kg', 'g', 'L', 'ml', 'units', 'hours', 'days', 'acres', 'meters', 'other'],
+    },
+    unitPrice: {
+      type: Number,
+      min: [0, 'Unit price must be positive'],
+    },
+    vendor: {
+      type: String,
+      maxlength: 100,
+    },
+    receiptNumber: {
+      type: String,
+      maxlength: 50,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'bank_transfer', 'check', 'card', 'credit', 'other'],
+      default: 'cash',
+    },
+    remarks: {
+      type: String,
+      maxlength: 500,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -143,15 +210,45 @@ seasonPlanSchema.virtual('planDuration').get(function() {
   return null;
 });
 
-// Indexes for better query performance
-seasonPlanSchema.index({ farmId: 1, userId: 1 });
-seasonPlanSchema.index({ season: 1, cultivationDate: 1 });
-seasonPlanSchema.index({ status: 1 });
+// Virtual for calculating total expenses
+seasonPlanSchema.virtual('totalExpenses').get(function() {
+  if (!this.expenses || this.expenses.length === 0) return 0;
+  return this.expenses.reduce((total, expense) => total + expense.amount, 0);
+});
+
+// Virtual for calculating expenses by category
+seasonPlanSchema.virtual('expensesByCategory').get(function() {
+  if (!this.expenses || this.expenses.length === 0) return {};
+  
+  const categoryTotals = {};
+  this.expenses.forEach(expense => {
+    if (!categoryTotals[expense.category]) {
+      categoryTotals[expense.category] = 0;
+    }
+    categoryTotals[expense.category] += expense.amount;
+  });
+  
+  return categoryTotals;
+});
+
+// Virtual for calculating cost per acre
+seasonPlanSchema.virtual('costPerAcre').get(function() {
+  const total = this.totalExpenses;
+  if (total === 0 || !this.cultivatingArea) return 0;
+  return total / this.cultivatingArea;
+});
 
 // Virtual for getting farm district
 seasonPlanSchema.virtual('district').get(function() {
   return this.farmId?.district;
 });
+
+// Indexes for better query performance
+seasonPlanSchema.index({ farmId: 1, userId: 1 });
+seasonPlanSchema.index({ season: 1, cultivationDate: 1 });
+seasonPlanSchema.index({ status: 1 });
+seasonPlanSchema.index({ 'expenses.date': 1 });
+seasonPlanSchema.index({ 'expenses.category': 1 });
 
 const SeasonPlan = mongoose.model('SeasonPlan', seasonPlanSchema);
 

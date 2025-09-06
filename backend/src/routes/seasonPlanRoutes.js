@@ -18,6 +18,10 @@ const {
   updateDailyRemark,
   deleteDailyRemark,
   removeRemarkImage,
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  getExpenseSummary,
 } = require('../controllers/seasonPlanController');
 const { protect } = require('../middleware/auth');
 
@@ -144,7 +148,7 @@ router
   .route('/:id/daily-remarks')
   .post(remarkUpload.array('images', 5), [
     body('date').isISO8601().withMessage('Valid date is required'),
-    body('category').optional().isIn(['general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
+    body('category').optional().isIn(['general', 'weather', 'field_preparation', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
     body('title').isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
     body('description').isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
   ], addDailyRemark);
@@ -153,7 +157,7 @@ router
   .route('/:id/daily-remarks/:remarkId')
   .put(remarkUpload.array('images', 5), [
     body('date').optional().isISO8601().withMessage('Valid date is required'),
-    body('category').optional().isIn(['general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
+    body('category').optional().isIn(['general', 'weather', 'field_preparation', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other']).withMessage('Invalid category'),
     body('title').optional().isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
     body('description').optional().isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
   ], updateDailyRemark)
@@ -163,5 +167,53 @@ router
 router
   .route('/:id/daily-remarks/:remarkId/images/:imageFilename')
   .delete(removeRemarkImage);
+
+// Expense management routes
+router
+  .route('/:id/expenses')
+  .post([
+    body('date').isISO8601().withMessage('Valid date is required'),
+    body('category').isIn([
+      'seeds', 'fertilizer', 'pesticide', 'herbicide', 'fungicide',
+      'labor', 'machinery', 'fuel', 'irrigation', 'transportation',
+      'equipment', 'land_preparation', 'harvesting', 'storage',
+      'certification', 'insurance', 'utilities', 'other'
+    ]).withMessage('Invalid expense category'),
+    body('description').isLength({ min: 1, max: 200 }).withMessage('Description must be between 1-200 characters'),
+    body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+    body('quantity').optional().isFloat({ min: 0 }).withMessage('Quantity must be a positive number'),
+    body('unitPrice').optional().isFloat({ min: 0 }).withMessage('Unit price must be a positive number'),
+    body('subcategory').optional().isLength({ max: 50 }).withMessage('Subcategory must be 50 characters or less'),
+    body('vendor').optional().isLength({ max: 100 }).withMessage('Vendor must be 100 characters or less'),
+    body('receiptNumber').optional().isLength({ max: 50 }).withMessage('Receipt number must be 50 characters or less'),
+    body('paymentMethod').optional().isIn(['cash', 'bank_transfer', 'check', 'card', 'credit', 'other']).withMessage('Invalid payment method'),
+    body('remarks').optional().isLength({ max: 500 }).withMessage('Remarks must be 500 characters or less'),
+  ], addExpense);
+
+router
+  .route('/:id/expenses/summary')
+  .get(getExpenseSummary);
+
+router
+  .route('/:id/expenses/:expenseId')
+  .put([
+    body('date').optional().isISO8601().withMessage('Valid date is required'),
+    body('category').optional().isIn([
+      'seeds', 'fertilizer', 'pesticide', 'herbicide', 'fungicide',
+      'labor', 'machinery', 'fuel', 'irrigation', 'transportation',
+      'equipment', 'land_preparation', 'harvesting', 'storage',
+      'certification', 'insurance', 'utilities', 'other'
+    ]).withMessage('Invalid expense category'),
+    body('description').optional().isLength({ min: 1, max: 200 }).withMessage('Description must be between 1-200 characters'),
+    body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+    body('quantity').optional().isFloat({ min: 0 }).withMessage('Quantity must be a positive number'),
+    body('unitPrice').optional().isFloat({ min: 0 }).withMessage('Unit price must be a positive number'),
+    body('subcategory').optional().isLength({ max: 50 }).withMessage('Subcategory must be 50 characters or less'),
+    body('vendor').optional().isLength({ max: 100 }).withMessage('Vendor must be 100 characters or less'),
+    body('receiptNumber').optional().isLength({ max: 50 }).withMessage('Receipt number must be 50 characters or less'),
+    body('paymentMethod').optional().isIn(['cash', 'bank_transfer', 'check', 'card', 'credit', 'other']).withMessage('Invalid payment method'),
+    body('remarks').optional().isLength({ max: 500 }).withMessage('Remarks must be 500 characters or less'),
+  ], updateExpense)
+  .delete(deleteExpense);
 
 module.exports = router;

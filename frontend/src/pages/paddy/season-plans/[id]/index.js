@@ -27,6 +27,9 @@ import {
   Fab,
   Avatar,
   CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -57,6 +60,12 @@ import {
   Comment as CommentIcon,
   PhotoCamera as PhotoCameraIcon,
   CloudUpload as CloudUploadIcon,
+  AccountBalanceWallet as ExpenseIcon,
+  TrendingUp as TrendingUpIcon,
+  Receipt as ReceiptIcon,
+  Category as CategoryIcon,
+  AttachMoney as MoneyIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
@@ -75,6 +84,7 @@ const SeasonPlanViewContent = ({ id }) => {
   const remarkCategories = [
     { value: 'general', label: 'General Observation', icon: '📝' },
     { value: 'weather', label: 'Weather Conditions', icon: '🌤️' },
+    { value: 'field_preparation', label: 'Field Preparation', icon: '🚜' },
     { value: 'pest', label: 'Pest Activity', icon: '🐛' },
     { value: 'disease', label: 'Disease Symptoms', icon: '🦠' },
     { value: 'fertilizer', label: 'Fertilizer Application', icon: '🌿' },
@@ -118,6 +128,85 @@ const SeasonPlanViewContent = ({ id }) => {
 
   // Daily Remarks states
   const [remarkDialog, setRemarkDialog] = useState(false);
+  
+  // Expense Management states
+  const [expenseDialog, setExpenseDialog] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [expenseData, setExpenseData] = useState({
+    date: dayjs().format('YYYY-MM-DD'),
+    category: 'other',
+    subcategory: '',
+    description: '',
+    amount: '',
+    quantity: '',
+    unit: '',
+    unitPrice: '',
+    vendor: '',
+    receiptNumber: '',
+    paymentMethod: 'cash',
+    remarks: '',
+  });
+  const [expenseSummary, setExpenseSummary] = useState(null);
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+
+  // Accordion state for better UX
+  const [expandedSections, setExpandedSections] = useState({
+    growingStages: false,
+    fertilizerSchedule: false,
+    dailyRemarks: false,
+    expenseManagement: false,
+  });
+
+  const handleAccordionChange = (section) => (event, isExpanded) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: isExpanded
+    }));
+  };
+  
+  // Expense categories with icons
+  const expenseCategories = [
+    { value: 'seeds', label: 'Seeds & Seedlings', icon: '🌱' },
+    { value: 'fertilizer', label: 'Fertilizers', icon: '🌿' },
+    { value: 'pesticide', label: 'Pesticides', icon: '🐛' },
+    { value: 'herbicide', label: 'Herbicides', icon: '🌾' },
+    { value: 'fungicide', label: 'Fungicides', icon: '🦠' },
+    { value: 'labor', label: 'Labor Costs', icon: '👷' },
+    { value: 'machinery', label: 'Machinery & Equipment', icon: '🚜' },
+    { value: 'fuel', label: 'Fuel & Energy', icon: '⛽' },
+    { value: 'irrigation', label: 'Irrigation', icon: '💧' },
+    { value: 'transportation', label: 'Transportation', icon: '🚛' },
+    { value: 'equipment', label: 'Tools & Equipment', icon: '🔧' },
+    { value: 'land_preparation', label: 'Land Preparation', icon: '🚜' },
+    { value: 'harvesting', label: 'Harvesting', icon: '🌾' },
+    { value: 'storage', label: 'Storage & Processing', icon: '🏪' },
+    { value: 'certification', label: 'Certification & Testing', icon: '📋' },
+    { value: 'insurance', label: 'Insurance', icon: '🛡️' },
+    { value: 'utilities', label: 'Utilities', icon: '⚡' },
+    { value: 'other', label: 'Other Expenses', icon: '💰' },
+  ];
+  
+  const paymentMethods = [
+    { value: 'cash', label: 'Cash' },
+    { value: 'bank_transfer', label: 'Bank Transfer' },
+    { value: 'check', label: 'Check' },
+    { value: 'card', label: 'Card Payment' },
+    { value: 'credit', label: 'Credit' },
+    { value: 'other', label: 'Other' },
+  ];
+  
+  const units = [
+    { value: 'kg', label: 'Kilograms (kg)' },
+    { value: 'g', label: 'Grams (g)' },
+    { value: 'L', label: 'Liters (L)' },
+    { value: 'ml', label: 'Milliliters (ml)' },
+    { value: 'units', label: 'Units' },
+    { value: 'hours', label: 'Hours' },
+    { value: 'days', label: 'Days' },
+    { value: 'acres', label: 'Acres' },
+    { value: 'meters', label: 'Meters' },
+    { value: 'other', label: 'Other' },
+  ];
   const [editingRemark, setEditingRemark] = useState(null);
   const [remarkData, setRemarkData] = useState({
     date: dayjs().format('YYYY-MM-DD'),
@@ -666,6 +755,159 @@ const SeasonPlanViewContent = ({ id }) => {
     return remarkCategories.find(cat => cat.value === category) || remarkCategories[7]; // Default to 'other'
   };
 
+  // Expense Management Functions
+  const loadExpenseSummary = useCallback(async () => {
+    try {
+      setLoadingExpenses(true);
+      const response = await seasonPlanAPI.getExpenseSummary(id);
+      setExpenseSummary(response.data.data);
+    } catch (error) {
+      console.error('Error loading expense summary:', error);
+      toast.error('Failed to load expense summary');
+    } finally {
+      setLoadingExpenses(false);
+    }
+  }, [id]);
+
+  const handleAddExpense = () => {
+    setEditingExpense(null);
+    setExpenseData({
+      date: dayjs().format('YYYY-MM-DD'),
+      category: 'other',
+      subcategory: '',
+      description: '',
+      amount: '',
+      quantity: '',
+      unit: '',
+      unitPrice: '',
+      vendor: '',
+      receiptNumber: '',
+      paymentMethod: 'cash',
+      remarks: '',
+    });
+    setExpenseDialog(true);
+  };
+
+  const handleEditExpense = (expense) => {
+    setEditingExpense(expense);
+    setExpenseData({
+      date: expense.date ? dayjs(expense.date).format('YYYY-MM-DD') : '',
+      category: expense.category || 'other',
+      subcategory: expense.subcategory || '',
+      description: expense.description || '',
+      amount: expense.amount?.toString() || '',
+      quantity: expense.quantity?.toString() || '',
+      unit: expense.unit || '',
+      unitPrice: expense.unitPrice?.toString() || '',
+      vendor: expense.vendor || '',
+      receiptNumber: expense.receiptNumber || '',
+      paymentMethod: expense.paymentMethod || 'cash',
+      remarks: expense.remarks || '',
+    });
+    setExpenseDialog(true);
+  };
+
+  const handleSaveExpense = async () => {
+    try {
+      if (!expenseData.date || !expenseData.description || !expenseData.amount || !expenseData.category) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      const expensePayload = {
+        date: expenseData.date,
+        category: expenseData.category,
+        subcategory: expenseData.subcategory || undefined,
+        description: expenseData.description,
+        amount: parseFloat(expenseData.amount),
+        quantity: expenseData.quantity ? parseFloat(expenseData.quantity) : undefined,
+        unit: expenseData.unit || undefined,
+        unitPrice: expenseData.unitPrice ? parseFloat(expenseData.unitPrice) : undefined,
+        vendor: expenseData.vendor || undefined,
+        receiptNumber: expenseData.receiptNumber || undefined,
+        paymentMethod: expenseData.paymentMethod,
+        remarks: expenseData.remarks || undefined,
+      };
+
+      if (editingExpense) {
+        const response = await seasonPlanAPI.updateExpense(id, editingExpense._id, expensePayload);
+        toast.success('💰 Expense updated successfully');
+        // Update plan with the response data that includes updated expenses
+        if (response.data.data) {
+          setPlan(prevPlan => ({
+            ...prevPlan,
+            expenses: response.data.data.expenses || prevPlan.expenses
+          }));
+        }
+      } else {
+        const response = await seasonPlanAPI.addExpense(id, expensePayload);
+        toast.success('💰 Expense added successfully');
+        // Update plan with the response data that includes new expense
+        if (response.data.data) {
+          setPlan(prevPlan => ({
+            ...prevPlan,
+            expenses: response.data.data.expenses || prevPlan.expenses
+          }));
+        }
+      }
+
+      setExpenseDialog(false);
+      // Only reload expense summary, not the entire plan
+      loadExpenseSummary();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast.error('Failed to save expense');
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    if (!window.confirm('Are you sure you want to delete this expense? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await seasonPlanAPI.deleteExpense(id, expenseId);
+      toast.success('💰 Expense deleted successfully');
+      // Update plan with the response data
+      if (response.data.data) {
+        setPlan(prevPlan => ({
+          ...prevPlan,
+          expenses: prevPlan.expenses.filter(exp => exp._id !== expenseId)
+        }));
+      }
+      // Only reload expense summary
+      loadExpenseSummary();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense');
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 2,
+    }).format(amount || 0);
+  };
+
+  const getCategoryIcon = (category) => {
+    const cat = expenseCategories.find(c => c.value === category);
+    return cat ? cat.icon : '💰';
+  };
+
+  const getCategoryLabel = (category) => {
+    const cat = expenseCategories.find(c => c.value === category);
+    return cat ? cat.label : category;
+  };
+
+  // Load expense summary when plan loads
+  useEffect(() => {
+    if (plan) {
+      loadExpenseSummary();
+    }
+  }, [plan, loadExpenseSummary]);
+
   if (loading) {
     return (
       <Box sx={{ p: 3 }}>
@@ -943,11 +1185,34 @@ const SeasonPlanViewContent = ({ id }) => {
 
         {/* Growing Stages */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                🌾 Growing Stages
-              </Typography>
+          <Accordion 
+            expanded={expandedSections.growingStages} 
+            onChange={handleAccordionChange('growingStages')}
+            sx={{ boxShadow: 3 }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                backgroundColor: '#f8f9fa',
+                '&:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiAccordionSummary-content': { margin: '16px 0' }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  🌾 Growing Stages
+                  {plan.growingStages && (
+                    <Chip 
+                      label={`${getCompletedStages()} of ${plan.growingStages.length} completed`}
+                      size="small"
+                      color={getCompletedStages() === plan.growingStages.length ? 'success' : 'default'}
+                      sx={{ ml: 2 }}
+                    />
+                  )}
+                </Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
               <Grid container spacing={2}>
                 {plan.growingStages?.map((stage, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
@@ -1019,17 +1284,36 @@ const SeasonPlanViewContent = ({ id }) => {
                   </Grid>
                 ))}
               </Grid>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
 
         {/* Fertilizer Schedule */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">
+          <Accordion 
+            expanded={expandedSections.fertilizerSchedule} 
+            onChange={handleAccordionChange('fertilizerSchedule')}
+            sx={{ boxShadow: 3 }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                backgroundColor: '#f8f9fa',
+                '&:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiAccordionSummary-content': { margin: '16px 0' }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   🌿 Fertilizer Schedule
+                  {plan.fertilizerSchedule && (
+                    <Chip 
+                      label={`${plan.fertilizerSchedule.filter(app => app.applied).length} of ${plan.fertilizerSchedule.length} applied`}
+                      size="small"
+                      color={plan.fertilizerSchedule.filter(app => app.applied).length === plan.fertilizerSchedule.length ? 'success' : 'default'}
+                      sx={{ ml: 2 }}
+                    />
+                  )}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1070,6 +1354,8 @@ const SeasonPlanViewContent = ({ id }) => {
                   )}
                 </Box>
               </Box>
+            </AccordionSummary>
+            <AccordionDetails>
               <Grid container spacing={2}>
                 {plan.fertilizerSchedule?.map((app, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
@@ -1210,21 +1496,41 @@ const SeasonPlanViewContent = ({ id }) => {
                   </Grid>
                 ))}
               </Grid>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
 
         {/* Daily Remarks */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CommentIcon sx={{ mr: 1 }} />
+          <Accordion 
+            expanded={expandedSections.dailyRemarks} 
+            onChange={handleAccordionChange('dailyRemarks')}
+            sx={{ boxShadow: 3 }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                backgroundColor: '#f8f9fa',
+                '&:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiAccordionSummary-content': { margin: '16px 0' }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CommentIcon />
                   Daily Remarks
+                  {plan.dailyRemarks && (
+                    <Chip 
+                      label={`${plan.dailyRemarks.length} remarks`}
+                      size="small"
+                      color={plan.dailyRemarks.length > 0 ? 'success' : 'default'}
+                      sx={{ ml: 2 }}
+                    />
+                  )}
                 </Typography>
                 <Button
                   variant="contained"
+                  size="small"
                   startIcon={<AddIcon />}
                   onClick={() => openRemarkDialog()}
                   sx={{
@@ -1237,6 +1543,8 @@ const SeasonPlanViewContent = ({ id }) => {
                   Add Remark
                 </Button>
               </Box>
+            </AccordionSummary>
+            <AccordionDetails>
               
               {plan.dailyRemarks && plan.dailyRemarks.length > 0 ? (
                 <Grid container spacing={2}>
@@ -1442,8 +1750,229 @@ const SeasonPlanViewContent = ({ id }) => {
                   </Button>
                 </Box>
               )}
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        {/* Expense Management */}
+        <Grid item xs={12}>
+          <Accordion 
+            expanded={expandedSections.expenseManagement} 
+            onChange={handleAccordionChange('expenseManagement')}
+            sx={{ boxShadow: 3 }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                backgroundColor: '#f8f9fa',
+                '&:hover': { backgroundColor: '#e9ecef' },
+                '& .MuiAccordionSummary-content': { margin: '16px 0' }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', pr: 2 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  💰 Expense Management
+                  {expenseSummary && (
+                    <Chip 
+                      label={`${expenseSummary.expenseCount} records | ${formatCurrency(expenseSummary.totalExpenses)}`}
+                      size="small"
+                      sx={{ ml: 2, backgroundColor: '#e8f5e8', color: '#2e7d32' }}
+                    />
+                  )}
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddExpense}
+                  sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#45a049' } }}
+                >
+                  Add Expense
+                </Button>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+
+              {/* Expense Summary Cards */}
+              {expenseSummary && (
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ backgroundColor: '#e8f5e8', border: '1px solid #4CAF50' }}>
+                      <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                        <MoneyIcon sx={{ fontSize: 32, color: '#4CAF50', mb: 1 }} />
+                        <Typography variant="h6" color="#4CAF50">
+                          {formatCurrency(expenseSummary.totalExpenses)}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Total Expenses
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ backgroundColor: '#fff3e0', border: '1px solid #ff9800' }}>
+                      <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                        <TrendingUpIcon sx={{ fontSize: 32, color: '#ff9800', mb: 1 }} />
+                        <Typography variant="h6" color="#ff9800">
+                          {formatCurrency(expenseSummary.costPerAcre)}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Cost per Acre
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ backgroundColor: '#f3e5f5', border: '1px solid #9c27b0' }}>
+                      <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                        <ReceiptIcon sx={{ fontSize: 32, color: '#9c27b0', mb: 1 }} />
+                        <Typography variant="h6" color="#9c27b0">
+                          {expenseSummary.expenseCount}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Total Records
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ backgroundColor: '#e1f5fe', border: '1px solid #03a9f4' }}>
+                      <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                        <CategoryIcon sx={{ fontSize: 32, color: '#03a9f4', mb: 1 }} />
+                        <Typography variant="h6" color="#03a9f4">
+                          {Object.keys(expenseSummary.expensesByCategory || {}).length}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Categories Used
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* Expenses List */}
+              {plan.expenses && plan.expenses.length > 0 ? (
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                    Expense Records ({plan.expenses.length})
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {plan.expenses
+                      .sort((a, b) => new Date(b.date) - new Date(a.date))
+                      .map((expense, index) => (
+                        <Grid item xs={12} md={6} key={expense._id || index}>
+                          <Card 
+                            sx={{ 
+                              border: '1px solid #e0e0e0',
+                              '&:hover': { 
+                                boxShadow: 3,
+                                borderColor: '#4CAF50'
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography variant="h6" component="span">
+                                    {getCategoryIcon(expense.category)}
+                                  </Typography>
+                                  <Box>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                      {getCategoryLabel(expense.category)}
+                                    </Typography>
+                                    {expense.subcategory && (
+                                      <Typography variant="body2" color="textSecondary">
+                                        {expense.subcategory}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleEditExpense(expense)}
+                                    sx={{ color: '#1976d2' }}
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteExpense(expense._id)}
+                                    sx={{ color: '#d32f2f' }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              </Box>
+                              
+                              <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                                {expense.description}
+                              </Typography>
+                              
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
+                                  {formatCurrency(expense.amount)}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                  {formatDate(expense.date)}
+                                </Typography>
+                              </Box>
+                              
+                              {(expense.quantity || expense.vendor || expense.receiptNumber) && (
+                                <Box sx={{ borderTop: '1px solid #f0f0f0', pt: 1, mt: 1 }}>
+                                  {expense.quantity && (
+                                    <Typography variant="body2" color="textSecondary">
+                                      Quantity: {expense.quantity} {expense.unit || 'units'}
+                                      {expense.unitPrice && ` @ ${formatCurrency(expense.unitPrice)} per ${expense.unit || 'unit'}`}
+                                    </Typography>
+                                  )}
+                                  {expense.vendor && (
+                                    <Typography variant="body2" color="textSecondary">
+                                      Vendor: {expense.vendor}
+                                    </Typography>
+                                  )}
+                                  {expense.receiptNumber && (
+                                    <Typography variant="body2" color="textSecondary">
+                                      Receipt: {expense.receiptNumber}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              )}
+                              
+                              {expense.remarks && (
+                                <Typography variant="body2" color="textSecondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                  "{expense.remarks}"
+                                </Typography>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))
+                    }
+                  </Grid>
+                </Box>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4, color: '#666' }}>
+                  <ExpenseIcon sx={{ fontSize: 64, color: '#ccc', mb: 2 }} />
+                  <Typography variant="body1" color="textSecondary" gutterBottom>
+                    No expenses recorded yet
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Start tracking your season expenses to monitor costs and profitability
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddExpense}
+                    sx={{ color: '#4CAF50', borderColor: '#4CAF50' }}
+                  >
+                    Add Your First Expense
+                  </Button>
+                </Box>
+              )}
+            </AccordionDetails>
+          </Accordion>
         </Grid>
 
         {/* Harvest Information */}
@@ -1452,7 +1981,7 @@ const SeasonPlanViewContent = ({ id }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Harvest Information
+                  🌾 Harvest Information
                 </Typography>
                 <Grid container spacing={3}>
                   {plan.expectedHarvest && (
@@ -2206,6 +2735,210 @@ const SeasonPlanViewContent = ({ id }) => {
           <Button onClick={() => setRemoveImageDialog(false)}>Cancel</Button>
           <Button onClick={confirmRemoveImage} color="error" variant="contained">
             Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Expense Dialog */}
+      <Dialog open={expenseDialog} onClose={() => setExpenseDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {editingExpense ? 'Edit Expense' : 'Add New Expense'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Grid container spacing={2}>
+              {/* Date */}
+              <Grid item xs={12} sm={6}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Date *"
+                    value={expenseData.date ? dayjs(expenseData.date) : null}
+                    onChange={(newValue) => {
+                      const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
+                      setExpenseData({ ...expenseData, date: dateString });
+                    }}
+                    renderInput={(params) => <TextField {...params} fullWidth required />}
+                    slotProps={{ 
+                      textField: { 
+                        fullWidth: true,
+                        required: true 
+                      } 
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              {/* Category */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Category"
+                  value={expenseData.category}
+                  onChange={(e) => setExpenseData({ ...expenseData, category: e.target.value })}
+                  required
+                >
+                  {expenseCategories.map((category) => (
+                    <MenuItem key={category.value} value={category.value}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{category.icon}</span>
+                        {category.label}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              {/* Subcategory */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Subcategory (Optional)"
+                  value={expenseData.subcategory}
+                  onChange={(e) => setExpenseData({ ...expenseData, subcategory: e.target.value })}
+                  placeholder="e.g., Urea, TSP, Seeds variety name"
+                />
+              </Grid>
+
+              {/* Payment Method */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Payment Method"
+                  value={expenseData.paymentMethod}
+                  onChange={(e) => setExpenseData({ ...expenseData, paymentMethod: e.target.value })}
+                >
+                  {paymentMethods.map((method) => (
+                    <MenuItem key={method.value} value={method.value}>
+                      {method.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              {/* Description */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={expenseData.description}
+                  onChange={(e) => setExpenseData({ ...expenseData, description: e.target.value })}
+                  placeholder="Detailed description of the expense"
+                  multiline
+                  rows={2}
+                  required
+                />
+              </Grid>
+
+              {/* Amount */}
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Amount (LKR)"
+                  type="number"
+                  value={expenseData.amount}
+                  onChange={(e) => setExpenseData({ ...expenseData, amount: e.target.value })}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  required
+                />
+              </Grid>
+
+              {/* Quantity */}
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  label="Quantity (Optional)"
+                  type="number"
+                  value={expenseData.quantity}
+                  onChange={(e) => {
+                    const quantity = e.target.value;
+                    setExpenseData({ 
+                      ...expenseData, 
+                      quantity,
+                      // Auto-calculate unit price if amount and quantity exist
+                      unitPrice: expenseData.amount && quantity ? (parseFloat(expenseData.amount) / parseFloat(quantity)).toFixed(2) : expenseData.unitPrice
+                    });
+                  }}
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              </Grid>
+
+              {/* Unit */}
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Unit (Optional)"
+                  value={expenseData.unit}
+                  onChange={(e) => setExpenseData({ ...expenseData, unit: e.target.value })}
+                >
+                  {units.map((unit) => (
+                    <MenuItem key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              {/* Unit Price (Auto-calculated or manual) */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Unit Price (LKR) - Auto-calculated"
+                  type="number"
+                  value={expenseData.unitPrice}
+                  onChange={(e) => setExpenseData({ ...expenseData, unitPrice: e.target.value })}
+                  inputProps={{ min: 0, step: 0.01 }}
+                  helperText="Automatically calculated from Amount ÷ Quantity"
+                />
+              </Grid>
+
+              {/* Vendor */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Vendor/Supplier (Optional)"
+                  value={expenseData.vendor}
+                  onChange={(e) => setExpenseData({ ...expenseData, vendor: e.target.value })}
+                  placeholder="Name of vendor or supplier"
+                />
+              </Grid>
+
+              {/* Receipt Number */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Receipt Number (Optional)"
+                  value={expenseData.receiptNumber}
+                  onChange={(e) => setExpenseData({ ...expenseData, receiptNumber: e.target.value })}
+                  placeholder="Receipt or invoice number"
+                />
+              </Grid>
+
+              {/* Remarks */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Remarks (Optional)"
+                  value={expenseData.remarks}
+                  onChange={(e) => setExpenseData({ ...expenseData, remarks: e.target.value })}
+                  placeholder="Additional notes or comments"
+                  multiline
+                  rows={2}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExpenseDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveExpense} 
+            variant="contained"
+            sx={{ backgroundColor: '#4CAF50', '&:hover': { backgroundColor: '#45a049' } }}
+          >
+            {editingExpense ? 'Update Expense' : 'Add Expense'}
           </Button>
         </DialogActions>
       </Dialog>
