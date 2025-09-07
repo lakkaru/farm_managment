@@ -153,7 +153,9 @@ export const seasonPlanAPI = {
   deleteDailyRemark: (id, remarkId) => 
     api.delete(`/season-plans/${id}/daily-remarks/${remarkId}`),
   removeRemarkImage: (id, remarkId, imageFilename) =>
-    api.delete(`/season-plans/${id}/daily-remarks/${remarkId}/images/${imageFilename}`),
+    api.delete(`/season-plans/${id}/daily-remarks/${remarkId}/remove-image`, {
+      data: { imageFilename }
+    }),
   
   // Expense Management API
   addExpense: (id, expenseData) => 

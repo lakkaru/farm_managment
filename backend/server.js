@@ -91,10 +91,22 @@ const connectDB = async () => {
   }
 };
 
+// Check R2 configuration
+const checkR2Config = () => {
+  const r2Service = require('./src/services/r2Service');
+  if (r2Service.isConfigured()) {
+    console.log('✓ Cloudflare R2 storage configured successfully');
+  } else {
+    console.warn('⚠️  Cloudflare R2 not configured. Image uploads will fail.');
+    console.warn('   Please set R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME in your .env file');
+  }
+};
+
 // Start server
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
+  checkR2Config();
   app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });

@@ -1,6 +1,8 @@
 const SeasonPlan = require('../models/SeasonPlan');
 const PaddyVariety = require('../models/PaddyVariety');
 const { validationResult } = require('express-validator');
+const r2Service = require('../services/r2Service');
+const imageProcessingService = require('../services/imageProcessingService');
 
 // @desc    Get all season plans for user
 // @route   GET /api/season-plans
@@ -917,16 +919,77 @@ const addDailyRemark = async (req, res) => {
       });
     }
 
-    // Handle uploaded images
+    // Handle uploaded images with Cloudflare R2 and image processing
     let imageObjects = [];
     if (req.files && req.files.length > 0) {
-      imageObjects = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        uploadDate: new Date(),
-      }));
+      try {
+        // Process and upload images to Cloudflare R2
+        const uploadPromises = req.files.map(async (file) => {
+          console.log(`Processing image: ${file.originalname} (${file.mimetype})`);
+          
+          // Validate image
+          const validation = await imageProcessingService.validateImage(
+            file.buffer, 
+            file.mimetype, 
+            file.originalname
+          );
+          
+          if (!validation.isValid) {
+            throw new Error(`Invalid image ${file.originalname}: ${validation.error}`);
+          }
+          
+          // Process image (convert HEIC to JPEG, optimize, resize)
+          const processedImage = await imageProcessingService.processImage(
+            file.buffer,
+            file.mimetype,
+            {
+              maxWidth: 1920,
+              maxHeight: 1080,
+              quality: 85,
+              format: 'jpeg'
+            },
+            file.originalname // Pass filename for better HEIC detection
+          );
+          
+          console.log(`Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
+          
+          // Generate new filename with correct extension
+          const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
+          const processedFileName = `${fileNameWithoutExt}${processedImage.fileExtension}`;
+          
+          // Upload processed image to R2
+          const uploadResult = await r2Service.uploadFile(
+            processedImage.buffer,
+            processedFileName,
+            processedImage.mimeType,
+            'daily-remarks'
+          );
+          
+          return {
+            filename: uploadResult.key, // R2 key as filename
+            originalName: file.originalname, // Keep original name for reference
+            mimetype: processedImage.mimeType, // Use processed MIME type
+            size: processedImage.processedSize,
+            url: uploadResult.url, // R2 public URL
+            uploadDate: new Date(),
+            processed: {
+              originalSize: processedImage.originalSize,
+              compressionRatio: processedImage.compressionRatio,
+              dimensions: `${processedImage.width}x${processedImage.height}`
+            }
+          };
+        });
+
+        imageObjects = await Promise.all(uploadPromises);
+        console.log(`Successfully processed and uploaded ${imageObjects.length} images`);
+      } catch (error) {
+        console.error('Image processing/upload error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to process and upload images',
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        });
+      }
     }
 
     // Create new remark
@@ -999,17 +1062,78 @@ const updateDailyRemark = async (req, res) => {
     if (title) remark.title = title.trim();
     if (description) remark.description = description.trim();
 
-    // Handle uploaded images
+    // Handle uploaded images with Cloudflare R2 and image processing
     if (req.files && req.files.length > 0) {
-      const newImageObjects = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        uploadDate: new Date(),
-      }));
-      // Add new images to existing ones (don't replace, append)
-      remark.images = [...(remark.images || []), ...newImageObjects];
+      try {
+        // Process and upload new images to Cloudflare R2
+        const uploadPromises = req.files.map(async (file) => {
+          console.log(`Processing image: ${file.originalname} (${file.mimetype})`);
+          
+          // Validate image
+          const validation = await imageProcessingService.validateImage(
+            file.buffer, 
+            file.mimetype, 
+            file.originalname
+          );
+          
+          if (!validation.isValid) {
+            throw new Error(`Invalid image ${file.originalname}: ${validation.error}`);
+          }
+          
+          // Process image (convert HEIC to JPEG, optimize, resize)
+          const processedImage = await imageProcessingService.processImage(
+            file.buffer,
+            file.mimetype,
+            {
+              maxWidth: 1920,
+              maxHeight: 1080,
+              quality: 85,
+              format: 'jpeg'
+            },
+            file.originalname // Pass filename for better HEIC detection
+          );
+          
+          console.log(`Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
+          
+          // Generate new filename with correct extension
+          const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
+          const processedFileName = `${fileNameWithoutExt}${processedImage.fileExtension}`;
+          
+          // Upload processed image to R2
+          const uploadResult = await r2Service.uploadFile(
+            processedImage.buffer,
+            processedFileName,
+            processedImage.mimeType,
+            'daily-remarks'
+          );
+          
+          return {
+            filename: uploadResult.key, // R2 key as filename
+            originalName: file.originalname, // Keep original name for reference
+            mimetype: processedImage.mimeType, // Use processed MIME type
+            size: processedImage.processedSize,
+            url: uploadResult.url, // R2 public URL
+            uploadDate: new Date(),
+            processed: {
+              originalSize: processedImage.originalSize,
+              compressionRatio: processedImage.compressionRatio,
+              dimensions: `${processedImage.width}x${processedImage.height}`
+            }
+          };
+        });
+
+        const newImageObjects = await Promise.all(uploadPromises);
+        console.log(`Successfully processed and uploaded ${newImageObjects.length} images`);
+        // Add new images to existing ones (don't replace, append)
+        remark.images = [...(remark.images || []), ...newImageObjects];
+      } catch (error) {
+        console.error('Image processing/upload error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to process and upload images',
+          error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        });
+      }
     }
 
     await plan.save();
@@ -1064,6 +1188,20 @@ const deleteDailyRemark = async (req, res) => {
       });
     }
 
+    // Delete associated images from Cloudflare R2
+    if (remark.images && remark.images.length > 0) {
+      try {
+        const deletePromises = remark.images.map(image => 
+          r2Service.deleteFile(image.filename)
+        );
+        await Promise.all(deletePromises);
+        console.log(`Deleted ${remark.images.length} images from R2 for remark ${remarkId}`);
+      } catch (error) {
+        console.log('Warning: Some images could not be deleted from R2:', error.message);
+        // Continue with remark deletion even if R2 cleanup fails
+      }
+    }
+
     plan.dailyRemarks.pull(remarkId);
     await plan.save();
 
@@ -1089,7 +1227,21 @@ const deleteDailyRemark = async (req, res) => {
 // Remove specific image from daily remark
 const removeRemarkImage = async (req, res) => {
   try {
-    const { id, remarkId, imageFilename } = req.params;
+    const { id, remarkId } = req.params;
+    const { imageFilename } = req.body;
+    
+    console.log('=== REMOVE IMAGE DEBUG ===');
+    console.log('Season plan ID:', id);
+    console.log('Remark ID:', remarkId);
+    console.log('Image filename from body:', imageFilename);
+    console.log('==========================');
+    
+    if (!imageFilename) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image filename is required',
+      });
+    }
     
     const plan = await SeasonPlan.findById(id);
     if (!plan) {
@@ -1130,18 +1282,14 @@ const removeRemarkImage = async (req, res) => {
     
     await plan.save();
 
-    // Optionally, delete the physical file
-    const fs = require('fs');
-    const path = require('path');
-    const imagePath = path.join(__dirname, '../../uploads/remarks', imageFilename);
-    
-    fs.unlink(imagePath, (err) => {
-      if (err) {
-        console.log('Warning: Could not delete image file:', imagePath);
-      } else {
-        console.log('Image file deleted:', imagePath);
-      }
-    });
+    // Delete the image from Cloudflare R2
+    try {
+      await r2Service.deleteFile(imageFilename);
+      console.log('Image deleted from R2:', imageFilename);
+    } catch (error) {
+      console.log('Warning: Could not delete image from R2:', imageFilename, error.message);
+      // Continue execution even if R2 deletion fails
+    }
 
     const populatedPlan = await SeasonPlan.findById(id)
       .populate('farmId', 'name district cultivationZone')

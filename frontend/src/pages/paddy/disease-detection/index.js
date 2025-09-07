@@ -216,7 +216,7 @@ const PlantDiseaseDetectionContent = () => {
                   Or drag and drop an image here
                 </Typography>
                 <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                  Supported formats: JPG, PNG, HEIC (Max 5MB)
+                  Supported formats: JPG, PNG, GIF, WebP, HEIC, HEIF (Max 10MB)
                 </Typography>
               </Box>
             ) : (
@@ -254,7 +254,7 @@ const PlantDiseaseDetectionContent = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
@@ -262,7 +262,7 @@ const PlantDiseaseDetectionContent = () => {
             <input
               ref={cameraInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               capture="environment"
               onChange={handleFileSelect}
               style={{ display: 'none' }}

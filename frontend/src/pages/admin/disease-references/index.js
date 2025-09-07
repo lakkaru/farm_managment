@@ -379,7 +379,7 @@ const AdminDiseaseReferencesContent = () => {
             <input
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               onChange={handleFileSelect}
               style={{ display: 'none' }}
               id="reference-upload-input"

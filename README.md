@@ -6,6 +6,11 @@ A comprehensive MERN stack application for managing farm operations with special
 
 - **Crop Management**: Track crops from planting to harvest with detailed growth stages
 - **Season Planning**: Specialized paddy cultivation planning with variety selection
+- **Daily Remarks**: Document daily observations with photos and categorization
+- **Expense Management**: Comprehensive expense tracking with 18 categories and auto-calculations
+- **Accordion UI**: Collapsible sections for better space utilization and navigation
+- **Cloud Image Storage**: Secure image storage using Cloudflare R2 with global CDN
+- **HEIC Image Support**: Automatic conversion of iOS HEIC images with optimization
 - **Livestock Management**: Monitor and manage farm animals
 - **Inventory Tracking**: Keep track of seeds, fertilizers, and equipment
 - **Weather Integration**: Climate-based recommendations for farming decisions
@@ -25,8 +30,12 @@ A comprehensive MERN stack application for managing farm operations with special
 ### Backend
 - **Node.js** with **Express.js** - RESTful API server
 - **MongoDB Atlas** - Cloud database with Mongoose ODM
+- **Cloudflare R2** - S3-compatible object storage for images with global CDN
+- **AWS SDK** - S3-compatible client for R2 integration
+- **HEIC Convert** & **Sharp** - Image processing and HEIC conversion
 - **JWT Authentication** - Secure user authentication
 - **bcryptjs** - Password hashing and security
+- **Multer** - File upload handling with memory storage
 - **CORS** - Cross-origin resource sharing
 - **Morgan** - HTTP request logging
 
@@ -58,7 +67,17 @@ A comprehensive MERN stack application for managing farm operations with special
    JWT_SECRET=your_jwt_secret_key
    PORT=5000
    NODE_ENV=development
+   
+   # Cloudflare R2 Configuration (for image storage)
+   R2_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
+   R2_ACCESS_KEY_ID=your_r2_access_key_id
+   R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+   R2_BUCKET_NAME=farm-management-images
+   R2_ACCOUNT_ID=your_cloudflare_account_id
+   # R2_PUBLIC_URL=https://images.yourdomain.com  # Optional: custom domain
    ```
+   
+   > 📄 **Note**: For detailed R2 setup instructions, see [R2_MIGRATION_GUIDE.md](./R2_MIGRATION_GUIDE.md)
 
 4. **Set up Frontend**
    ```bash

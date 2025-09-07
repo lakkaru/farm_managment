@@ -99,7 +99,10 @@ const seasonPlanSchema = new mongoose.Schema({
     },
     category: {
       type: String,
-      enum: ['general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'other'],
+      enum: [
+        'general', 'weather', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth', 'field_preparation',
+        'plowing', 'seeds_preparation', 'seeding_sowing', 'transplanting', 'harvesting', 'other'
+      ],
       default: 'general',
     },
     title: {
@@ -110,17 +113,24 @@ const seasonPlanSchema = new mongoose.Schema({
     description: {
       type: String,
       required: true,
-      maxlength: 1000,
+      maxlength: 2000,
     },
     images: [{
       filename: String,
       originalName: String,
       mimetype: String,
       size: Number,
+      url: String, // R2 public URL for new images
       uploadDate: {
         type: Date,
         default: Date.now,
       },
+      // Processing metadata for R2 uploaded images
+      processed: {
+        originalSize: Number,
+        compressionRatio: Number,
+        dimensions: String
+      }
     }],
     createdAt: {
       type: Date,

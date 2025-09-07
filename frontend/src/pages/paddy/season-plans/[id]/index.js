@@ -73,6 +73,99 @@ import AppProviders from '../../../../providers/AppProviders';
 import BackButton from '../../../../components/BackButton';
 import { seasonPlanAPI } from '../../../../services/api';
 import { toast } from 'react-toastify';
+import { PADDY_REMARK_CATEGORIES, getCategoryInfo } from '../../../../constants/paddyRemarkCategories';
+
+// Thumbnail Display Component
+const ThumbnailDisplay = ({ image, imageUrl }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  console.log('=== THUMBNAIL DEBUG ===');
+  console.log('imageUrl:', imageUrl);
+  console.log('image object:', image);
+  console.log('imageError:', imageError);
+  console.log('imageLoaded:', imageLoaded);
+  console.log('========================');
+
+  if (imageError) {
+    // Show error placeholder only if image actually failed to load
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          color: '#888',
+          fontSize: '0.65rem',
+          textAlign: 'center',
+          backgroundColor: '#f8f9fa',
+          border: '1px dashed #ddd',
+          borderRadius: '4px'
+        }}
+      >
+        <Box sx={{ fontSize: '1.4rem', mb: 0.3 }}>🖼️</Box>
+        <Box sx={{ fontWeight: 'bold', fontSize: '0.6rem' }}>Image</Box>
+        <Box sx={{ fontSize: '0.55rem', opacity: 0.8 }}>Unavailable</Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      height: '100%', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      position: 'relative'
+    }}>
+      {isLoading && (
+        <Box sx={{ 
+          position: 'absolute',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#f5f5f5',
+          fontSize: '0.8rem',
+          color: '#666'
+        }}>
+          Loading...
+        </Box>
+      )}
+      
+      <img
+        src={imageUrl}
+        alt=""
+        crossOrigin="anonymous"
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'cover',
+          width: '100%',
+          height: '100%',
+          display: isLoading ? 'none' : 'block'
+        }}
+        onLoad={() => {
+          setIsLoading(false);
+          setImageLoaded(true);
+          console.log('✅ Thumbnail loaded successfully via backend API:', imageUrl);
+        }}
+        onError={(e) => {
+          setIsLoading(false);
+          setImageError(true);
+          console.error('❌ Thumbnail failed to load via backend API:', imageUrl);
+          console.error('Error details:', e);
+        }}
+      />
+    </Box>
+  );
+};
 
 const SeasonPlanViewContent = ({ id }) => {
   const [plan, setPlan] = useState(null);
@@ -80,18 +173,9 @@ const SeasonPlanViewContent = ({ id }) => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [error, setError] = useState('');
   
-  // Daily Remarks Categories
-  const remarkCategories = [
-    { value: 'general', label: 'General Observation', icon: '📝' },
-    { value: 'weather', label: 'Weather Conditions', icon: '🌤️' },
-    { value: 'field_preparation', label: 'Field Preparation', icon: '🚜' },
-    { value: 'pest', label: 'Pest Activity', icon: '🐛' },
-    { value: 'disease', label: 'Disease Symptoms', icon: '🦠' },
-    { value: 'fertilizer', label: 'Fertilizer Application', icon: '🌿' },
-    { value: 'irrigation', label: 'Irrigation & Water', icon: '💧' },
-    { value: 'growth', label: 'Plant Growth', icon: '🌱' },
-    { value: 'other', label: 'Other', icon: '📋' }
-  ];
+  
+  // Use imported paddy cultivation categories
+  const remarkCategories = PADDY_REMARK_CATEGORIES;
   
   // Implementation tracking states
   const [fertilizerDialog, setFertilizerDialog] = useState({ open: false, index: null });
@@ -219,8 +303,54 @@ const SeasonPlanViewContent = ({ id }) => {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [deleteRemarkDialog, setDeleteRemarkDialog] = useState(false);
   const [deleteRemarkId, setDeleteRemarkId] = useState(null);
-  const [removeImageDialog, setRemoveImageDialog] = useState(false);
-  const [removeImageData, setRemoveImageData] = useState({ remarkId: null, imageFilename: null });
+
+  // Remove image from daily remark
+  const removeRemarkImage = async (remarkId, imageFilename) => {
+    if (saving) return;
+    setSaving(true);
+    
+    try {
+      console.log('=== FRONTEND REMOVE IMAGE DEBUG ===');
+      console.log('Season plan ID:', id);
+      console.log('Remark ID:', remarkId);
+      console.log('Image filename:', imageFilename);
+      console.log('Full API call details:', {
+        url: `/season-plans/${id}/daily-remarks/${remarkId}/remove-image`,
+        data: { imageFilename }
+      });
+      console.log('=====================================');
+      
+      const response = await seasonPlanAPI.removeRemarkImage(id, remarkId, imageFilename);
+      
+      // Update the main plan state
+      setPlan(response.data.data);
+      
+      // Update remarkData if we're currently editing this remark
+      if (editingRemark && editingRemark._id === remarkId) {
+        const updatedRemark = response.data.data.dailyRemarks.find(r => r._id === remarkId);
+        if (updatedRemark) {
+          setRemarkData(prev => ({
+            ...prev,
+            images: updatedRemark.images || []
+          }));
+          setEditingRemark(updatedRemark);
+        }
+      }
+      
+      toast.success('🖼️ Image removed successfully');
+    } catch (error) {
+      console.error('Error removing image:', error);
+      let message = 'Failed to remove image';
+      if (error.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error.message) {
+        message = error.message;
+      }
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const loadSeasonPlan = useCallback(async () => {
     try {
@@ -625,23 +755,66 @@ const SeasonPlanViewContent = ({ id }) => {
 
     setUploadingImages(true);
     const newImages = [];
+    let processedCount = 0;
 
     files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+      // Check if file is HEIC/HEIF
+      const isHeic = file.type.toLowerCase().includes('heic') || 
+                     file.type.toLowerCase().includes('heif') ||
+                     file.name.toLowerCase().endsWith('.heic') ||
+                     file.name.toLowerCase().endsWith('.heif');
+
+      if (isHeic) {
+        // For HEIC files, use a placeholder thumbnail
         newImages.push({
           file,
-          preview: e.target.result,
+          preview: null, // No preview for HEIC
           name: file.name,
-          size: file.size
+          size: file.size,
+          isHeic: true
         });
         
-        if (newImages.length === files.length) {
+        processedCount++;
+        if (processedCount === files.length) {
           setRemarkImages(prev => [...prev, ...newImages]);
           setUploadingImages(false);
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // For other image formats, generate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newImages.push({
+            file,
+            preview: e.target.result,
+            name: file.name,
+            size: file.size,
+            isHeic: false
+          });
+          
+          processedCount++;
+          if (processedCount === files.length) {
+            setRemarkImages(prev => [...prev, ...newImages]);
+            setUploadingImages(false);
+          }
+        };
+        reader.onerror = () => {
+          // If reading fails, still add the file with no preview
+          newImages.push({
+            file,
+            preview: null,
+            name: file.name,
+            size: file.size,
+            isHeic: false
+          });
+          
+          processedCount++;
+          if (processedCount === files.length) {
+            setRemarkImages(prev => [...prev, ...newImages]);
+            setUploadingImages(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     });
     
     // Reset file input
@@ -718,42 +891,10 @@ const SeasonPlanViewContent = ({ id }) => {
     }
   };
 
-  const removeRemarkImage = async (remarkId, imageFilename) => {
-    setRemoveImageData({ remarkId, imageFilename });
-    setRemoveImageDialog(true);
-  };
 
-  const confirmRemoveImage = async () => {
-    const { remarkId, imageFilename } = removeImageData;
-    if (!remarkId || !imageFilename) return;
 
-    try {
-      const response = await seasonPlanAPI.removeRemarkImage(id, remarkId, imageFilename);
-      setPlan(response.data.data);
-      
-      // Update remarkData if we're currently editing this remark
-      if (editingRemark && editingRemark._id === remarkId) {
-        const updatedRemark = response.data.data.dailyRemarks.find(r => r._id === remarkId);
-        if (updatedRemark) {
-          setRemarkData(prev => ({
-            ...prev,
-            images: updatedRemark.images || []
-          }));
-        }
-      }
-      
-      toast.success('🖼️ Image removed successfully');
-      setRemoveImageDialog(false);
-      setRemoveImageData({ remarkId: null, imageFilename: null });
-    } catch (error) {
-      console.error('Error removing image:', error);
-      toast.error('Failed to remove image');
-    }
-  };
-
-  const getCategoryInfo = (category) => {
-    return remarkCategories.find(cat => cat.value === category) || remarkCategories[7]; // Default to 'other'
-  };
+  // Use imported getCategoryInfo function  
+  const getRemarkCategoryInfo = getCategoryInfo;
 
   // Expense Management Functions
   const loadExpenseSummary = useCallback(async () => {
@@ -1549,11 +1690,11 @@ const SeasonPlanViewContent = ({ id }) => {
               {plan.dailyRemarks && plan.dailyRemarks.length > 0 ? (
                 <Grid container spacing={2}>
                   {plan.dailyRemarks
-                    .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date, newest first
+                    .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by remark date, oldest first
                     .map((remark, index) => {
                       const categoryInfo = getCategoryInfo(remark.category);
                       return (
-                        <Grid item xs={12} sm={6} md={4} key={remark._id || index}>
+                        <Grid item xs={12}  key={remark._id || index}>
                           <Card 
                             variant="outlined" 
                             sx={{ 
@@ -1625,10 +1766,18 @@ const SeasonPlanViewContent = ({ id }) => {
                                   </Typography>
                                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     {remark.images.slice(0, 3).map((image, imgIndex) => {
+                                      // Enhanced debugging
+                                      // console.log('=== THUMBNAIL DEBUG ===');
+                                      // console.log('Image index:', imgIndex);
+                                      // console.log('Image object:', JSON.stringify(image, null, 2));
+                                      // console.log('Image.url exists:', !!image.url);
+                                      // console.log('Image.url value:', image.url);
+                                      // console.log('Image.filename:', image.filename);
+                                      
+                                      // Always use backend API endpoint for both R2 and legacy images
                                       const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
-                                      console.log('Loading thumbnail image:', imageUrl);
-                                      console.log('Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
-                                      console.log('Image filename:', image.filename);
+                                      console.log('Constructed imageUrl (via backend):', imageUrl);
+                                      console.log('========================');
                                       
                                       return (
                                         <Box
@@ -1651,33 +1800,34 @@ const SeasonPlanViewContent = ({ id }) => {
                                           }}
                                           title={`Image: ${image.originalName || image.filename}`}
                                           onClick={() => {
-                                            console.log('Opening image in new tab:', imageUrl);
-                                            window.open(imageUrl, '_blank');
+                                            // Always use the backend API endpoint for serving images
+                                            const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
+                                            console.log('Opening image via backend API:', backendImageUrl);
+                                            window.open(backendImageUrl, '_blank');
                                           }}
                                         >
-                                          <img
-                                            src={imageUrl}
-                                            alt=""
-                                            crossOrigin="anonymous"
-                                            style={{
-                                              maxWidth: '100%',
-                                              maxHeight: '100%',
-                                              objectFit: 'cover',
-                                              width: '100%',
-                                              height: '100%'
-                                            }}
-                                            onLoad={() => {
-                                              console.log('✅ Thumbnail loaded successfully:', imageUrl);
-                                            }}
-                                            onError={(e) => {
-                                              console.error('❌ Thumbnail failed to load:', imageUrl);
-                                              console.error('Error event:', e);
-                                              // Hide the image and show fallback
-                                              e.target.style.display = 'none';
-                                              const parent = e.target.parentElement;
-                                              parent.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999;">📷</div>`;
-                                            }}
-                                          />
+                                          <ThumbnailDisplay image={image} imageUrl={imageUrl} />
+                                        
+                                            {/* Legacy image (show placeholder for unavailable images) */}
+                                            {/* <Box
+                                              sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '100%',
+                                                height: '100%',
+                                                color: '#888',
+                                                fontSize: '0.65rem',
+                                                textAlign: 'center',
+                                                backgroundColor: '#f8f9fa',
+                                                border: '1px dashed #ddd'
+                                              }}
+                                            >
+                                              <Box sx={{ fontSize: '1.4rem', mb: 0.3 }}>�️</Box>
+                                              <Box sx={{ fontWeight: 'bold', fontSize: '0.6rem' }}>Legacy</Box>
+                                              <Box sx={{ fontSize: '0.55rem', opacity: 0.8 }}>Unavailable</Box>
+                                            </Box> */}
                                         </Box>
                                       );
                                     })}
@@ -1705,9 +1855,11 @@ const SeasonPlanViewContent = ({ id }) => {
                                           }
                                         }}
                                         onClick={() => {
-                                          // Show first additional image for now
+                                          // Show first additional image via backend API
                                           if (remark.images[3]) {
-                                            window.open(`${process.env.GATSBY_API_URL}/season-plans/remark-image/${remark.images[3].filename}`, '_blank');
+                                            const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${remark.images[3].filename}`;
+                                            console.log('Opening additional image via backend API:', backendImageUrl);
+                                            window.open(backendImageUrl, '_blank');
                                           }
                                         }}
                                       >
@@ -1859,9 +2011,9 @@ const SeasonPlanViewContent = ({ id }) => {
                   </Typography>
                   <Grid container spacing={2}>
                     {plan.expenses
-                      .sort((a, b) => new Date(b.date) - new Date(a.date))
+                      .sort((a, b) => new Date(a.date) - new Date(b.date))
                       .map((expense, index) => (
-                        <Grid item xs={12} md={6} key={expense._id || index}>
+                        <Grid item xs={12} key={expense._id || index}>
                           <Card 
                             sx={{ 
                               border: '1px solid #e0e0e0',
@@ -2527,7 +2679,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     Attach Images (Optional)
                   </Typography>
                   <input
-                    accept="image/*"
+                    accept="image/*,.heic,.heif"
                     style={{ display: 'none' }}
                     id="remark-image-upload"
                     multiple
@@ -2546,7 +2698,10 @@ const SeasonPlanViewContent = ({ id }) => {
                     </Button>
                   </label>
                   <Typography variant="caption" color="textSecondary">
-                    Support JPG, PNG, GIF up to 5MB each
+                    Support JPG, PNG, GIF, WebP, HEIC, HEIF up to 10MB each
+                  </Typography>
+                  <Typography variant="caption" color="info.main" display="block" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                    💡 HEIC files (iPhone photos) are automatically converted to JPEG
                   </Typography>
                 </Box>
                 
@@ -2559,18 +2714,59 @@ const SeasonPlanViewContent = ({ id }) => {
                       {remarkImages.map((imageObj, index) => (
                         <Grid item key={index}>
                           <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                            <Box
-                              component="img"
-                              src={imageObj.preview}
-                              alt={imageObj.name}
-                              sx={{
-                                width: 80,
-                                height: 80,
-                                objectFit: 'cover',
-                                borderRadius: 1,
-                                border: '1px solid #ddd'
-                              }}
-                            />
+                            {imageObj.isHeic || !imageObj.preview ? (
+                              // HEIC placeholder or fallback for images without preview
+                              <Tooltip 
+                                title={imageObj.isHeic 
+                                  ? `HEIC image: ${imageObj.name} (${(imageObj.size / 1024 / 1024).toFixed(1)}MB) - Will be converted to JPEG on upload`
+                                  : `Image: ${imageObj.name} (${(imageObj.size / 1024 / 1024).toFixed(1)}MB) - Preview not available`
+                                }
+                                arrow
+                              >
+                                <Box
+                                  sx={{
+                                    width: 80,
+                                    height: 80,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 1,
+                                    border: imageObj.isHeic ? '2px solid #FF9800' : '1px solid #ddd',
+                                    backgroundColor: imageObj.isHeic ? '#FFF3E0' : '#f5f5f5',
+                                    color: imageObj.isHeic ? '#E65100' : '#666',
+                                    fontSize: '0.7rem',
+                                    textAlign: 'center',
+                                    p: 0.5,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <Box sx={{ fontSize: '1.2rem', mb: 0.5 }}>
+                                    {imageObj.isHeic ? '🍎' : '📷'}
+                                  </Box>
+                                  <Box sx={{ fontSize: '0.6rem', lineHeight: 1, fontWeight: 'bold' }}>
+                                    {imageObj.isHeic ? 'HEIC' : 'IMG'}
+                                  </Box>
+                                  <Box sx={{ fontSize: '0.5rem', opacity: 0.7, mt: 0.3 }}>
+                                    {(imageObj.size / 1024 / 1024).toFixed(1)}MB
+                                  </Box>
+                                </Box>
+                              </Tooltip>
+                            ) : (
+                              // Regular image preview
+                              <Box
+                                component="img"
+                                src={imageObj.preview}
+                                alt={imageObj.name}
+                                sx={{
+                                  width: 80,
+                                  height: 80,
+                                  objectFit: 'cover',
+                                  borderRadius: 1,
+                                  border: '1px solid #ddd'
+                                }}
+                              />
+                            )}
                             <IconButton
                               size="small"
                               sx={{
@@ -2601,15 +2797,16 @@ const SeasonPlanViewContent = ({ id }) => {
                     </Typography>
                     <Grid container spacing={1}>
                       {remarkData.images.filter(image => image && image.filename).map((image, index) => {
-                        // Debug: Log the full image object structure
+                        // Always use backend API endpoint for both R2 and legacy images
                         console.log('=== EXISTING IMAGE DEBUG ===');
                         console.log('Full image object:', JSON.stringify(image, null, 2));
                         console.log('Image filename:', image.filename);
                         console.log('Image originalName:', image.originalName);
+                        console.log('Image URL from R2:', image.url);
                         console.log('Environment GATSBY_API_URL:', process.env.GATSBY_API_URL);
                         
                         const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
-                        console.log('Constructed imageUrl:', imageUrl);
+                        console.log('Final imageUrl (via backend):', imageUrl);
                         console.log('==========================');
                         
                         return (
@@ -2630,8 +2827,10 @@ const SeasonPlanViewContent = ({ id }) => {
                                   backgroundColor: '#f5f5f5'
                                 }}
                                 onClick={() => {
-                                  console.log('Edit dialog - Opening image in new tab:', imageUrl);
-                                  window.open(imageUrl, '_blank');
+                                  // Always use backend API endpoint for serving images
+                                  const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
+                                  console.log('Edit dialog - Opening image via backend API:', backendImageUrl);
+                                  window.open(backendImageUrl, '_blank');
                                 }}
                                 onLoad={() => {
                                   console.log('✅ Edit dialog - Existing image loaded successfully:', imageUrl);
@@ -2645,19 +2844,10 @@ const SeasonPlanViewContent = ({ id }) => {
                                     imageObject: image
                                   });
                                   
-                                  // Show fallback
+                                  // Hide the failed image and show React-based fallback
                                   e.target.style.display = 'none';
-                                  const parent = e.target.parentElement;
-                                  if (parent.querySelector('.fallback-icon')) return;
-                                  
-                                  const fallback = document.createElement('div');
-                                  fallback.className = 'fallback-icon';
-                                  fallback.style.cssText = 'width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: #ffebee; border: 2px solid #f44336; border-radius: 4px; color: #f44336; font-size: 24px; flex-direction: column;';
-                                  fallback.innerHTML = `
-                                    <div>❌</div>
-                                    <div style="font-size: 10px; margin-top: 4px;">Failed</div>
-                                  `;
-                                  parent.appendChild(fallback);
+                                  // Note: The fallback will be handled by React state in a future update
+                                  // For now, we'll keep this simple to avoid more innerHTML usage
                                 }}
                               />
                               <IconButton
@@ -2719,22 +2909,6 @@ const SeasonPlanViewContent = ({ id }) => {
           <Button onClick={() => setDeleteRemarkDialog(false)}>Cancel</Button>
           <Button onClick={confirmDeleteRemark} color="error" variant="contained">
             Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Remove Image Confirmation Dialog */}
-      <Dialog open={removeImageDialog} onClose={() => setRemoveImageDialog(false)}>
-        <DialogTitle>Confirm Remove Image</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove this image? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRemoveImageDialog(false)}>Cancel</Button>
-          <Button onClick={confirmRemoveImage} color="error" variant="contained">
-            Remove
           </Button>
         </DialogActions>
       </Dialog>
