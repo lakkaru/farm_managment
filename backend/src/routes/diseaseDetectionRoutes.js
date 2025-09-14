@@ -3,11 +3,11 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const axios = require('axios');
-const { protect } = require('../src/middleware/auth');
+const { protect } = require('../middleware/auth');
 const { 
   validateImageUpload, 
   handleValidationErrors 
-} = require('../src/middleware/validation');
+} = require('../middleware/validation');
 const DiseaseReference = require('../models/DiseaseReference');
 const AnalysisHistory = require('../models/AnalysisHistory');
 

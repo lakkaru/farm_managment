@@ -15,8 +15,8 @@ const userRoutes = require('./src/routes/userRoutes');
 const inventoryRoutes = require('./src/routes/inventoryRoutes');
 const paddyVarietyRoutes = require('./src/routes/paddyVarietyRoutes');
 const seasonPlanRoutes = require('./src/routes/seasonPlanRoutes');
-const diseaseDetectionRoutes = require('./routes/diseaseDetectionRoutes');
-const adminDiseaseRoutes = require('./routes/adminDiseaseRoutes');
+const diseaseDetectionRoutes = require('./src/routes/diseaseDetectionRoutes');
+const adminDiseaseRoutes = require('./src/routes/adminDiseaseRoutes');
 
 // Import middleware
 const { errorHandler } = require('./src/middleware/errorHandler');

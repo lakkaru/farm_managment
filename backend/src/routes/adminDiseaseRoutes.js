@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const sharp = require('sharp'); // For image processing
-const { protect, authorize } = require('../src/middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const DiseaseReference = require('../models/DiseaseReference');
 
 const router = express.Router();

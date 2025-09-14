@@ -384,6 +384,11 @@ const DashboardContent = () => {
 };
 
 const Dashboard = () => {
+  const isBrowser = typeof window !== "undefined"
+   if (!isBrowser) {
+    // Render nothing (or a loading spinner) during SSR
+    return null
+  }
   return (
     <AppProviders>
       <PrivateRoute>
