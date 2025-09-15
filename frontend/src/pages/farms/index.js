@@ -181,8 +181,21 @@ const FarmsPageContent = () => {
         ) : (
           farms.map((farm) => (
             <Grid item xs={12} sm={6} md={4} key={farm._id}>
-              <Card>
-                <CardContent>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    transform: 'translateY(-2px)',
+                  },
+                }}
+                onClick={() => handleViewFarm(farm._id)}
+              >
+                <CardContent sx={{ flex: 1 }}>
                   <Typography variant="h6" component="h2" gutterBottom>
                     {farm.name}
                   </Typography>
@@ -210,7 +223,7 @@ const FarmsPageContent = () => {
                   )}
                 </CardContent>
                 
-                <CardActions>
+                <CardActions onClick={(e) => e.stopPropagation()}>
                   <Tooltip title="View Details">
                     <IconButton
                       size="small"
