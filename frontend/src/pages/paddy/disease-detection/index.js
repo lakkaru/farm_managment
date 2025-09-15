@@ -30,11 +30,11 @@ import {
   Info as InfoIcon,
   BugReport as DiseaseIcon,
   Check as CheckIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 import { diseaseDetectionAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
 
@@ -174,7 +174,13 @@ const PlantDiseaseDetectionContent = () => {
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
       {/* Header */}
       <Box display="flex" alignItems="center" mb={3}>
-        <BackButton to="/dashboard" variant="icon" />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/dashboard')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
         <Box>
           <Typography variant="h4" gutterBottom>
             Plant Disease Detection

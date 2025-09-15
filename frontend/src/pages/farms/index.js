@@ -22,12 +22,12 @@ import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import { toast } from 'react-toastify';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
-import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 
 const FarmsPageContent = () => {
@@ -130,7 +130,13 @@ const FarmsPageContent = () => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center">
-          <BackButton to="/dashboard" variant="icon" />
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            Back
+          </Button>
           <Typography variant="h4" component="h1">
             Farm Management
           </Typography>

@@ -17,6 +17,7 @@ import {
   ToggleButtonGroup,
   Chip,
 } from '@mui/material';
+import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -24,7 +25,6 @@ import dayjs from 'dayjs';
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
@@ -376,7 +376,13 @@ const CreateSeasonPlanContent = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" alignItems="center" mb={2}>
-        <BackButton to="/paddy/season-plans" variant="icon" />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/paddy/season-plans')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
         <Typography variant="h4" gutterBottom>
           Create Season Plan
         </Typography>

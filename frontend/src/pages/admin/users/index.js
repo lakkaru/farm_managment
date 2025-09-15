@@ -33,11 +33,12 @@ import {
   AdminPanelSettings as AdminIcon,
   School as ExpertIcon,
   Business as ManagerIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 import { userAPI } from '../../../services/api';
 
 const AdminUsersContent = () => {
@@ -224,8 +225,14 @@ const AdminUsersContent = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <BackButton />
-          <Typography variant="h4" sx={{ ml: 2, fontWeight: 600, color: 'primary.main' }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
             User Management
           </Typography>
         </Box>

@@ -38,11 +38,12 @@ import {
   Photo as PhotoIcon,
   Science as ScienceIcon,
   LocalHospital as TreatmentIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
+import { navigate } from 'gatsby';
 import { toast } from 'react-toastify';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 
 const diseaseDatabase = [
   {
@@ -290,8 +291,14 @@ const AdminDiseaseReferencesContent = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <BackButton />
-        <Typography variant="h4" sx={{ ml: 2, fontWeight: 600, color: 'primary.main' }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/dashboard')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
+        <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
           Disease Reference Images
         </Typography>
       </Box>

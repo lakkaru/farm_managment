@@ -25,11 +25,11 @@ import {
   Settings as SettingsIcon,
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../components/Layout/Layout';
 import PrivateRoute from '../components/PrivateRoute';
-import BackButton from '../components/BackButton';
 import ProfileEditDialog from '../components/ProfileEditDialog';
 import ChangePasswordDialog from '../components/ChangePasswordDialog';
 import NotificationSettings from '../components/NotificationSettings';
@@ -132,8 +132,14 @@ const ProfileContent = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <BackButton to="/dashboard" />
-        <Typography variant="h4" sx={{ ml: 2 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/dashboard')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
+        <Typography variant="h4">
           My Profile
         </Typography>
       </Box>

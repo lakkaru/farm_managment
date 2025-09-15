@@ -29,11 +29,11 @@ import {
   WaterDrop as WaterIcon,
   CheckCircle as CheckCircleIcon,
   TrendingUp as TrendingUpIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 import { seasonPlanAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
@@ -109,7 +109,13 @@ const SeasonPlansContent = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box display="flex" alignItems="center">
-          <BackButton to="/dashboard" variant="icon" />
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            Back
+          </Button>
           <Box>
             <Typography variant="h4" gutterBottom>
               Season Plans
@@ -178,6 +184,7 @@ const SeasonPlansContent = () => {
                     plan.status === 'cancelled' ? '#F44336' : '#FFC107'
                   }`,
                   transition: 'all 0.3s ease',
+                  cursor: 'pointer',
                   '&:hover': {
                     boxShadow: plan.status === 'completed' 
                       ? '0 4px 12px rgba(76, 175, 80, 0.3)'
@@ -187,6 +194,7 @@ const SeasonPlansContent = () => {
                     transform: 'translateY(-2px)',
                   },
                 }}
+                onClick={() => navigate(`/paddy/season-plans/${plan._id}`)}
               >
                 <CardContent sx={{ flex: 1 }}>
                   {/* Farm and Season Info */}
@@ -302,7 +310,7 @@ const SeasonPlansContent = () => {
                   )}
                 </CardContent>
 
-                <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+                <CardActions sx={{ justifyContent: 'space-between', p: 2 }} onClick={(e) => e.stopPropagation()}>
                   <Box>
                     <Tooltip title="View Details">
                       <IconButton

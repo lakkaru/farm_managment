@@ -70,7 +70,6 @@ import {
 import { navigate } from "gatsby";
 import Layout from "../../../../components/Layout/Layout";
 import AppProviders from "../../../../providers/AppProviders";
-import BackButton from "../../../../components/BackButton";
 import { seasonPlanAPI } from "../../../../services/api";
 import { toast } from "react-toastify";
 import {
@@ -1157,7 +1156,13 @@ const SeasonPlanViewContent = ({ id }) => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <BackButton to="/paddy/season-plans" variant="button" label="Back" />
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/paddy/season-plans")}
+            sx={{ mr: 2 }}
+          >
+            Back
+          </Button>
           <Box>
             <Typography variant="h4" gutterBottom>
               {plan.farmId?.name} - {plan.season.toUpperCase()} Season
@@ -1175,7 +1180,7 @@ const SeasonPlanViewContent = ({ id }) => {
             startIcon={<EditIcon />}
             variant="outlined"
             onClick={() => navigate(`/paddy/season-plans/${id}/edit`)}
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, minWidth:'97px', mb: { xs: 1, sm: 0 } }}
           >
             Edit
           </Button>

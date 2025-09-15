@@ -227,7 +227,7 @@ const DashboardContent = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom>
-          Welcome back, {user?.profile?.firstName || 'Farmer'}!
+          Welcome, {user?.profile?.firstName || 'Farmer'}!
         </Typography>
         <Typography variant="body1" color="textSecondary">
           Here's an overview of your paddy cultivation operations

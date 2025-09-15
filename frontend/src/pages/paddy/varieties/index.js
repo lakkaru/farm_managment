@@ -14,10 +14,11 @@ import {
 import {
   Search as SearchIcon,
   Agriculture as AgricultureIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
+import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
-import BackButton from '../../../components/BackButton';
 import { paddyVarietyAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
 
@@ -80,7 +81,13 @@ const PaddyVarietiesContent = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box display="flex" alignItems="center">
-          <BackButton to="/dashboard" variant="icon" />
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/dashboard')}
+            sx={{ mr: 2 }}
+          >
+            Back
+          </Button>
           <Box>
             <Typography variant="h4" gutterBottom>
               Paddy Varieties

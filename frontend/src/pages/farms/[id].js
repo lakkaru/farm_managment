@@ -15,7 +15,6 @@ import { navigate } from 'gatsby';
 import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
-import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 
 const FarmDetailContent = ({ farmId }) => {
@@ -92,7 +91,13 @@ const FarmDetailContent = ({ farmId }) => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
-        <BackButton to="/farms" variant="button" label="Back to Farms" />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/farms')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
       </Box>
     );
   }
@@ -103,7 +108,13 @@ const FarmDetailContent = ({ farmId }) => {
         <Alert severity="warning" sx={{ mb: 3 }}>
           Farm not found
         </Alert>
-        <BackButton to="/farms" variant="button" label="Back to Farms" />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/farms')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
       </Box>
     );
   }
@@ -113,7 +124,13 @@ const FarmDetailContent = ({ farmId }) => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box component="div">
-          <BackButton to="/farms" variant="button" label="Back to Farms" sx={{ mb: 2 }} />
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/farms')}
+            sx={{ mr: 2, mb: 2 }}
+          >
+            Back
+          </Button>
           <Typography variant="h4" component="h1">
             {farm.name}
           </Typography>
@@ -157,6 +174,17 @@ const FarmDetailContent = ({ farmId }) => {
                     {formatArea(farm.totalArea)}
                   </Typography>
                 </Grid>
+
+                {farm.soilType && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="textSecondary">
+                      Soil Type
+                    </Typography>
+                    <Typography variant="body1">
+                      {farm.soilType}
+                    </Typography>
+                  </Grid>
+                )}
 
                 {farm.description && (
                   <Grid item xs={12}>

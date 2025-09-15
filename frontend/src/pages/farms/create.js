@@ -13,10 +13,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
-import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/districts';
@@ -170,7 +170,13 @@ const CreateFarmContent = () => {
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
       <Box display="flex" alignItems="center" mb={2}>
-        <BackButton to="/farms" variant="icon" />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/farms')}
+          sx={{ mr: 2 }}
+        >
+          Back
+        </Button>
         <Typography variant="h4" gutterBottom>
           Create New Farm
         </Typography>
