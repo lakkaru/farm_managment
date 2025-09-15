@@ -22,7 +22,15 @@ import { useAuth } from '../../contexts/AuthContext';
 const Header = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Make useMediaQuery SSR-safe by providing a default value
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), {
+    defaultMatches: false, // Default to false during SSR
+    ssrMatchMedia: (query) => ({
+      matches: false,
+      addListener: () => {},
+      removeListener: () => {},
+    })
+  });
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {

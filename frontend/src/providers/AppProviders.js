@@ -2,11 +2,12 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
 import { ToastContainer } from 'react-toastify';
-import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CacheProvider } from '@emotion/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from '../contexts/AuthContext';
 import { FarmProvider } from '../contexts/FarmContext';
+import createEmotionCache from '../utils/createEmotionCache';
 import 'react-toastify/dist/ReactToastify.css';
 
 const queryClient = new QueryClient({
@@ -18,6 +19,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Create Emotion cache for SSR compatibility
+const cache = createEmotionCache();
 
 const theme = createTheme({
   palette: {
@@ -66,10 +70,10 @@ const theme = createTheme({
   },
 });
 
-const AppProviders = ({ children }) => {
+const AppProviders = ({ children, emotionCache = cache }) => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
+    <CacheProvider value={emotionCache}>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
@@ -86,12 +90,12 @@ const AppProviders = ({ children }) => {
                 draggable
                 pauseOnHover
               />
-              {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
+              {typeof window !== 'undefined' && process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
             </FarmProvider>
           </AuthProvider>
         </ThemeProvider>
-      </Router>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </CacheProvider>
   );
 };
 

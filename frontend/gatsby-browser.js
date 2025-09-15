@@ -1,10 +1,12 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CacheProvider } from '@emotion/react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { FarmProvider } from './src/contexts/FarmContext';
+import createEmotionCache from './src/utils/createEmotionCache';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -17,6 +19,9 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Create a shared cache instance
+const cache = createEmotionCache();
 
 // Create theme
 const theme = createTheme({
@@ -56,25 +61,35 @@ const theme = createTheme({
 });
 
 export const wrapRootElement = ({ element }) => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <FarmProvider>
-          {element}
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
-        </FarmProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <CacheProvider value={cache}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <FarmProvider>
+            {element}
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
+          </FarmProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </CacheProvider>
 );
+
+export const wrapPageElement = ({ element }) => {
+  return (
+    <CacheProvider value={cache}>
+      {element}
+    </CacheProvider>
+  );
+};

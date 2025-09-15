@@ -44,7 +44,15 @@ const drawerWidth = 260;
 
 const Sidebar = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Make useMediaQuery SSR-safe by providing a default value
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), {
+    defaultMatches: false, // Default to false during SSR
+    ssrMatchMedia: (query) => ({
+      matches: false,
+      addListener: () => {},
+      removeListener: () => {},
+    })
+  });
   const { user } = useAuth();
   const { farms, selectedFarm, setSelectedFarm, setFarms } = useFarm();
   const [mobileOpen, setMobileOpen] = useState(false);
