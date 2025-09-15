@@ -9,7 +9,6 @@ const {
   removeManager,
   getFarmsInRadius,
   getDistricts,
-  getSoilTypes,
   getCultivationZoneDetails,
   getFarmsByDistrict,
   getFarmsByZone
@@ -22,7 +21,6 @@ const router = express.Router();
 
 // Public routes (no auth required for basic data)
 router.get('/districts', getDistricts);
-router.get('/soil-types', getSoilTypes);
 router.get('/cultivation-zones/:zoneCode', getCultivationZoneDetails);
 
 // Protected routes

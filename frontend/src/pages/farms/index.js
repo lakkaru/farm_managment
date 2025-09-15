@@ -196,9 +196,6 @@ const FarmsPageContent = () => {
                   <Typography variant="body2" color="textSecondary">
                     <strong>Area:</strong> {formatArea(farm.totalArea)}
                   </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    <strong>Soil Type:</strong> {farm.soilType || 'Not specified'}
-                  </Typography>
                   
                   {farm.description && (
                     <Typography variant="body2" sx={{ mt: 1 }}>

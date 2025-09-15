@@ -7,7 +7,6 @@ const {
   getCultivationZoneInfo,
   SRI_LANKAN_DISTRICTS 
 } = require('../constants/districts');
-const { SOIL_TYPE_NAMES } = require('../constants/soilTypes');
 
 // @desc    Get all farms
 // @route   GET /api/farms
@@ -259,17 +258,6 @@ const getDistricts = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all soil types
-// @route   GET /api/farms/soil-types
-// @access  Public
-const getSoilTypes = asyncHandler(async (req, res) => {
-  res.status(200).json({
-    success: true,
-    count: SOIL_TYPE_NAMES.length,
-    data: SOIL_TYPE_NAMES
-  });
-});
-
 // @desc    Get cultivation zone info
 // @route   GET /api/farms/cultivation-zones/:zoneCode
 // @access  Public
@@ -374,7 +362,6 @@ module.exports = {
   removeManager,
   getFarmsInRadius,
   getDistricts,
-  getSoilTypes,
   getCultivationZoneDetails,
   getFarmsByDistrict,
   getFarmsByZone

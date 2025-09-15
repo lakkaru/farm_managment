@@ -20,7 +20,6 @@ import BackButton from '../../components/BackButton';
 import { farmAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/districts';
-import { COMMON_SOIL_TYPES } from '../../constants/soilTypes';
 
 const CreateFarmContent = () => {
   const [loading, setLoading] = useState(false);
@@ -47,8 +46,7 @@ const CreateFarmContent = () => {
     cultivatedArea: {
       value: '',
       unit: 'acres'
-    },
-    soilType: ''
+    }
   });
 
   const handleChange = (e) => {
@@ -104,7 +102,6 @@ const CreateFarmContent = () => {
         farmType: formData.farmType,
         district: formData.district,
         cultivationZone: formData.cultivationZone,
-        soilType: formData.soilType,
         location: {
           address: formData.location.address || formData.district, // Use district as address if address is empty
           country: formData.location.country,
@@ -390,26 +387,7 @@ const CreateFarmContent = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Soil Type</InputLabel>
-                <Select
-                  name="soilType"
-                  value={formData.soilType}
-                  onChange={handleChange}
-                  label="Soil Type"
-                >
-                  {COMMON_SOIL_TYPES.map(soilType => (
-                    <MenuItem key={soilType} value={soilType}>
-                      {soilType}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
-                Select the predominant soil type in your farm area
-              </Typography>
-            </Grid>
+
 
             {/* Action Buttons */}
             <Grid item xs={12} sx={{ mt: 3 }}>

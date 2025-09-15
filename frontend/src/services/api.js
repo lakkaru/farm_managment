@@ -83,7 +83,6 @@ export const farmAPI = {
   getFarmsInRadius: (zipcode, distance, params) => api.get(`/farms/radius/${zipcode}/${distance}`, { params }),
   // New district-related endpoints
   getDistricts: () => api.get('/farms/districts'),
-  getSoilTypes: () => api.get('/farms/soil-types'),
   getCultivationZoneDetails: (zoneCode) => api.get(`/farms/cultivation-zones/${zoneCode}`),
   getFarmsByDistrict: (district, params) => api.get(`/farms/by-district/${district}`, { params }),
   getFarmsByZone: (zoneCode, params) => api.get(`/farms/by-zone/${zoneCode}`, { params }),

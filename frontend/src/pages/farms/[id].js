@@ -158,17 +158,6 @@ const FarmDetailContent = ({ farmId }) => {
                   </Typography>
                 </Grid>
 
-                {farm.soilType && (
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="textSecondary">
-                      Soil Type
-                    </Typography>
-                    <Typography variant="body1">
-                      {farm.soilType}
-                    </Typography>
-                  </Grid>
-                )}
-
                 {farm.description && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="textSecondary">

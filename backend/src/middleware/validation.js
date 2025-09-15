@@ -2,7 +2,6 @@ const Joi = require('joi');
 const multer = require('multer');
 const AppError = require('../utils/AppError');
 const { SRI_LANKAN_DISTRICTS } = require('../constants/districts');
-const { SOIL_TYPE_NAMES } = require('../constants/soilTypes');
 
 // Image validation constants
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/jpg', 'image/heic'];
@@ -23,9 +22,6 @@ const farmSchema = Joi.object({
     'WL1', 'WL2', 'WL3', 'WM1', 'WM2', 'WM3', 'WU1',
     'DL1', 'DL2', 'DL3', 'IL1', 'IM1'
   ).trim(),
-  
-  // Soil type field (new)
-  soilType: Joi.string().valid(...SOIL_TYPE_NAMES).trim(),
   
   location: Joi.object({
     address: Joi.string().required().trim(),

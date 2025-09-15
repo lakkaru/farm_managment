@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const { validateDistrict, validateCultivationZone, getZoneForDistrict } = require('../constants/districts');
-const { SOIL_TYPE_NAMES } = require('../constants/soilTypes');
 
 const farmSchema = new mongoose.Schema({
   name: {
@@ -87,14 +86,7 @@ const farmSchema = new mongoose.Schema({
       default: 'acres'
     }
   },
-  soilType: {
-    type: String,
-    trim: true,
-    enum: {
-      values: SOIL_TYPE_NAMES,
-      message: 'Please select a valid soil type'
-    }
-  },
+
   farmType: {
     type: String,
     enum: ['crop', 'livestock', 'mixed', 'organic', 'dairy', 'poultry'],

@@ -19,7 +19,6 @@ import AppProviders from '../../../providers/AppProviders';
 import { farmAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../../constants/districts';
-import { COMMON_SOIL_TYPES } from '../../../constants/soilTypes';
 
 const EditFarmContent = ({ farmId }) => {
   const [loading, setLoading] = useState(true);
@@ -47,8 +46,7 @@ const EditFarmContent = ({ farmId }) => {
     cultivatedArea: {
       value: '',
       unit: 'acres'
-    },
-    soilType: ''
+    }
   });
 
   const loadFarm = useCallback(async () => {
@@ -80,8 +78,7 @@ const EditFarmContent = ({ farmId }) => {
         cultivatedArea: {
           value: farm.cultivatedArea?.value || farm.cultivatedArea || '',
           unit: farm.cultivatedArea?.unit || 'acres'
-        },
-        soilType: farm.soilType || ''
+        }
       });
     } catch (err) {
       console.error('Error loading farm:', err);
@@ -147,8 +144,7 @@ const EditFarmContent = ({ farmId }) => {
         cultivationZone: formData.cultivationZone,
         location: formData.location,
         totalArea: Number(formData.totalArea),
-        cultivatedArea: Number(formData.cultivatedArea),
-        soilType: formData.soilType
+        cultivatedArea: Number(formData.cultivatedArea)
       };
 
       await farmAPI.updateFarm(farmId, submitData);
@@ -368,26 +364,7 @@ const EditFarmContent = ({ farmId }) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Soil Type</InputLabel>
-                <Select
-                  name="soilType"
-                  value={formData.soilType}
-                  onChange={handleChange}
-                  label="Soil Type"
-                >
-                  {COMMON_SOIL_TYPES.map(soilType => (
-                    <MenuItem key={soilType} value={soilType}>
-                      {soilType}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
-                Select the predominant soil type in your farm area
-              </Typography>
-            </Grid>
+
 
             {/* Coordinates */}
             <Grid item xs={12}>
