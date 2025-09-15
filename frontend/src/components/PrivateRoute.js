@@ -30,6 +30,11 @@ const PrivateRoute = ({ children }) => {
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     if (typeof window !== 'undefined') {
+      // Store the current path to redirect back after login
+      const currentPath = window.location.pathname;
+      if (currentPath && currentPath !== '/login') {
+        localStorage.setItem('redirectAfterLogin', currentPath);
+      }
       navigate('/login');
     }
     return (

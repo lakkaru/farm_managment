@@ -17,6 +17,7 @@ import {
   LogoutOutlined,
   Person,
 } from '@mui/icons-material';
+import { navigate } from 'gatsby';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Header = () => {
@@ -44,6 +45,12 @@ const Header = () => {
 
   const handleUserMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    console.log('Profile menu clicked, navigating to /profile');
+    handleUserMenuClose();
+    navigate('/profile');
   };
 
   const getUserInitials = () => {
@@ -138,7 +145,7 @@ const Header = () => {
               horizontal: 'right',
             }}
           >
-            <MenuItem onClick={handleUserMenuClose}>
+            <MenuItem onClick={handleProfileClick}>
               <Person sx={{ mr: 1 }} />
               Profile
             </MenuItem>

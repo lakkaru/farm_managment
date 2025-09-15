@@ -25,6 +25,23 @@ const { notFound } = require('./src/middleware/notFound');
 // Create Express app
 const app = express();
 
+// Ensure upload directories exist
+const fs = require('fs');
+const path = require('path');
+
+const uploadDirs = [
+  './src/uploads/avatars',
+  './src/uploads/disease-detection',
+  './src/uploads/admin-disease-references'
+];
+
+uploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`✓ Created upload directory: ${dir}`);
+  }
+});
+
 // Security middleware
 app.use(helmet());
 app.use(compression());

@@ -56,6 +56,17 @@ export const authAPI = {
   logout: () => api.post('/users/logout'),
   getProfile: () => api.get('/users/profile'),
   updateProfile: (userData) => api.put('/users/profile', userData),
+  uploadAvatar: (avatarFile) => {
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    return api.post('/users/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  getAvatarUrl: (filename) => filename ? `${api.defaults.baseURL}/users/avatar/${filename.split('/').pop()}` : null,
+  changePassword: (passwordData) => api.put('/users/change-password', passwordData),
   forgotPassword: (email) => api.post('/users/forgot-password', { email }),
   resetPassword: (token, password) => api.put(`/users/reset-password/${token}`, { password }),
 };

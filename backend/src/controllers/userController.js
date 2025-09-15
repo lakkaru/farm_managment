@@ -132,22 +132,28 @@ const loginUser = asyncHandler(async (req, res) => {
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    res.status(200).json({
-      success: true,
-      data: {
-        _id: user._id,
-        email: user.email,
-        profile: user.profile,
-        createdAt: user.createdAt,
-      },
-    });
-  } else {
+  if (!user) {
     return res.status(404).json({
       success: false,
       message: 'User not found',
     });
   }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      _id: user._id,
+      email: user.email,
+      profile: user.profile,
+      contact: user.contact,
+      preferences: user.preferences,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
+  });
 });
 
 // @desc    Update user profile
@@ -156,37 +162,223 @@ const getUserProfile = asyncHandler(async (req, res) => {
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    user.email = req.body.email || user.email;
-    user.profile.firstName = req.body.profile?.firstName || user.profile.firstName;
-    user.profile.lastName = req.body.profile?.lastName || user.profile.lastName;
-    user.profile.phone = req.body.profile?.phone || user.profile.phone;
-    user.profile.role = req.body.profile?.role || user.profile.role;
-
-    // Update password if provided
-    if (req.body.password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
-    }
-
-    const updatedUser = await user.save();
-
-    res.status(200).json({
-      success: true,
-      data: {
-        _id: updatedUser._id,
-        email: updatedUser.email,
-        profile: updatedUser.profile,
-        token: generateToken(updatedUser._id),
-      },
-      message: 'Profile updated successfully',
-    });
-  } else {
+  if (!user) {
     return res.status(404).json({
       success: false,
       message: 'User not found',
     });
   }
+
+  // Update basic profile information
+  if (req.body.email && req.body.email !== user.email) {
+    // Check if email is already taken by another user
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already in use by another account',
+      });
+    }
+    user.email = req.body.email;
+  }
+
+  // Update profile fields
+  if (req.body.profile) {
+    const { profile } = req.body;
+    user.profile.firstName = profile.firstName || user.profile.firstName;
+    user.profile.lastName = profile.lastName || user.profile.lastName;
+    user.profile.avatar = profile.avatar || user.profile.avatar;
+    user.profile.bio = profile.bio !== undefined ? profile.bio : user.profile.bio;
+    
+    if (profile.dateOfBirth) {
+      user.profile.dateOfBirth = new Date(profile.dateOfBirth);
+    }
+    
+    if (profile.gender) {
+      user.profile.gender = profile.gender;
+    }
+  }
+
+  // Update contact information
+  if (req.body.contact) {
+    const { contact } = req.body;
+    user.contact.phone = contact.phone || user.contact.phone;
+    
+    if (contact.address) {
+      user.contact.address = {
+        street: contact.address.street || user.contact.address?.street || '',
+        city: contact.address.city || user.contact.address?.city || '',
+        state: contact.address.state || user.contact.address?.state || '',
+        country: contact.address.country || user.contact.address?.country || '',
+        zipCode: contact.address.zipCode || user.contact.address?.zipCode || '',
+      };
+    }
+  }
+
+  // Update preferences
+  if (req.body.preferences) {
+    const { preferences } = req.body;
+    user.preferences.language = preferences.language || user.preferences.language;
+    user.preferences.timezone = preferences.timezone || user.preferences.timezone;
+    
+    if (preferences.notifications) {
+      user.preferences.notifications = {
+        email: preferences.notifications.email !== undefined ? preferences.notifications.email : user.preferences.notifications?.email ?? true,
+        sms: preferences.notifications.sms !== undefined ? preferences.notifications.sms : user.preferences.notifications?.sms ?? false,
+        push: preferences.notifications.push !== undefined ? preferences.notifications.push : user.preferences.notifications?.push ?? true,
+        // Extended notification preferences
+        farmAlerts: preferences.notifications.farmAlerts !== undefined ? preferences.notifications.farmAlerts : user.preferences.notifications?.farmAlerts ?? true,
+        weatherUpdates: preferences.notifications.weatherUpdates !== undefined ? preferences.notifications.weatherUpdates : user.preferences.notifications?.weatherUpdates ?? true,
+        taskReminders: preferences.notifications.taskReminders !== undefined ? preferences.notifications.taskReminders : user.preferences.notifications?.taskReminders ?? true,
+        inventoryAlerts: preferences.notifications.inventoryAlerts !== undefined ? preferences.notifications.inventoryAlerts : user.preferences.notifications?.inventoryAlerts ?? true,
+        systemUpdates: preferences.notifications.systemUpdates !== undefined ? preferences.notifications.systemUpdates : user.preferences.notifications?.systemUpdates ?? false,
+        marketingEmails: preferences.notifications.marketingEmails !== undefined ? preferences.notifications.marketingEmails : user.preferences.notifications?.marketingEmails ?? false,
+      };
+    }
+  }
+
+  // Update password if provided (requires current password verification)
+  if (req.body.password) {
+    if (!req.body.currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required to update password',
+      });
+    }
+
+    // Verify current password
+    const currentUser = await User.findById(req.user._id).select('+password');
+    const isCurrentPasswordValid = await currentUser.matchPassword(req.body.currentPassword);
+    
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Hash new password (pre-save hook will handle this)
+    user.password = req.body.password;
+  }
+
+  const updatedUser = await user.save();
+
+  // Return updated user data (excluding sensitive information)
+  res.status(200).json({
+    success: true,
+    data: {
+      _id: updatedUser._id,
+      email: updatedUser.email,
+      profile: updatedUser.profile,
+      contact: updatedUser.contact,
+      preferences: updatedUser.preferences,
+      role: updatedUser.role,
+      isEmailVerified: updatedUser.isEmailVerified,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+    },
+    message: 'Profile updated successfully',
+  });
+});
+
+// @desc    Upload profile avatar
+// @route   POST /api/users/profile/avatar
+// @access  Private
+const uploadProfileAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'No avatar file uploaded',
+    });
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  // Update user avatar path
+  const avatarUrl = `/api/users/avatar/${req.file.filename}`;
+  user.profile.avatar = avatarUrl;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      avatar: avatarUrl,
+    },
+    message: 'Avatar uploaded successfully',
+  });
+});
+
+// @desc    Change user password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = asyncHandler(async (req, res) => {
+  console.log('Change password request received:', { 
+    userId: req.user._id, 
+    hasCurrentPassword: !!req.body.currentPassword, 
+    hasNewPassword: !!req.body.newPassword 
+  });
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    console.log('Missing password fields');
+    return res.status(400).json({
+      success: false,
+      message: 'Current password and new password are required',
+    });
+  }
+
+  // Get user with password field
+  const user = await User.findById(req.user._id).select('+password');
+
+  if (!user) {
+    console.log('User not found:', req.user._id);
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  console.log('User found, verifying current password');
+  // Verify current password
+  const isCurrentPasswordValid = await user.matchPassword(currentPassword);
+  console.log('Current password valid:', isCurrentPasswordValid);
+  
+  if (!isCurrentPasswordValid) {
+    return res.status(400).json({
+      success: false,
+      message: 'Current password is incorrect',
+    });
+  }
+
+  // Check if new password is different from current password
+  const isSamePassword = await user.matchPassword(newPassword);
+  console.log('New password same as current:', isSamePassword);
+  
+  if (isSamePassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be different from current password',
+    });
+  }
+
+  console.log('Updating password for user:', user._id);
+  // Update password (pre-save hook will hash it)
+  user.password = newPassword;
+  await user.save();
+
+  console.log('Password updated successfully');
+  res.status(200).json({
+    success: true,
+    message: 'Password changed successfully',
+  });
 });
 
 // @desc    Get all users
@@ -207,5 +399,7 @@ module.exports = {
   loginUser,
   getUserProfile,
   updateUserProfile,
+  uploadProfileAvatar,
+  changePassword,
   getUsers,
 };
