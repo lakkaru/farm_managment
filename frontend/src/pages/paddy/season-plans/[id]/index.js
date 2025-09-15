@@ -877,8 +877,8 @@ const SeasonPlanViewContent = ({ id }) => {
   };
 
   const saveRemark = async () => {
-    if (!remarkData.title.trim() || !remarkData.description.trim()) {
-      toast.error("Please fill in all required fields");
+    if (!remarkData.description.trim()) {
+      toast.error("Please fill in the description field");
       return;
     }
 
@@ -3514,19 +3514,18 @@ const SeasonPlanViewContent = ({ id }) => {
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  label="Title"
+                  label="Title (Optional)"
                   value={remarkData.title}
                   onChange={(e) =>
                     setRemarkData({ ...remarkData, title: e.target.value })
                   }
                   fullWidth
-                  required
-                  placeholder="Brief title for your observation"
+                  placeholder="Brief title for your observation (category provides context)"
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  label="Description"
+                  label="Description *"
                   value={remarkData.description}
                   onChange={(e) =>
                     setRemarkData({

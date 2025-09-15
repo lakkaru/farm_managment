@@ -896,10 +896,10 @@ const addDailyRemark = async (req, res) => {
     const { id } = req.params;
     const { date, category, title, description } = req.body;
 
-    if (!date || !title || !description) {
+    if (!date || !description) {
       return res.status(400).json({
         success: false,
-        message: 'Date, title, and description are required',
+        message: 'Date and description are required',
       });
     }
 
