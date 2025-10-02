@@ -116,7 +116,10 @@ const LoginPage = () => {
     }
 
     try {
+      console.log('Login page: Attempting login, API URL:', process.env.GATSBY_API_URL);
       await login(loginData);
+      console.log('Login page: Login successful, navigating...');
+      
       const redirectPath = localStorage.getItem('redirectAfterLogin');
       if (redirectPath) {
         localStorage.removeItem('redirectAfterLogin');
@@ -125,7 +128,26 @@ const LoginPage = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      console.error('Login page: Login error:', err);
+      console.error('Login page: Error details:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      let errorMessage = err.message || 'Login failed. Please check your credentials.';
+      
+      // More specific error messages for production debugging
+      if (err.response?.status === 0 || err.message === 'Network Error') {
+        errorMessage = `Network error: Cannot reach API server (${process.env.GATSBY_API_URL}). Please check if the server is running.`;
+      } else if (err.response?.status === 404) {
+        errorMessage = 'API endpoint not found. Please check the server configuration.';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later or contact support.';
+      }
+      
+      setError(errorMessage);
     }
   };
 

@@ -10,15 +10,32 @@ class ImageProcessingService {
    */
   async convertHeicToJpeg(heicBuffer, quality = 85) {
     try {
-      const jpegBuffer = await heicConvert({
+      console.log(`[HEIC DEBUG] Starting HEIC conversion - Buffer size: ${heicBuffer.length} bytes`);
+      
+      // Add timeout for HEIC conversion (mobile files can sometimes hang)
+      const conversionPromise = heicConvert({
         buffer: heicBuffer,
         format: 'JPEG',
         quality: quality / 100, // heic-convert expects 0-1 range
       });
-
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('HEIC conversion timeout - file may be corrupted or too large'));
+        }, 30000); // 30 second timeout
+      });
+      
+      const jpegBuffer = await Promise.race([conversionPromise, timeoutPromise]);
+      console.log(`[HEIC DEBUG] HEIC conversion successful - Output size: ${jpegBuffer.length} bytes`);
+      
       return jpegBuffer;
     } catch (error) {
-      console.error('HEIC conversion error:', error);
+      console.error('[HEIC DEBUG] HEIC conversion error:', error);
+      console.error('[HEIC DEBUG] Input buffer info:', {
+        length: heicBuffer.length,
+        isBuffer: Buffer.isBuffer(heicBuffer),
+        firstBytes: heicBuffer.length > 0 ? heicBuffer.slice(0, 16).toString('hex') : 'empty'
+      });
       throw new Error(`Failed to convert HEIC to JPEG: ${error.message}`);
     }
   }
@@ -44,11 +61,20 @@ class ImageProcessingService {
       let outputMimeType = mimeType;
       let fileExtension = this.getFileExtension(mimeType);
 
-      // Enhanced HEIC detection
-      const isHeicType = mimeType.toLowerCase().includes('heic') || 
-                        mimeType.toLowerCase().includes('heif') ||
-                        filename.toLowerCase().endsWith('.heic') ||
-                        filename.toLowerCase().endsWith('.heif');
+      // Enhanced HEIC detection for mobile devices
+      const normalizedMimeType = mimeType.toLowerCase();
+      const lowerFilename = filename.toLowerCase();
+      
+      const isHeicType = normalizedMimeType.includes('heic') || 
+                        normalizedMimeType.includes('heif') ||
+                        lowerFilename.endsWith('.heic') ||
+                        lowerFilename.endsWith('.heif') ||
+                        // Mobile devices often send HEIC with generic MIME types
+                        (lowerFilename.endsWith('.heic') && (
+                          normalizedMimeType === 'application/octet-stream' ||
+                          normalizedMimeType === 'image/unknown' ||
+                          normalizedMimeType === 'application/unknown'
+                        ));
 
       // Convert HEIC to JPEG
       if (isHeicType) {
@@ -152,30 +178,40 @@ class ImageProcessingService {
       'image/heif',
       'image/bmp',
       'image/tiff',
-      // Additional HEIC MIME types
+      'image/avif',
+      // Additional HEIC MIME types used by different devices/browsers
       'image/x-heic',
       'image/x-heif',
+      // Generic types that mobile devices might use for HEIC
+      'image/unknown',
+      'application/unknown'
     ];
 
     const normalizedMimeType = mimeType.toLowerCase();
+    const lowerFilename = filename.toLowerCase();
+    const supportedExtensions = ['.heic', '.heif', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.avif'];
     
     // Check by MIME type first
     if (supportedTypes.includes(normalizedMimeType)) {
       return true;
     }
     
-    // For octet-stream, check by file extension (common for HEIC files)
-    if (normalizedMimeType === 'application/octet-stream' && filename) {
-      const lowerFilename = filename.toLowerCase();
-      const supportedExtensions = ['.heic', '.heif', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
+    // For octet-stream or unknown types, check by file extension (common for HEIC files from mobile)
+    if ((normalizedMimeType === 'application/octet-stream' || 
+         normalizedMimeType === 'application/unknown' ||
+         normalizedMimeType === 'image/unknown') && filename) {
       return supportedExtensions.some(ext => lowerFilename.endsWith(ext));
     }
     
     // Fallback: check if it's any image MIME type with supported extension
     if (normalizedMimeType.startsWith('image/') && filename) {
-      const lowerFilename = filename.toLowerCase();
-      const supportedExtensions = ['.heic', '.heif', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
       return supportedExtensions.some(ext => lowerFilename.endsWith(ext));
+    }
+    
+    // Final fallback: if file has a supported extension, consider it valid
+    if (filename && supportedExtensions.some(ext => lowerFilename.endsWith(ext))) {
+      console.log(`Accepting file by extension fallback: ${filename} with MIME: ${mimeType}`);
+      return true;
     }
 
     return false;
@@ -198,16 +234,28 @@ class ImageProcessingService {
       }
 
       // For HEIC files, we can't use Sharp directly, so we'll validate after conversion
-      const isHeicType = mimeType.toLowerCase().includes('heic') || 
-                        mimeType.toLowerCase().includes('heif') ||
-                        filename.toLowerCase().endsWith('.heic') ||
-                        filename.toLowerCase().endsWith('.heif');
+      const normalizedMimeType = mimeType.toLowerCase();
+      const lowerFilename = filename.toLowerCase();
+      
+      const isHeicType = normalizedMimeType.includes('heic') || 
+                        normalizedMimeType.includes('heif') ||
+                        lowerFilename.endsWith('.heic') ||
+                        lowerFilename.endsWith('.heif') ||
+                        // Handle mobile devices that send HEIC with generic MIME types
+                        (lowerFilename.endsWith('.heic') && (
+                          normalizedMimeType === 'application/octet-stream' ||
+                          normalizedMimeType === 'image/unknown' ||
+                          normalizedMimeType === 'application/unknown'
+                        ));
                         
       if (isHeicType) {
         try {
+          console.log(`[HEIC DEBUG] Validating HEIC file: ${filename} - Size: ${fileBuffer.length} bytes`);
           await this.convertHeicToJpeg(fileBuffer);
+          console.log(`[HEIC DEBUG] HEIC validation successful for: ${filename}`);
           return { isValid: true };
         } catch (error) {
+          console.error(`[HEIC DEBUG] HEIC validation failed for ${filename}:`, error.message);
           return {
             isValid: false,
             error: `Invalid HEIC/HEIF file: ${error.message}`,

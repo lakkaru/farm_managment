@@ -803,6 +803,29 @@ const SeasonPlanViewContent = ({ id }) => {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
 
+    console.log("[MOBILE DEBUG] Files selected:", files.map(f => ({
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      lastModified: f.lastModified
+    })));
+
+    // Check file sizes (10MB limit per file)
+    const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast.error(`Some files are too large (>10MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+      event.target.value = "";
+      return;
+    }
+
+    // Check total size for mobile (50MB total limit)
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalSize > 50 * 1024 * 1024) {
+      toast.error(`Total file size too large (${Math.round(totalSize / 1024 / 1024)}MB). Please select fewer or smaller images.`);
+      event.target.value = "";
+      return;
+    }
+
     setUploadingImages(true);
     const newImages = [];
     let processedCount = 0;
@@ -886,31 +909,69 @@ const SeasonPlanViewContent = ({ id }) => {
     setSaving(true);
 
     try {
+      console.log("=== MOBILE DEBUG: Starting saveRemark ===");
+      console.log("Remark data:", remarkData);
+      console.log("Remark images count:", remarkImages.length);
+      console.log("Remark images details:", remarkImages.map(img => ({
+        name: img.name,
+        size: img.size,
+        type: img.file?.type,
+        isHeic: img.isHeic,
+        hasFile: !!img.file
+      })));
+
       const formData = new FormData();
       formData.append("date", remarkData.date);
       formData.append("category", remarkData.category);
       formData.append("title", remarkData.title);
       formData.append("description", remarkData.description);
 
-      // Add images
+      // Add images with detailed logging
       remarkImages.forEach((imageObj, index) => {
         if (imageObj.file) {
+          console.log(`[MOBILE DEBUG] Adding image ${index}:`, {
+            name: imageObj.file.name,
+            size: imageObj.file.size,
+            type: imageObj.file.type,
+            lastModified: imageObj.file.lastModified
+          });
           formData.append("images", imageObj.file);
+        } else {
+          console.log(`[MOBILE DEBUG] Skipping image ${index} - no file object`);
         }
       });
 
+      // Log FormData contents
+      console.log("[MOBILE DEBUG] FormData entries:");
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, {
+            name: value.name,
+            size: value.size,
+            type: value.type,
+            lastModified: value.lastModified
+          });
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+
       let response;
       if (editingRemark) {
+        console.log(`[MOBILE DEBUG] Updating remark ${editingRemark._id}`);
         // Update existing remark
         response = await seasonPlanAPI.updateDailyRemark(
           id,
           editingRemark._id,
           formData
         );
+        console.log("[MOBILE DEBUG] Update successful:", response.data);
         toast.success("📝 Daily remark updated successfully");
       } else {
+        console.log("[MOBILE DEBUG] Adding new remark");
         // Add new remark
         response = await seasonPlanAPI.addDailyRemark(id, formData);
+        console.log("[MOBILE DEBUG] Add successful:", response.data);
         toast.success("📝 Daily remark added successfully");
       }
 
@@ -918,8 +979,34 @@ const SeasonPlanViewContent = ({ id }) => {
       setPlan(response.data.data);
       closeRemarkDialog();
     } catch (error) {
-      console.error("Error saving daily remark:", error);
-      toast.error("Failed to save daily remark");
+      console.error("[MOBILE DEBUG] Error saving daily remark:", error);
+      console.error("[MOBILE DEBUG] Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers,
+          timeout: error.config?.timeout
+        }
+      });
+      
+      let errorMessage = "Failed to save daily remark";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message.includes('timeout')) {
+        errorMessage = "Upload timeout - image file might be too large for mobile connection";
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = "Network error - please check your connection and try again";
+      } else if (error.response?.status === 413) {
+        errorMessage = "Image files are too large for upload. Please use smaller images or contact support.";
+      } else if (error.response?.status >= 500) {
+        errorMessage = "Server error - please try again later";
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

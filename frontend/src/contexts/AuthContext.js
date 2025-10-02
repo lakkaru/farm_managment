@@ -106,7 +106,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       dispatch({ type: 'LOGIN_START' });
+      console.log('AuthContext: Attempting login with API URL:', process.env.GATSBY_API_URL);
+      
       const response = await authAPI.login(credentials);
+      console.log('AuthContext: Login successful, storing token');
       
       localStorage.setItem('token', response.data.data.token);
       dispatch({ 
@@ -120,14 +123,22 @@ export const AuthProvider = ({ children }) => {
       toast.success('Login successful!');
       return response.data;
     } catch (error) {
+      console.error('AuthContext: Login error:', error);
+      console.error('AuthContext: Error response:', error.response);
+      console.error('AuthContext: API URL:', process.env.GATSBY_API_URL);
+      
       let message = 'Login failed';
       
       if (error.response?.data?.message) {
         message = error.response.data.message;
       } else if (error.message === 'Network Error') {
-        message = 'Network error. Please check your connection.';
+        message = 'Network error. Please check your connection and API server.';
       } else if (error.code === 'ECONNREFUSED') {
         message = 'Cannot connect to server. Please try again later.';
+      } else if (error.response?.status === 0) {
+        message = 'Network error: Unable to reach the server. Please check if the API server is running.';
+      } else if (!error.response) {
+        message = 'Network error: No response from server. Please check your internet connection.';
       }
       
       dispatch({ type: 'LOGIN_FAIL', payload: message });

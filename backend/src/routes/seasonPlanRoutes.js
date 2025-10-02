@@ -37,7 +37,8 @@ const remarkUpload = multer({
     console.log('File upload attempt:', {
       originalname: file.originalname,
       mimetype: file.mimetype,
-      size: file.size
+      size: file.size,
+      fieldname: file.fieldname
     });
 
     // Supported image types including HEIC/HEIF with various MIME types
@@ -51,15 +52,22 @@ const remarkUpload = multer({
       'image/heif',
       'image/bmp',
       'image/tiff',
-      // Additional HEIC MIME types that might be used
+      // Additional HEIC MIME types that might be used by different browsers/devices
       'image/x-heic',
       'image/x-heif',
-      // Some browsers might not set MIME type for HEIC
-      'application/octet-stream' // We'll validate by extension for this
+      'image/avif',
+      // Some mobile browsers/devices might send HEIC as generic types
+      'application/octet-stream',
+      'image/unknown',
+      'application/unknown'
     ];
     
     const mimeType = file.mimetype.toLowerCase();
     const fileName = file.originalname.toLowerCase();
+    
+    // Define image extensions for validation
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff', '.avif'];
+    const hasImageExtension = imageExtensions.some(ext => fileName.endsWith(ext));
     
     // Check by MIME type first
     if (supportedTypes.includes(mimeType)) {
@@ -67,27 +75,23 @@ const remarkUpload = multer({
       return cb(null, true);
     }
     
-    // If MIME type is octet-stream, check by file extension for HEIC/HEIF
-    if (mimeType === 'application/octet-stream') {
-      if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
-        console.log('✅ HEIC/HEIF file accepted by extension:', fileName);
-        return cb(null, true);
-      }
+    // Mobile devices often send HEIC files with generic MIME types, so check by extension
+    if (hasImageExtension) {
+      console.log('✅ File accepted by extension:', fileName, 'with MIME type:', mimeType);
+      return cb(null, true);
     }
     
-    // Check if it's an image file by extension as fallback
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'];
-    const hasImageExtension = imageExtensions.some(ext => fileName.endsWith(ext));
-    
-    if (hasImageExtension && mimeType.startsWith('image/')) {
-      console.log('✅ File accepted by extension fallback:', fileName);
+    // Fallback: if MIME type starts with 'image/' accept it
+    if (mimeType.startsWith('image/')) {
+      console.log('✅ File accepted as generic image type:', mimeType);
       return cb(null, true);
     }
     
     console.log('❌ File rejected:', {
       originalname: file.originalname,
       mimetype: file.mimetype,
-      reason: 'Unsupported format'
+      hasImageExtension,
+      reason: 'Unsupported format - not recognized as image'
     });
     
     return cb(new Error(`Unsupported image format! File: ${file.originalname}, MIME: ${file.mimetype}. Supported formats: JPEG, PNG, GIF, WebP, HEIC, HEIF, BMP, TIFF`), false);
@@ -277,22 +281,75 @@ router
   .route('/:id/fertilizer/:applicationIndex')
   .delete(deleteFertilizerApplication);
 
+// Middleware to handle multer errors specifically for daily remarks
+const handleRemarkUploadErrors = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.error('Multer error:', error);
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is too large. Maximum size is 10MB per image.',
+        error: 'FILE_TOO_LARGE'
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files. Maximum 5 images allowed per remark.',
+        error: 'TOO_MANY_FILES'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: `Upload error: ${error.message}`,
+      error: error.code
+    });
+  }
+  
+  if (error.message && error.message.includes('Unsupported image format')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Unsupported image format. Please use JPEG, PNG, GIF, WebP, HEIC, or HEIF images.',
+      error: 'UNSUPPORTED_FORMAT'
+    });
+  }
+  
+  next(error);
+};
+
+// Middleware to log daily remarks requests
+const logDailyRemarksRequest = (req, res, next) => {
+  console.log('\n=== DAILY REMARKS REQUEST DEBUG ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.originalUrl);
+  console.log('Headers:', {
+    'content-type': req.headers['content-type'],
+    'content-length': req.headers['content-length'],
+    'user-agent': req.headers['user-agent']
+  });
+  console.log('Body fields:', Object.keys(req.body || {}));
+  console.log('Files:', req.files ? req.files.length : 'no files yet');
+  console.log('Params:', req.params);
+  console.log('=====================================\n');
+  next();
+};
+
 // Daily remarks routes
 router
   .route('/:id/daily-remarks')
-  .post(remarkUpload.array('images', 5), [
+  .post(logDailyRemarksRequest, remarkUpload.array('images', 5), handleRemarkUploadErrors, [
     body('date').isISO8601().withMessage('Valid date is required'),
     body('category').optional().isIn([
       'general', 'weather', 'field_preparation', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth',
       'plowing', 'seeds_preparation', 'seeding_sowing', 'transplanting', 'harvesting', 'other'
     ]).withMessage('Invalid category'),
-    body('title').isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
+    body('title').optional().isLength({ min: 1, max: 100 }).withMessage('Title must be between 1-100 characters'),
     body('description').isLength({ min: 1, max: 1000 }).withMessage('Description must be between 1-1000 characters'),
   ], addDailyRemark);
 
 router
   .route('/:id/daily-remarks/:remarkId')
-  .put(remarkUpload.array('images', 5), [
+  .put(logDailyRemarksRequest, remarkUpload.array('images', 5), handleRemarkUploadErrors, [
     body('date').optional().isISO8601().withMessage('Valid date is required'),
     body('category').optional().isIn([
       'general', 'weather', 'field_preparation', 'pest', 'disease', 'fertilizer', 'irrigation', 'growth',

@@ -25,6 +25,10 @@ const { notFound } = require('./src/middleware/notFound');
 // Create Express app
 const app = express();
 
+// Trust proxy - required when running behind reverse proxy (Nginx, Cloudflare, etc.)
+// This fixes express-rate-limit X-Forwarded-For header validation errors
+app.set('trust proxy', 1);
+
 // Ensure upload directories exist
 const fs = require('fs');
 const path = require('path');
@@ -43,14 +47,31 @@ uploadDirs.forEach(dir => {
 });
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginEmbedderPolicy: false, // Disable for file uploads
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
 app.use(compression());
 
-// Rate limiting
+// Rate limiting with proper proxy support
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000)
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for health checks
+  skip: (req) => req.path === '/api/health'
 });
 app.use('/api', limiter);
 
@@ -121,21 +142,40 @@ const checkR2Config = () => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
+let server;
 
 connectDB().then(() => {
   checkR2Config();
-  app.listen(PORT, () => {
+  server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`Trust proxy setting: ${app.get('trust proxy')}`);
   });
+}).catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.log('Unhandled Rejection at:', promise, 'reason:', err);
   // Close server & exit process
-  server.close(() => {
+  if (server) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
+});
+
+// Handle SIGTERM gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  if (server) {
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+  }
 });
 
 module.exports = app;

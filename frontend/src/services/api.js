@@ -154,11 +154,21 @@ export const seasonPlanAPI = {
   // Daily Remarks API
   addDailyRemark: (id, formData) => 
     api.post(`/season-plans/${id}/daily-remarks`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000, // 60 seconds for image uploads
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`[MOBILE DEBUG] Upload progress: ${percentCompleted}%`);
+      }
     }),
   updateDailyRemark: (id, remarkId, formData) => 
     api.put(`/season-plans/${id}/daily-remarks/${remarkId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000, // 60 seconds for image uploads
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`[MOBILE DEBUG] Upload progress: ${percentCompleted}%`);
+      }
     }),
   deleteDailyRemark: (id, remarkId) => 
     api.delete(`/season-plans/${id}/daily-remarks/${remarkId}`),

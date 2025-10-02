@@ -893,10 +893,27 @@ const deleteFertilizerApplication = async (req, res) => {
 // @access  Private
 const addDailyRemark = async (req, res) => {
   try {
+    console.log('\n=== ADD DAILY REMARK CONTROLLER DEBUG ===');
+    console.log('Request received for season plan:', req.params.id);
+    console.log('Body:', req.body);
+    console.log('Files received:', req.files ? req.files.length : 0);
+    if (req.files) {
+      req.files.forEach((file, index) => {
+        console.log(`File ${index}:`, {
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          bufferLength: file.buffer ? file.buffer.length : 'no buffer'
+        });
+      });
+    }
+    console.log('==========================================\n');
+
     const { id } = req.params;
     const { date, category, title, description } = req.body;
 
     if (!date || !description) {
+      console.log('[MOBILE DEBUG] Validation failed - missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Date and description are required',
@@ -923,11 +940,24 @@ const addDailyRemark = async (req, res) => {
     let imageObjects = [];
     if (req.files && req.files.length > 0) {
       try {
+        console.log(`[MOBILE DEBUG] Processing ${req.files.length} files:`, req.files.map(f => ({
+          name: f.originalname,
+          mime: f.mimetype,
+          size: f.size,
+          bufferLength: f.buffer ? f.buffer.length : 'no buffer'
+        })));
+
         // Process and upload images to Cloudflare R2
-        const uploadPromises = req.files.map(async (file) => {
-          console.log(`Processing image: ${file.originalname} (${file.mimetype})`);
+        const uploadPromises = req.files.map(async (file, index) => {
+          console.log(`[MOBILE DEBUG] Processing image ${index + 1}: ${file.originalname} (${file.mimetype}) - Size: ${file.size} bytes`);
+          
+          // Check if buffer exists and has content
+          if (!file.buffer || file.buffer.length === 0) {
+            throw new Error(`Image ${file.originalname} has no data or empty buffer`);
+          }
           
           // Validate image
+          console.log(`[MOBILE DEBUG] Validating image: ${file.originalname}`);
           const validation = await imageProcessingService.validateImage(
             file.buffer, 
             file.mimetype, 
@@ -935,10 +965,14 @@ const addDailyRemark = async (req, res) => {
           );
           
           if (!validation.isValid) {
+            console.error(`[MOBILE DEBUG] Validation failed for ${file.originalname}:`, validation.error);
             throw new Error(`Invalid image ${file.originalname}: ${validation.error}`);
           }
           
+          console.log(`[MOBILE DEBUG] Validation passed for ${file.originalname}`);
+          
           // Process image (convert HEIC to JPEG, optimize, resize)
+          console.log(`[MOBILE DEBUG] Starting image processing for ${file.originalname}`);
           const processedImage = await imageProcessingService.processImage(
             file.buffer,
             file.mimetype,
@@ -951,12 +985,13 @@ const addDailyRemark = async (req, res) => {
             file.originalname // Pass filename for better HEIC detection
           );
           
-          console.log(`Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
+          console.log(`[MOBILE DEBUG] Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
           
           // Generate new filename with correct extension
           const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
           const processedFileName = `${fileNameWithoutExt}${processedImage.fileExtension}`;
           
+          console.log(`[MOBILE DEBUG] Uploading to R2 as: ${processedFileName}`);
           // Upload processed image to R2
           const uploadResult = await r2Service.uploadFile(
             processedImage.buffer,
@@ -964,6 +999,8 @@ const addDailyRemark = async (req, res) => {
             processedImage.mimeType,
             'daily-remarks'
           );
+          
+          console.log(`[MOBILE DEBUG] Successfully uploaded: ${processedFileName} to R2`);
           
           return {
             filename: uploadResult.key, // R2 key as filename
@@ -981,13 +1018,37 @@ const addDailyRemark = async (req, res) => {
         });
 
         imageObjects = await Promise.all(uploadPromises);
-        console.log(`Successfully processed and uploaded ${imageObjects.length} images`);
+        console.log(`[MOBILE DEBUG] Successfully processed and uploaded ${imageObjects.length} images`);
       } catch (error) {
-        console.error('Image processing/upload error:', error);
+        console.error('[MOBILE DEBUG] Image processing/upload error:', error);
+        console.error('[MOBILE DEBUG] Error stack:', error.stack);
+        console.error('[MOBILE DEBUG] Error details:', {
+          message: error.message,
+          code: error.code,
+          statusCode: error.statusCode,
+          files: req.files ? req.files.map(f => ({ name: f.originalname, mime: f.mimetype, size: f.size })) : 'no files'
+        });
+        
+        // More specific error messages
+        let errorMessage = 'Failed to process and upload images';
+        if (error.message.includes('HEIC')) {
+          errorMessage = 'Failed to process HEIC image. Please try converting to JPEG first or use a different image.';
+        } else if (error.message.includes('validate')) {
+          errorMessage = 'Invalid image file. Please ensure the file is a valid image format.';
+        } else if (error.message.includes('size') || error.message.includes('large')) {
+          errorMessage = 'Image file is too large. Please compress the image or use a smaller file.';
+        } else if (error.message.includes('buffer') || error.message.includes('empty')) {
+          errorMessage = 'Image file appears to be corrupted or empty. Please try uploading a different image.';
+        }
+        
         return res.status(500).json({
           success: false,
-          message: 'Failed to process and upload images',
+          message: errorMessage,
           error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          debug: process.env.NODE_ENV === 'development' ? {
+            originalError: error.message,
+            files: req.files ? req.files.map(f => ({ name: f.originalname, mime: f.mimetype, size: f.size })) : null
+          } : undefined
         });
       }
     }
