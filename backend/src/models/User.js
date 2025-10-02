@@ -32,8 +32,9 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: false,
     unique: true,
+    sparse: true, // This allows multiple null values while maintaining uniqueness for non-null values
     lowercase: true,
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
@@ -71,8 +72,10 @@ const userSchema = new mongoose.Schema({
   contact: {
     phone: {
       type: String,
+      required: [true, 'Phone number is required'],
+      unique: true,
       trim: true,
-      match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+      match: [/^07[0-9]{8}$/, 'Please enter a valid Sri Lankan phone number (e.g., 0715316597)']
     },
     address: {
       street: String,
@@ -86,7 +89,7 @@ const userSchema = new mongoose.Schema({
     language: {
       type: String,
       default: 'en',
-      enum: ['en', 'es', 'fr', 'de', 'zh']
+      enum: ['en', 'si', 'es', 'fr', 'de', 'zh']
     },
     timezone: {
       type: String,
@@ -192,7 +195,8 @@ userSchema.methods.resetLoginAttempts = function() {
 };
 
 // Indexes
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1 }, { sparse: true }); // Sparse index for optional email
+userSchema.index({ 'contact.phone': 1 }); // Index for phone numbers
 userSchema.index({ 'permissions.farm': 1 });
 userSchema.index({ role: 1 });
 

@@ -16,44 +16,61 @@ const generateToken = (id) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { email, password, profile } = req.body;
 
-  // Validation
-  if (!email || !password) {
+  // Validation - password is still required
+  if (!password) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide email and password',
+      message: 'Please provide password',
     });
   }
 
-  if (!profile || !profile.firstName || !profile.lastName) {
+  if (!profile || !profile.firstName || !profile.lastName || !profile.phone) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide first name and last name',
+      message: 'Please provide first name, last name, and phone number',
     });
   }
 
-  // Check if user exists
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
+  // Check if user exists by phone number
+  const phoneExists = await User.findOne({ 'contact.phone': profile.phone });
+  if (phoneExists) {
     return res.status(400).json({
       success: false,
-      message: 'User with this email already exists',
+      message: 'User with this phone number already exists',
     });
   }
 
-  // Create user
-  const user = await User.create({
-    email,
+  // Check if email exists (only if email is provided)
+  if (email) {
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists',
+      });
+    }
+  }
+
+  // Create user data object
+  const userData = {
     password, // Let the pre-save hook handle hashing
     profile: {
       firstName: profile.firstName,
       lastName: profile.lastName,
     },
     contact: {
-      phone: profile.phone || '',
+      phone: profile.phone,
     },
     role: profile.role || 'farm_owner',
-  });
+  };
+
+  // Only add email if provided
+  if (email && email.trim()) {
+    userData.email = email;
+  }
+
+  // Create user
+  const user = await User.create(userData);
 
   if (user) {
     res.status(201).json({
@@ -62,6 +79,7 @@ const registerUser = asyncHandler(async (req, res) => {
         _id: user._id,
         email: user.email,
         profile: user.profile,
+        contact: user.contact,
         token: generateToken(user._id),
       },
       message: 'User registered successfully',
@@ -78,18 +96,24 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, firstName, password } = req.body;
 
   // Validation
-  if (!email || !password) {
+  if ((!email && !firstName) || !password) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide email and password',
+      message: 'Please provide (email or first name) and password',
     });
   }
 
-  // Check for user
-  const user = await User.findOne({ email }).select('+password');
+  let user;
+  
+  // Check for user by email or firstName
+  if (email) {
+    user = await User.findOne({ email }).select('+password');
+  } else if (firstName) {
+    user = await User.findOne({ 'profile.firstName': firstName }).select('+password');
+  }
 
   if (!user) {
     return res.status(401).json({
@@ -119,6 +143,7 @@ const loginUser = asyncHandler(async (req, res) => {
       _id: user._id,
       email: user.email,
       profile: user.profile,
+      contact: user.contact,
       role: user.role,
       token: generateToken(user._id),
     },

@@ -60,7 +60,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
-  if (variant === 'compact') {
+  if (variant === 'compact' || variant === 'login') {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <Button

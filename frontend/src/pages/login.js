@@ -30,25 +30,28 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import AppProviders from '../providers/AppProviders';
+import LanguageSwitcher from '../components/LanguageSwitcher/LanguageSwitcher';
 
 const LoginPage = () => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { login, register, isLoading, isAuthenticated } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Login form state
+  // Login form state - now uses firstName instead of email
   const [loginData, setLoginData] = useState({
-    email: '',
+    firstName: '',
     password: '',
   });
 
-  // Registration form state
+  // Registration form state - email is now optional
   const [registerData, setRegisterData] = useState({
     email: '',
     password: '',
@@ -87,9 +90,31 @@ const LoginPage = () => {
     setError('');
   };
 
+  // Phone number formatting function
+  const formatPhoneNumber = (value) => {
+    // Remove all non-numeric characters
+    const numericOnly = value.replace(/\D/g, '');
+    // Limit to 10 digits and format as 0XXXXXXXXX
+    if (numericOnly.length <= 10) {
+      return numericOnly;
+    }
+    return numericOnly.substring(0, 10);
+  };
+
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'firstName' || name === 'lastName' || name === 'phone' || name === 'role') {
+    
+    // Special handling for phone number formatting
+    if (name === 'phone') {
+      const formattedPhone = formatPhoneNumber(value);
+      setRegisterData({
+        ...registerData,
+        profile: {
+          ...registerData.profile,
+          [name]: formattedPhone,
+        },
+      });
+    } else if (name === 'firstName' || name === 'lastName' || name === 'role') {
       setRegisterData({
         ...registerData,
         profile: {
@@ -110,8 +135,8 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!loginData.email || !loginData.password) {
-      setError('Please fill in all fields');
+    if (!loginData.firstName || !loginData.password) {
+      setError(t('auth.fillAllFields'));
       return;
     }
 
@@ -136,15 +161,15 @@ const LoginPage = () => {
         data: err.response?.data
       });
       
-      let errorMessage = err.message || 'Login failed. Please check your credentials.';
+      let errorMessage = err.message || t('auth.loginFailed');
       
       // More specific error messages for production debugging
       if (err.response?.status === 0 || err.message === 'Network Error') {
-        errorMessage = `Network error: Cannot reach API server (${process.env.GATSBY_API_URL}). Please check if the server is running.`;
+        errorMessage = t('auth.networkError');
       } else if (err.response?.status === 404) {
         errorMessage = 'API endpoint not found. Please check the server configuration.';
       } else if (err.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later or contact support.';
+        errorMessage = t('auth.serverError');
       }
       
       setError(errorMessage);
@@ -155,30 +180,41 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    // Validation
+    // Validation - email is now optional
     if (!registerData.profile.firstName || !registerData.profile.lastName || 
-        !registerData.email || !registerData.profile.phone || 
-        !registerData.password || !registerData.confirmPassword) {
-      setError('Please fill in all fields');
+        !registerData.profile.phone || !registerData.password || !registerData.confirmPassword) {
+      setError(t('auth.fillAllFields'));
       return;
     }
 
     if (registerData.password !== registerData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordsNotMatch'));
       return;
     }
 
     if (registerData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('auth.passwordTooShort'));
+      return;
+    }
+
+    // Validate phone number format (should be 10 digits)
+    if (registerData.profile.phone.length !== 10 || !registerData.profile.phone.startsWith('0')) {
+      setError(t('auth.phoneFormat'));
       return;
     }
 
     try {
-      await register(registerData);
-      toast.success('Registration successful! Please log in.');
+      // Create a clean registration object, removing empty email if not provided
+      const cleanRegisterData = { ...registerData };
+      if (!cleanRegisterData.email || cleanRegisterData.email.trim() === '') {
+        delete cleanRegisterData.email;
+      }
+      
+      await register(cleanRegisterData);
+      toast.success(t('auth.registrationSuccessful'));
       setTabValue(0); // Switch to login tab
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || t('auth.registrationFailed'));
     }
   };
 
@@ -197,21 +233,37 @@ const LoginPage = () => {
         position: 'relative',
       }}
     >
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={handleBackToHome}
-        sx={{ 
-          position: 'absolute', 
-          top: 16, 
-          left: 16,
-          color: 'white',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          },
-        }}
-      >
-        Back to Home
-      </Button>
+      <Box sx={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackToHome}
+          sx={{ 
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+        >
+          {t('auth.backToHome')}
+        </Button>
+        <Box sx={{ 
+          '& .MuiButton-root': {
+            backgroundColor: 'rgba(255, 255, 255, 0.9) !important',
+            color: '#2e7d32 !important',
+            border: '2px solid #4caf50 !important',
+            fontWeight: '600 !important',
+            minWidth: '80px !important',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2) !important',
+            '&:hover': {
+              backgroundColor: '#4caf50 !important',
+              color: 'white !important',
+              transform: 'translateY(-1px) !important',
+            }
+          }
+        }}>
+          <LanguageSwitcher variant="login" />
+        </Box>
+      </Box>
 
       <Container maxWidth="sm">
         <Paper
@@ -227,10 +279,10 @@ const LoginPage = () => {
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <AgricultureIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
             <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-              Farm Management System
+              {t('auth.welcome')}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Sign in to your account or create a new one
+              {t('auth.signInToAccount')}
             </Typography>
           </Box>
 
@@ -246,8 +298,8 @@ const LoginPage = () => {
             variant="fullWidth"
             sx={{ mb: 3 }}
           >
-            <Tab label="Sign In" />
-            <Tab label="Sign Up" />
+            <Tab label={t('auth.signIn')} />
+            <Tab label={t('auth.signUp')} />
           </Tabs>
 
           {/* Login Form */}
@@ -255,10 +307,10 @@ const LoginPage = () => {
             <Box component="form" onSubmit={handleLoginSubmit}>
               <TextField
                 fullWidth
-                label="Email Address"
-                name="email"
-                type="email"
-                value={loginData.email}
+                label={t('auth.firstName')}
+                name="firstName"
+                type="text"
+                value={loginData.firstName}
                 onChange={handleLoginChange}
                 variant="outlined"
                 margin="normal"
@@ -266,14 +318,14 @@ const LoginPage = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EmailIcon color="action" />
+                      <PersonIcon color="action" />
                     </InputAdornment>
                   ),
                 }}
               />
               <TextField
                 fullWidth
-                label="Password"
+                label={t('auth.password')}
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={loginData.password}
@@ -318,10 +370,10 @@ const LoginPage = () => {
                 {isLoading ? (
                   <>
                     <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Signing In...
+                    {t('auth.signingIn')}
                   </>
                 ) : (
-                  'Sign In'
+                  t('auth.signIn')
                 )}
               </Button>
             </Box>
@@ -333,7 +385,7 @@ const LoginPage = () => {
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
                   fullWidth
-                  label="First Name"
+                  label={t('auth.firstName')}
                   name="firstName"
                   value={registerData.profile.firstName}
                   onChange={handleRegisterChange}
@@ -349,7 +401,7 @@ const LoginPage = () => {
                 />
                 <TextField
                   fullWidth
-                  label="Last Name"
+                  label={t('auth.lastName')}
                   name="lastName"
                   value={registerData.profile.lastName}
                   onChange={handleRegisterChange}
@@ -360,14 +412,14 @@ const LoginPage = () => {
               
               <TextField
                 fullWidth
-                label="Email Address"
+                label={t('auth.email')}
                 name="email"
                 type="email"
                 value={registerData.email}
                 onChange={handleRegisterChange}
                 variant="outlined"
                 margin="normal"
-                required
+                helperText={t('auth.emailOptional')}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -379,13 +431,15 @@ const LoginPage = () => {
               
               <TextField
                 fullWidth
-                label="Phone Number"
+                label={t('auth.phoneNumber')}
                 name="phone"
                 value={registerData.profile.phone}
                 onChange={handleRegisterChange}
                 variant="outlined"
                 margin="normal"
                 required
+                helperText={t('auth.phoneFormat')}
+                inputProps={{ maxLength: 10 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -396,23 +450,23 @@ const LoginPage = () => {
               />
 
               <FormControl fullWidth margin="normal">
-                <InputLabel>Role</InputLabel>
+                <InputLabel>{t('auth.role')}</InputLabel>
                 <Select
                   name="role"
                   value={registerData.profile.role}
                   onChange={handleRegisterChange}
-                  label="Role"
+                  label={t('auth.role')}
                 >
-                  <MenuItem value="farm_owner">Farm Owner</MenuItem>
-                  <MenuItem value="farm_manager">Farm Manager</MenuItem>
-                  <MenuItem value="worker">Worker</MenuItem>
-                  <MenuItem value="viewer">Viewer</MenuItem>
+                  <MenuItem value="farm_owner">{t('auth.farmOwner')}</MenuItem>
+                  <MenuItem value="farm_manager">{t('auth.farmManager')}</MenuItem>
+                  <MenuItem value="worker">{t('auth.worker')}</MenuItem>
+                  <MenuItem value="viewer">{t('auth.viewer')}</MenuItem>
                 </Select>
               </FormControl>
 
               <TextField
                 fullWidth
-                label="Password"
+                label={t('auth.password')}
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={registerData.password}
@@ -437,12 +491,12 @@ const LoginPage = () => {
                     </InputAdornment>
                   ),
                 }}
-                helperText="Minimum 6 characters"
+                helperText={t('auth.passwordMinLength')}
               />
 
               <TextField
                 fullWidth
-                label="Confirm Password"
+                label={t('auth.confirmPassword')}
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={registerData.confirmPassword}
@@ -488,10 +542,10 @@ const LoginPage = () => {
                 {isLoading ? (
                   <>
                     <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                    Creating Account...
+                    {t('auth.creatingAccount')}
                   </>
                 ) : (
-                  'Create Account'
+                  t('auth.createAccount')
                 )}
               </Button>
             </Box>
@@ -499,8 +553,8 @@ const LoginPage = () => {
 
           <Typography variant="body2" align="center" color="textSecondary" sx={{ mt: 2 }}>
             {tabValue === 0
-              ? "Don't have an account? Click 'Sign Up' tab above."
-              : "Already have an account? Click 'Sign In' tab above."
+              ? t('auth.clickSignUp')
+              : t('auth.clickSignIn')
             }
           </Typography>
         </Paper>
