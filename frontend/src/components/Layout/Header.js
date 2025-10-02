@@ -18,10 +18,13 @@ import {
   Person,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const theme = useTheme();
   // Make useMediaQuery SSR-safe by providing a default value
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), {
@@ -71,12 +74,12 @@ const Header = () => {
     >
       <Toolbar>
         {/* Search Section */}
-        {!isMobile && (
+        {/* {!isMobile && (
           <Box sx={{ flex: 1, maxWidth: 500, mr: 3 }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Search farms, crops, livestock..."
+              placeholder={t('common.search')}
               variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -86,12 +89,23 @@ const Header = () => {
               }}
             />
           </Box>
-        )}
+        )} */}
 
         <Box sx={{ flexGrow: 1 }} />
 
         {/* Action Section */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Language Switcher - More Prominent */}
+          <Box sx={{ 
+            p: 1, 
+            borderRadius: 2, 
+            backgroundColor: 'primary.light', 
+            border: '1px solid',
+            borderColor: 'primary.main',
+          }}>
+            <LanguageSwitcher variant="button" />
+          </Box>
+          
           <IconButton color="inherit" title="Notifications">
             <NotificationsOutlined />
           </IconButton>
@@ -147,11 +161,11 @@ const Header = () => {
           >
             <MenuItem onClick={handleProfileClick}>
               <Person sx={{ mr: 1 }} />
-              Profile
+              {t('navigation.profile')}
             </MenuItem>
             <MenuItem onClick={handleLogout}>
               <LogoutOutlined sx={{ mr: 1 }} />
-              Logout
+              {t('navigation.logout')}
             </MenuItem>
           </Menu>
         </Box>

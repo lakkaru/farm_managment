@@ -36,6 +36,7 @@ import {
   BugReport as DiseaseIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFarm } from '../../contexts/FarmContext';
 import { farmAPI } from '../../services/api';
@@ -43,6 +44,7 @@ import { farmAPI } from '../../services/api';
 const drawerWidth = 260;
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   // Make useMediaQuery SSR-safe by providing a default value
   const isMobile = useMediaQuery(theme.breakpoints.down('md'), {
@@ -87,31 +89,34 @@ const Sidebar = () => {
   }, []);
 
   const navigationItems = [
-    { path: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
+    { id: 'dashboard', path: '/dashboard', icon: HomeIcon, label: t('navigation.dashboard') },
     { 
+      id: 'farms',
       path: '/farms', 
       icon: FarmIcon, 
-      label: 'Farms',
+      label: t('navigation.farms'),
       hasSubmenu: true,
       submenu: [
-        { path: '/farms', icon: ViewIcon, label: 'View All Farms' },
-        { path: '/farms/create', icon: AddIcon, label: 'Create Farm' },
+        { path: '/farms', icon: ViewIcon, label: t('navigation.viewAllFarms') },
+        { path: '/farms/create', icon: AddIcon, label: t('navigation.createFarm') },
       ]
     },
     { 
+      id: 'crops',
       path: '/crops', 
       icon: AgricultureIcon, 
-      label: 'Crops',
+      label: t('navigation.crops'),
       hasSubmenu: true,
       submenu: [
         { 
-          label: 'Paddy', 
+          id: 'paddy',
+          label: t('navigation.paddy'), 
           icon: PaddyIcon, 
           isSubmenuGroup: true,
           submenu: [
-            { path: '/paddy/varieties', icon: PaddyIcon, label: 'Paddy Varieties' },
-            { path: '/paddy/season-plans', icon: ViewIcon, label: 'Season Plans' },
-            { path: '/paddy/disease-detection', icon: DiseaseIcon, label: 'Disease Detection' },
+            { path: '/paddy/varieties', icon: PaddyIcon, label: t('navigation.paddyVarieties') },
+            { path: '/paddy/season-plans', icon: ViewIcon, label: t('navigation.seasonPlans') },
+            { path: '/paddy/disease-detection', icon: DiseaseIcon, label: t('navigation.diseaseDetection') },
           ]
         },
       ]
@@ -119,13 +124,14 @@ const Sidebar = () => {
     // Admin Section - Only visible to admin and expert users
     ...(user && ['admin', 'expert'].includes(user.role) ? [
       { 
+        id: 'admin',
         path: '/admin', 
         icon: SettingsIcon, 
-        label: 'Administration',
+        label: t('navigation.admin'),
         hasSubmenu: true,
         submenu: [
-          { path: '/admin/disease-references', icon: DiseaseIcon, label: 'Disease References' },
-          { path: '/admin/users', icon: ViewIcon, label: 'User Management' },
+          { path: '/admin/disease-references', icon: DiseaseIcon, label: t('admin.diseaseReferences') },
+          { path: '/admin/users', icon: ViewIcon, label: t('admin.userManagement') },
         ]
       },
     ] : []),
@@ -157,19 +163,19 @@ const Sidebar = () => {
   };
 
   const getMenuState = (item) => {
-    if (item.label === 'Paddy') return paddyMenuOpen;
-    if (item.label === 'Farms') return farmsMenuOpen;
-    if (item.label === 'Crops') return cropsMenuOpen;
-    if (item.label === 'Administration') return adminMenuOpen;
+    if (item.id === 'paddy') return paddyMenuOpen;
+    if (item.id === 'farms') return farmsMenuOpen;
+    if (item.id === 'crops') return cropsMenuOpen;
+    if (item.id === 'admin') return adminMenuOpen;
     return false;
   };
 
   const getMenuType = (item) => {
-    if (item.label === 'Paddy') return 'paddy';
-    if (item.label === 'Farms') return 'farms';
-    if (item.label === 'Crops') return 'crops';
-    if (item.label === 'Administration') return 'admin';
-    return null;
+    if (item.id === 'paddy') return 'paddy';
+    if (item.id === 'farms') return 'farms';
+    if (item.id === 'crops') return 'crops';
+    if (item.id === 'admin') return 'admin';
+    return item.id || null;
   };
 
   const handleDrawerToggle = () => {
@@ -180,6 +186,11 @@ const Sidebar = () => {
     const farmId = event.target.value;
     const farm = farms.find(f => f._id === farmId);
     setSelectedFarm(farm || null);
+    
+    // Navigate to farm detail page when a farm is selected
+    if (farmId && farm) {
+      navigate(`/farms/${farmId}`);
+    }
   };
 
   const getUserInitials = () => {
@@ -205,7 +216,7 @@ const Sidebar = () => {
       {/* Farm Selector */}
       <Box sx={{ px: 2, pb: 2 }}>
         <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>
-          Farms ({farms.length})
+          {t('farms.farmsCount')} ({farms.length})
         </Typography>
         {farms.length > 0 ? (
           <FormControl fullWidth size="small">
@@ -216,7 +227,7 @@ const Sidebar = () => {
             >
               <MenuItem value="">
                 <Typography variant="body2" color="textSecondary">
-                  Select a farm
+                  {t('farms.selectFarm')}
                 </Typography>
               </MenuItem>
               {farms.map(farm => (
@@ -228,7 +239,7 @@ const Sidebar = () => {
           </FormControl>
         ) : (
           <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center', py: 1 }}>
-            No farms found. Create a farm first.
+            {t('farms.noFarmsFound')}
           </Typography>
         )}
       </Box>

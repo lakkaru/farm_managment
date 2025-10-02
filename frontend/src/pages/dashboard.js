@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -24,6 +24,7 @@ import {
   BugReport as DiseaseIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout/Layout';
 import PrivateRoute from '../components/PrivateRoute';
 import PhaseNotification from '../components/PhaseNotification';
@@ -34,6 +35,7 @@ import { farmAPI, seasonPlanAPI, paddyVarietyAPI } from '../services/api';
 const DashboardContent = () => {
   const theme = useTheme();
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -44,11 +46,7 @@ const DashboardContent = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -83,7 +81,7 @@ const DashboardContent = () => {
       if (farms.length > 0) {
         activities.push({
           icon: <AgricultureIcon color="success" />,
-          text: `You have ${farms.length} farm${farms.length !== 1 ? 's' : ''} registered for paddy cultivation`,
+          text: t('dashboard.farmsRegisteredActivity', { count: farms.length, plural: farms.length !== 1 ? 's' : '' }),
           time: 'Active',
         });
       }
@@ -91,7 +89,7 @@ const DashboardContent = () => {
       if (activeSeasons.length > 0) {
         activities.push({
           icon: <PaddyIcon color="primary" />,
-          text: `${activeSeasons.length} active paddy season${activeSeasons.length !== 1 ? 's' : ''} in progress`,
+          text: t('dashboard.activeSeasonsActivity', { count: activeSeasons.length, plural: activeSeasons.length !== 1 ? 's' : '' }),
           time: 'Current Season',
         });
       }
@@ -99,7 +97,7 @@ const DashboardContent = () => {
       if (seasonPlans.length > 0) {
         activities.push({
           icon: <PlanSeasonIcon color="info" />,
-          text: `${seasonPlans.length} total season plan${seasonPlans.length !== 1 ? 's' : ''} created`,
+          text: t('dashboard.seasonPlansActivity', { count: seasonPlans.length, plural: seasonPlans.length !== 1 ? 's' : '' }),
           time: 'Historical',
         });
       }
@@ -107,7 +105,7 @@ const DashboardContent = () => {
       if (paddyVarieties.length > 0) {
         activities.push({
           icon: <TrendingUpIcon color="secondary" />,
-          text: `${paddyVarieties.length} paddy varietie${paddyVarieties.length !== 1 ? 's' : ''} available for selection`,
+          text: t('dashboard.varietiesActivity', { count: paddyVarieties.length, plural: paddyVarieties.length !== 1 ? 's' : '' }),
           time: 'Database',
         });
       }
@@ -117,13 +115,13 @@ const DashboardContent = () => {
         activities.push(
           {
             icon: <PaddyIcon color="primary" />,
-            text: 'Welcome to your paddy farm management system!',
-            time: 'Getting started',
+            text: t('dashboard.welcomeMessage'),
+            time: t('dashboard.gettingStarted'),
           },
           {
             icon: <AddIcon color="action" />,
-            text: 'Create your first farm and start planning your paddy seasons',
-            time: 'Next step',
+            text: t('dashboard.createFirstFarmMessage'),
+            time: t('dashboard.nextStepLabel', 'Next step'),
           }
         );
       }
@@ -146,7 +144,11 @@ const DashboardContent = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const handleCreateFarm = () => {
     navigate('/farms/create');
@@ -177,36 +179,36 @@ const DashboardContent = () => {
 
   const statCards = [
     {
-      title: 'Total Farms',
+      title: t('dashboard.totalFarms'),
       value: stats.farms,
       color: theme.palette.success.main,
       icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
       type: 'farms',
-      subtitle: stats.farms === 0 ? 'Create your first farm' : `${stats.farms} farm${stats.farms !== 1 ? 's' : ''} registered`,
+      // subtitle: stats.farms === 0 ? t('dashboard.createYourFirstFarm') : `${stats.farms} ${t('dashboard.farmsRegistered')}`,
     },
     {
-      title: 'Season Plans',
+      title: t('dashboard.activeSeasonPlans'),
       value: stats.seasonPlans,
       color: theme.palette.primary.main,
       icon: <PlanSeasonIcon sx={{ fontSize: 40 }} />,
       type: 'seasonPlans',
-      subtitle: stats.seasonPlans === 0 ? 'Plan your first season' : `${stats.seasonPlans} plan${stats.seasonPlans !== 1 ? 's' : ''} created`,
+      // subtitle: stats.seasonPlans === 0 ? t('dashboard.planYourFirstSeason') : `${stats.seasonPlans} ${t('dashboard.plansCreated')}`,
     },
     {
-      title: 'Active Seasons',
+      title: t('dashboard.activeSeasons'),
       value: stats.activeSeasons,
       color: theme.palette.warning.main,
       icon: <PaddyIcon sx={{ fontSize: 40 }} />,
       type: 'activeSeasons',
-      subtitle: stats.activeSeasons === 0 ? 'No active seasons' : `${stats.activeSeasons} season${stats.activeSeasons !== 1 ? 's' : ''} ongoing`,
+      // subtitle: stats.activeSeasons === 0 ? t('dashboard.noActiveSeasons') : `${stats.activeSeasons} ${t('dashboard.seasonsOngoing')}`,
     },
     {
-      title: 'Paddy Varieties',
+      title: t('dashboard.paddyVarieties'),
       value: stats.paddyVarieties,
       color: theme.palette.secondary.main,
       icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
       type: 'paddyVarieties',
-      subtitle: stats.paddyVarieties === 0 ? 'No varieties available' : `${stats.paddyVarieties} varietie${stats.paddyVarieties !== 1 ? 's' : ''} available`,
+      // subtitle: stats.paddyVarieties === 0 ? t('dashboard.noVarietiesAvailable') : `${stats.paddyVarieties} ${t('dashboard.varietiesAvailable')}`,
     }
   ];
 
@@ -227,14 +229,14 @@ const DashboardContent = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom>
-          Welcome, {user?.profile?.firstName || 'Farmer'}!
+          {t('auth.welcome')}, {user?.profile?.firstName || 'User'}!
         </Typography>
         <Typography variant="body1" color="textSecondary">
-          Here's an overview of your paddy cultivation operations
+          {t('dashboard.paddyCultivationOverview')}
         </Typography>
       </Box>
 
-      <PhaseNotification />
+      {/* <PhaseNotification /> */}
 
       {error && (
         <Alert severity="warning" sx={{ mb: 3 }}>
@@ -303,7 +305,7 @@ const DashboardContent = () => {
         <Grid item xs={12} md={8}>
           <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h5" gutterBottom>
-              Recent Activity
+              {t('dashboard.recentActivity')}
             </Typography>
             {recentActivity.length > 0 ? (
               <List>
@@ -321,7 +323,7 @@ const DashboardContent = () => {
               </List>
             ) : (
               <Typography variant="body1" color="textSecondary">
-                No recent activity to display.
+                {t('dashboard.noRecentActivity')}
               </Typography>
             )}
           </Paper>
@@ -331,7 +333,7 @@ const DashboardContent = () => {
         <Grid item xs={12} md={4}>
           <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h5" gutterBottom>
-              Quick Actions
+              {t('dashboard.quickActions')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Button
@@ -340,7 +342,15 @@ const DashboardContent = () => {
                 onClick={handleCreateFarm}
                 fullWidth
               >
-                Create Farm
+                {t('dashboard.createFarm')}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<TrendingUpIcon />}
+                onClick={() => navigate('/paddy/season-plans')}
+                fullWidth
+              >
+                {t('dashboard.viewSeasonPlans')}
               </Button>
               <Button
                 variant="outlined"
@@ -348,7 +358,7 @@ const DashboardContent = () => {
                 onClick={handlePlanSeason}
                 fullWidth
               >
-                Plan Paddy Season
+                {t('dashboard.planPaddySeason')}
               </Button>
               <Button
                 variant="outlined"
@@ -356,7 +366,7 @@ const DashboardContent = () => {
                 onClick={() => navigate('/paddy/varieties')}
                 fullWidth
               >
-                View Paddy Varieties
+                {t('dashboard.viewPaddyVarieties')}
               </Button>
               <Button
                 variant="outlined"
@@ -365,16 +375,9 @@ const DashboardContent = () => {
                 fullWidth
                 color="warning"
               >
-                Plant Disease Detection
+                {t('dashboard.plantDiseaseDetection')}
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={<TrendingUpIcon />}
-                onClick={() => navigate('/paddy/season-plans')}
-                fullWidth
-              >
-                View Season Plans
-              </Button>
+              
             </Box>
           </Paper>
         </Grid>

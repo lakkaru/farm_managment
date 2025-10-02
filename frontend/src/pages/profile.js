@@ -26,13 +26,16 @@ import {
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
   ArrowBack as ArrowBackIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { navigate } from 'gatsby';
 import Layout from '../components/Layout/Layout';
 import PrivateRoute from '../components/PrivateRoute';
 import ProfileEditDialog from '../components/ProfileEditDialog';
 import ChangePasswordDialog from '../components/ChangePasswordDialog';
 import NotificationSettings from '../components/NotificationSettings';
+import LanguageSwitcher from '../components/LanguageSwitcher/LanguageSwitcher';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
 import { toast } from 'react-toastify';
@@ -41,6 +44,7 @@ import dayjs from 'dayjs';
 const ProfileContent = () => {
   console.log('ProfileContent component rendering');
   const { user, updateProfile } = useAuth();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -140,7 +144,7 @@ const ProfileContent = () => {
           Back
         </Button>
         <Typography variant="h4">
-          My Profile
+          {t('profile.title')}
         </Typography>
       </Box>
 
@@ -359,7 +363,7 @@ const ProfileContent = () => {
                 <CardContent>
                   <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <NotificationsIcon sx={{ mr: 1 }} />
-                    Notifications
+                    {t('profile.accountSettings')}
                   </Typography>
                   
                   <Button
@@ -384,6 +388,37 @@ const ProfileContent = () => {
                       </Typography>
                     </Box>
                   )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Language Preferences */}
+            <Grid item xs={12} sm={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <LanguageIcon sx={{ mr: 1 }} />
+                    {t('common.language')} Preferences
+                  </Typography>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      Choose your preferred language for the interface
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      අතුරු මුහුණත සඳහා ඔබේ කැමති භාෂාව තෝරන්න
+                    </Typography>
+                  </Box>
+                  
+                  <LanguageSwitcher variant="button" />
+                  
+                  <Box sx={{ mt: 2, p: 2, backgroundColor: 'info.light', borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ color: 'info.contrastText' }}>
+                      💡 Current: {i18n.language === 'si' ? 'සිංහල (Sinhala)' : 'English'}
+                      <br />
+                      Changes apply immediately
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
