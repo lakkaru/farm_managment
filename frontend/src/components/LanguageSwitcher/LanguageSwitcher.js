@@ -67,18 +67,28 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
           size="small"
           onClick={handleClick}
           startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
+          variant="outlined"
           sx={{
-            minWidth: 'auto',
-            fontSize: '0.875rem',
+            minWidth: '70px',
+            fontSize: '0.9rem',
             textTransform: 'none',
-            color: 'text.primary',
-            fontWeight: 500,
-            px: 1,
-            borderRadius: 2,
+            color: 'primary.main',
+            fontWeight: 600,
+            px: 2,
+            py: 1,
+            borderRadius: 3,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            boxShadow: '0 2px 8px rgba(76, 175, 80, 0.2)',
             '&:hover': {
-              backgroundColor: 'primary.light',
-              color: 'primary.contrastText',
+              backgroundColor: 'primary.main',
+              color: 'white',
+              borderColor: 'primary.main',
+              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+              transform: 'translateY(-1px)',
             },
+            transition: 'all 0.2s ease-in-out',
           }}
         >
           {currentLanguage.code.toUpperCase()}
