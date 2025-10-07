@@ -413,8 +413,8 @@ const Sidebar = () => {
               <Typography variant="body2" fontWeight="600">
                 {user.profile?.firstName} {user.profile?.lastName}
               </Typography>
-              <Typography variant="caption" color="textSecondary" sx={{ textTransform: 'capitalize' }}>
-                {user.role?.replace('_', ' ')}
+              <Typography variant="caption" color="textSecondary">
+                {t(`roles.${user.role}`, user.role?.replace('_', ' '))}
               </Typography>
             </Box>
           </Box>

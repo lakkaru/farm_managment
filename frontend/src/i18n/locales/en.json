@@ -80,6 +80,15 @@
     "clickSignIn": "Already have an account? Click 'Sign In' tab above."
   },
   
+  "roles": {
+    "admin": "Administrator",
+    "expert": "Agricultural Expert",
+    "farm_owner": "Farm Owner",
+    "farm_manager": "Farm Manager",
+    "worker": "Farm Worker",
+    "viewer": "Viewer"
+  },
+  
   "dashboard": {
     "title": "Dashboard",
     "totalFarms": "Total Farms",
@@ -222,6 +231,25 @@
     "recommendations": "Treatment Recommendations",
     "noImageSelected": "Please select an image first",
     "analysisComplete": "Disease analysis complete!"
+  },
+  
+  "offline": {
+    "title": "You are offline",
+    "message": "Check your internet connection and try again. Some features may be limited while offline.",
+    "cachedContent": "You can still view previously loaded content while offline.",
+    "retry": "Try Again",
+    "pwaInfo": "This app works offline thanks to Progressive Web App technology"
+  },
+  
+  "pwa": {
+    "install": "Install",
+    "installing": "Installing...",
+    "installTitle": "Install Farm Management App",
+    "installDescription": "Get faster access and work offline!",
+    "updateAvailable": "App update available",
+    "updateDescription": "A new version is ready to install",
+    "updateNow": "Update Now",
+    "updateLater": "Later"
   },
   
   "profile": {

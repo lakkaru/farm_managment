@@ -7,6 +7,7 @@ import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { FarmProvider } from './src/contexts/FarmContext';
 import createEmotionCache from './src/utils/createEmotionCache';
+import './src/i18n/i18n'; // Initialize i18n
 
 import 'react-toastify/dist/ReactToastify.css';
 
