@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
 import { farmAPI } from '../../services/api';
@@ -22,6 +23,7 @@ import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/districts';
 
 const CreateFarmContent = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -175,14 +177,14 @@ const CreateFarmContent = () => {
           onClick={() => navigate('/farms')}
           sx={{ mr: 2 }}
         >
-          Back
+          {t('common.back')}
         </Button>
         <Typography variant="h4" gutterBottom>
-          Create New Farm
+          {t('farms.createNewFarm')}
         </Typography>
       </Box>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
-        Add a new farm to your management system
+        {t('farms.addNewFarmDescription')}
       </Typography>
 
       <Paper elevation={2} sx={{ p: 4 }}>
@@ -197,14 +199,14 @@ const CreateFarmContent = () => {
             {/* Basic Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
-                Basic Information
+                {t('farms.basicInformation')}
               </Typography>
             </Grid>
             
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Farm Name *"
+                label={`${t('farms.farmName')} *`}
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -214,20 +216,19 @@ const CreateFarmContent = () => {
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Farm Type *</InputLabel>
+                <InputLabel>{`${t('farms.farmType')} *`}</InputLabel>
                 <Select
                   name="farmType"
                   value={formData.farmType}
                   onChange={handleChange}
-                  label="Farm Type *"
+                  label={`${t('farms.farmType')} *`}
                   required
                 >
-                  <MenuItem value="crop">Crop Farm</MenuItem>
-                  <MenuItem value="livestock">Livestock Farm</MenuItem>
-                  <MenuItem value="mixed">Mixed Farm</MenuItem>
-                  <MenuItem value="organic">Organic Farm</MenuItem>
-                  <MenuItem value="dairy">Dairy Farm</MenuItem>
-                  <MenuItem value="poultry">Poultry Farm</MenuItem>
+                  <MenuItem value="crop">{t('farms.farmTypes.crop')}</MenuItem>
+                  <MenuItem value="livestock">{t('farms.farmTypes.livestock')}</MenuItem>
+                  <MenuItem value="mixed">{t('farms.farmTypes.mixed')}</MenuItem>
+                  <MenuItem value="aquaculture">{t('farms.farmTypes.aquaculture')}</MenuItem>
+                  <MenuItem value="poultry">{t('farms.farmTypes.poultry')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -235,7 +236,7 @@ const CreateFarmContent = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Description"
+                label={t('farms.description')}
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
@@ -247,14 +248,14 @@ const CreateFarmContent = () => {
             {/* Location */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Location
+                {t('farms.locationInformation')}
               </Typography>
             </Grid>
 
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Address"
+                label={t('farms.address')}
                 name="location.address"
                 value={formData.location.address}
                 onChange={handleChange}
@@ -263,12 +264,12 @@ const CreateFarmContent = () => {
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>District *</InputLabel>
+                <InputLabel>{`${t('farms.district')} *`}</InputLabel>
                 <Select
                   name="district"
                   value={formData.district}
                   onChange={handleChange}
-                  label="District *"
+                  label={`${t('farms.district')} *`}
                   required
                 >
                   {SRI_LANKAN_DISTRICTS.map(district => (
@@ -283,28 +284,28 @@ const CreateFarmContent = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Cultivation Zone"
+                label={t('farms.cultivationZone')}
                 name="cultivationZone"
                 value={getZoneDescription(formData.cultivationZone)}
                 InputProps={{ readOnly: true }}
-                helperText="Auto-populated based on district selection"
+                helperText={t('farms.selectDistrictFirst')}
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="ZIP Code"
+                label={t('farms.zipCode')}
                 name="location.zipCode"
                 value={formData.location.zipCode}
                 onChange={handleChange}
               />
-            </Grid>
+            </Grid> */}
 
-            <Grid item xs={12} md={6}>
+            {/* <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Latitude (Optional)"
+                label={`${t('farms.latitude')} (${t('common.optional')})`}
                 name="location.coordinates.latitude"
                 type="number"
                 value={formData.location.coordinates.latitude}
@@ -317,7 +318,7 @@ const CreateFarmContent = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Longitude (Optional)"
+                label={`${t('farms.longitude')} (${t('common.optional')})`}
                 name="location.coordinates.longitude"
                 type="number"
                 value={formData.location.coordinates.longitude}
@@ -325,19 +326,19 @@ const CreateFarmContent = () => {
                 placeholder="e.g., 79.8612"
                 inputProps={{ step: "any" }}
               />
-            </Grid>
+            </Grid> */}
 
             {/* Area Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Area Information
+                {t('farms.areaInformation')}
               </Typography>
             </Grid>
 
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="Total Area *"
+                label={`${t('farms.totalAreaValue')} *`}
                 name="totalArea.value"
                 type="number"
                 value={formData.totalArea.value}
@@ -349,17 +350,17 @@ const CreateFarmContent = () => {
 
             <Grid item xs={12} md={2}>
               <FormControl fullWidth required>
-                <InputLabel>Unit</InputLabel>
+                <InputLabel>{t('farms.unit')}</InputLabel>
                 <Select
                   name="totalArea.unit"
                   value={formData.totalArea.unit}
                   onChange={handleChange}
-                  label="Unit"
+                  label={t('farms.unit')}
                 >
-                  <MenuItem value="acres">Acres</MenuItem>
-                  <MenuItem value="hectares">Hectares</MenuItem>
-                  <MenuItem value="sq meters">Sq Meters</MenuItem>
-                  <MenuItem value="sq feet">Sq Feet</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
+                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
+                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -367,7 +368,7 @@ const CreateFarmContent = () => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label="Cultivated Area"
+                label={t('farms.cultivatedAreaValue')}
                 name="cultivatedArea.value"
                 type="number"
                 value={formData.cultivatedArea.value}
@@ -378,17 +379,17 @@ const CreateFarmContent = () => {
 
             <Grid item xs={12} md={2}>
               <FormControl fullWidth>
-                <InputLabel>Unit</InputLabel>
+                <InputLabel>{t('farms.unit')}</InputLabel>
                 <Select
                   name="cultivatedArea.unit"
                   value={formData.cultivatedArea.unit}
                   onChange={handleChange}
-                  label="Unit"
+                  label={t('farms.unit')}
                 >
-                  <MenuItem value="acres">Acres</MenuItem>
-                  <MenuItem value="hectares">Hectares</MenuItem>
-                  <MenuItem value="sq meters">Sq Meters</MenuItem>
-                  <MenuItem value="sq feet">Sq Feet</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
+                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
+                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -403,7 +404,7 @@ const CreateFarmContent = () => {
                   onClick={() => navigate('/dashboard')}
                   disabled={loading}
                 >
-                  Cancel
+                  {t('farms.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -411,7 +412,7 @@ const CreateFarmContent = () => {
                   disabled={loading}
                   startIcon={loading && <CircularProgress size={20} />}
                 >
-                  {loading ? 'Creating...' : 'Create Farm'}
+                  {loading ? t('farms.creating') : t('farms.createFarmButton')}
                 </Button>
               </Box>
             </Grid>

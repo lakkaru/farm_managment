@@ -13,11 +13,13 @@ import {
 } from '@mui/material';
 import { navigate } from 'gatsby';
 import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
 import { farmAPI } from '../../services/api';
 
 const FarmDetailContent = ({ farmId }) => {
+  const { t } = useTranslation();
   const [farm, setFarm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,11 +32,11 @@ const FarmDetailContent = ({ farmId }) => {
       setFarm(response.data.data);
     } catch (err) {
       console.error('Error loading farm:', err);
-      setError('Failed to load farm details');
+      setError(t('errors.serverError', 'Failed to load farm details'));
     } finally {
       setLoading(false);
     }
-  }, [farmId]);
+  }, [farmId, t]);
 
   useEffect(() => {
     if (farmId) {
@@ -129,7 +131,7 @@ const FarmDetailContent = ({ farmId }) => {
             onClick={() => navigate('/farms')}
             sx={{ mr: 2, mb: 2 }}
           >
-            Back
+            {t('common.back')}
           </Button>
           <Typography variant="h4" component="h1">
             {farm.name}
@@ -140,7 +142,7 @@ const FarmDetailContent = ({ farmId }) => {
           startIcon={<EditIcon />}
           onClick={handleEdit}
         >
-          Edit Farm
+          {t('farms.editFarm')}
         </Button>
       </Box>
 
@@ -150,14 +152,14 @@ const FarmDetailContent = ({ farmId }) => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Basic Information
+                {t('farms.basicInformation')}
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Farm Type
+                    {t('farms.farmType')}
                   </Typography>
                   <Chip
                     label={farm.farmType}
@@ -168,28 +170,28 @@ const FarmDetailContent = ({ farmId }) => {
                 
                 <Grid item xs={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Total Area
+                    {t('farms.totalAreaValue')}
                   </Typography>
                   <Typography variant="body1">
                     {formatArea(farm.totalArea)}
                   </Typography>
                 </Grid>
 
-                {farm.soilType && (
+                {/* {farm.soilType && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="textSecondary">
-                      Soil Type
+                      {t('farms.soilType')}
                     </Typography>
                     <Typography variant="body1">
                       {farm.soilType}
                     </Typography>
                   </Grid>
-                )}
+                )} */}
 
                 {farm.description && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="textSecondary">
-                      Description
+                      {t('farms.description')}
                     </Typography>
                     <Typography variant="body1">
                       {farm.description}
@@ -206,33 +208,33 @@ const FarmDetailContent = ({ farmId }) => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Location Details
+                {t('farms.locationInformation')}
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
               <Grid container spacing={2}>
                 <Grid item xs={12}>
                   <Typography variant="body2" color="textSecondary">
-                    District
+                    {t('farms.district')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.district || 'Not specified'}
+                    {farm.district || t('farms.notSpecified')}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12}>
                   <Typography variant="body2" color="textSecondary">
-                    Cultivation Zone
+                    {t('farms.cultivationZone')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.cultivationZone || 'Not specified'}
+                    {farm.cultivationZone || t('farms.notSpecified')}
                   </Typography>
                 </Grid>
 
                 {farm.location?.address && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="textSecondary">
-                      Address
+                      {t('farms.address')}
                     </Typography>
                     <Typography variant="body1">
                       {farm.location.address}
@@ -243,7 +245,7 @@ const FarmDetailContent = ({ farmId }) => {
                 {farm.location?.zipCode && (
                   <Grid item xs={12}>
                     <Typography variant="body2" color="textSecondary">
-                      Zip Code
+                      {t('farms.zipCode')}
                     </Typography>
                     <Typography variant="body1">
                       {farm.location.zipCode}
@@ -261,19 +263,19 @@ const FarmDetailContent = ({ farmId }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Owner Information
+                  {t('farms.ownerInformation')}
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 
                 <Typography variant="body2" color="textSecondary">
-                  Name
+                  {t('farms.name')}
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 1 }}>
                   {farm.owner.profile?.firstName} {farm.owner.profile?.lastName}
                 </Typography>
 
                 <Typography variant="body2" color="textSecondary">
-                  Email
+                  {t('farms.email')}
                 </Typography>
                 <Typography variant="body1">
                   {farm.owner.email}
@@ -282,7 +284,7 @@ const FarmDetailContent = ({ farmId }) => {
                 {farm.owner.contact?.phone && (
                   <Box component="div">
                     <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                      Phone
+                      {t('farms.phone')}
                     </Typography>
                     <Typography variant="body1">
                       {farm.owner.contact.phone}
@@ -300,7 +302,7 @@ const FarmDetailContent = ({ farmId }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Farm Managers
+                  {t('farms.farmManagers')}
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
                 
@@ -324,26 +326,26 @@ const FarmDetailContent = ({ farmId }) => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Additional Information
+                {t('farms.additionalInformation')}
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Created On
+                    {t('farms.createdOn')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.createdAt ? new Date(farm.createdAt).toLocaleDateString() : 'N/A'}
+                    {farm.createdAt ? new Date(farm.createdAt).toLocaleDateString() : t('farms.notAvailable')}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
-                    Last Updated
+                    {t('farms.lastUpdated')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.updatedAt ? new Date(farm.updatedAt).toLocaleDateString() : 'N/A'}
+                    {farm.updatedAt ? new Date(farm.updatedAt).toLocaleDateString() : t('farms.notAvailable')}
                   </Typography>
                 </Grid>
               </Grid>

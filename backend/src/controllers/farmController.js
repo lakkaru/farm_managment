@@ -80,6 +80,19 @@ const createFarm = asyncHandler(async (req, res) => {
     throw new AppError('Invalid district name. Please select a valid Sri Lankan district.', 400);
   }
   
+  // Handle coordinates - remove if empty to avoid geospatial index issues
+  if (req.body.location && req.body.location.coordinates) {
+    const { latitude, longitude } = req.body.location.coordinates;
+    if (!latitude || !longitude || latitude === '' || longitude === '' || latitude === null || longitude === null) {
+      delete req.body.location.coordinates;
+    } else {
+      req.body.location.coordinates = {
+        latitude: Number(latitude),
+        longitude: Number(longitude)
+      };
+    }
+  }
+  
   const farm = await Farm.create(req.body);
   
   // Populate the created farm
@@ -109,6 +122,19 @@ const updateFarm = asyncHandler(async (req, res) => {
   // Validate district if provided
   if (req.body.district && !validateDistrict(req.body.district)) {
     throw new AppError('Invalid district name. Please select a valid Sri Lankan district.', 400);
+  }
+  
+  // Handle coordinates - remove if empty to avoid geospatial index issues
+  if (req.body.location && req.body.location.coordinates) {
+    const { latitude, longitude } = req.body.location.coordinates;
+    if (!latitude || !longitude || latitude === '' || longitude === '' || latitude === null || longitude === null) {
+      delete req.body.location.coordinates;
+    } else {
+      req.body.location.coordinates = {
+        latitude: Number(latitude),
+        longitude: Number(longitude)
+      };
+    }
   }
   
   farm = await Farm.findByIdAndUpdate(req.params.id, req.body, {

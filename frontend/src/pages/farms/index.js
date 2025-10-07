@@ -26,11 +26,13 @@ import {
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
 import { farmAPI } from '../../services/api';
 
 const FarmsPageContent = () => {
+  const { t } = useTranslation();
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +47,7 @@ const FarmsPageContent = () => {
       setFarms(response.data.data || []);
     } catch (err) {
       console.error('Error loading farms:', err);
-      setError('Failed to load farms');
+      setError(t('errors.serverError', 'Failed to load farms'));
       setFarms([]);
     } finally {
       setLoading(false);
@@ -77,12 +79,12 @@ const FarmsPageContent = () => {
     try {
       setError(''); // Clear any previous errors
       await farmAPI.deleteFarm(farm._id);
-      toast.success('Farm deleted successfully');
+      toast.success(t('farms.farmDeleted'));
       await loadFarms(); // Refresh the list
       setDeleteDialog({ open: false, farm: null });
     } catch (err) {
       console.error('Error deleting farm:', err);
-      toast.error('Failed to delete farm');
+      toast.error(t('errors.serverError', 'Failed to delete farm'));
     }
   }, [deleteDialog, loadFarms]);
 
@@ -135,10 +137,10 @@ const FarmsPageContent = () => {
             onClick={() => navigate('/dashboard')}
             sx={{ mr: 2 }}
           >
-            Back
+            {t('common.back')}
           </Button>
           <Typography variant="h4" component="h1">
-            Farm Management
+            {t('farms.farmManagement')}
           </Typography>
         </Box>
         <Button
@@ -146,7 +148,7 @@ const FarmsPageContent = () => {
           startIcon={<AddIcon />}
           onClick={handleCreateFarm}
         >
-          Add New Farm
+          {t('farms.addNewFarm')}
         </Button>
       </Box>
 
@@ -164,7 +166,7 @@ const FarmsPageContent = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" align="center" color="textSecondary">
-                  No farms found. Start by creating your first farm.
+                  {t('farms.noFarmsMessage')}
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
@@ -173,7 +175,7 @@ const FarmsPageContent = () => {
                   startIcon={<AddIcon />}
                   onClick={handleCreateFarm}
                 >
-                  Create Farm
+                  {t('farms.createFarm')}
                 </Button>
               </CardActions>
             </Card>
@@ -213,7 +215,7 @@ const FarmsPageContent = () => {
                   </Box>
 
                   <Typography variant="body2" color="textSecondary">
-                    <strong>Area:</strong> {formatArea(farm.totalArea)}
+                    <strong>{t('farms.area')}:</strong> {formatArea(farm.totalArea)}
                   </Typography>
                   
                   {farm.description && (
@@ -224,7 +226,7 @@ const FarmsPageContent = () => {
                 </CardContent>
                 
                 <CardActions onClick={(e) => e.stopPropagation()}>
-                  <Tooltip title="View Details">
+                  <Tooltip title={t('farms.viewDetails')}>
                     <IconButton
                       size="small"
                       color="primary"
@@ -234,7 +236,7 @@ const FarmsPageContent = () => {
                     </IconButton>
                   </Tooltip>
                   
-                  <Tooltip title="Edit Farm">
+                  <Tooltip title={t('farms.editFarm')}>
                     <IconButton
                       size="small"
                       color="secondary"
@@ -244,7 +246,7 @@ const FarmsPageContent = () => {
                     </IconButton>
                   </Tooltip>
                   
-                  <Tooltip title="Delete Farm">
+                  <Tooltip title={t('farms.deleteFarm')}>
                     <IconButton
                       size="small"
                       color="error"
@@ -267,17 +269,18 @@ const FarmsPageContent = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>{t('farms.confirmDeleteTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{deleteDialog.farm?.name}"? 
-            This action cannot be undone.
+            {t('farms.confirmDeleteMessage', { 
+              farmName: deleteDialog.farm?.name 
+            })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
+          <Button onClick={handleDeleteCancel}>{t('common.cancel')}</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

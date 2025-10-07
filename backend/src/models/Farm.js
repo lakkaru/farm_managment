@@ -157,6 +157,27 @@ farmSchema.pre('save', function(next) {
     }
   }
   
+  // Handle coordinates for geospatial indexing
+  if (this.location && this.location.coordinates) {
+    const { latitude, longitude } = this.location.coordinates;
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+      this.location.coordinates = undefined;
+    }
+  }
+  
+  next();
+});
+
+// Pre-update middleware to handle coordinates for updates
+farmSchema.pre(['findOneAndUpdate', 'updateOne', 'updateMany'], function(next) {
+  const update = this.getUpdate();
+  if (update && update.location && update.location.coordinates) {
+    const { latitude, longitude } = update.location.coordinates;
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude) || 
+        latitude === null || longitude === null || latitude === '' || longitude === '') {
+      delete update.location.coordinates;
+    }
+  }
   next();
 });
 

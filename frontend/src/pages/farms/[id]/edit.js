@@ -13,7 +13,9 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { farmAPI } from '../../../services/api';
@@ -21,6 +23,7 @@ import { toast } from 'react-toastify';
 import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../../constants/districts';
 
 const EditFarmContent = ({ farmId }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -135,6 +138,12 @@ const EditFarmContent = ({ farmId }) => {
       setSaving(true);
       setError('');
       
+      // Validate required fields
+      if (!formData.totalArea.value || formData.totalArea.value <= 0) {
+        setError('Total area value is required and must be greater than 0');
+        return;
+      }
+      
       // Prepare data for submission
       const submitData = {
         name: formData.name,
@@ -142,9 +151,25 @@ const EditFarmContent = ({ farmId }) => {
         farmType: formData.farmType,
         district: formData.district,
         cultivationZone: formData.cultivationZone,
-        location: formData.location,
-        totalArea: Number(formData.totalArea),
-        cultivatedArea: Number(formData.cultivatedArea)
+        location: {
+          address: formData.location.address || formData.district || 'Not specified',
+          country: formData.location.country,
+          zipCode: formData.location.zipCode,
+          ...(formData.location.coordinates.latitude && formData.location.coordinates.longitude ? {
+            coordinates: {
+              latitude: Number(formData.location.coordinates.latitude),
+              longitude: Number(formData.location.coordinates.longitude)
+            }
+          } : {})
+        },
+        totalArea: {
+          value: Number(formData.totalArea.value) || 0,
+          unit: formData.totalArea.unit || 'acres'
+        },
+        cultivatedArea: {
+          value: formData.cultivatedArea.value ? Number(formData.cultivatedArea.value) : 0,
+          unit: formData.cultivatedArea.unit || 'acres'
+        }
       };
 
       await farmAPI.updateFarm(farmId, submitData);
@@ -174,9 +199,18 @@ const EditFarmContent = ({ farmId }) => {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Edit Farm
-      </Typography>
+      <Box display="flex" alignItems="center" mb={2}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate(`/farms/${farmId}`)}
+          sx={{ mr: 2 }}
+        >
+          {t('common.back')}
+        </Button>
+        <Typography variant="h4" component="h1">
+          {t('farms.editFarm')}
+        </Typography>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -190,14 +224,14 @@ const EditFarmContent = ({ farmId }) => {
             {/* Basic Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
-                Basic Information
+                {t('farms.basicInformation')}
               </Typography>
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Farm Name"
+                label={t('farms.farmName')}
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -207,18 +241,18 @@ const EditFarmContent = ({ farmId }) => {
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
-                <InputLabel>Farm Type</InputLabel>
+                <InputLabel>{t('farms.farmType')}</InputLabel>
                 <Select
                   name="farmType"
                   value={formData.farmType}
-                  label="Farm Type"
+                  label={t('farms.farmType')}
                   onChange={handleChange}
                 >
-                  <MenuItem value="crop">Crop Farm</MenuItem>
-                  <MenuItem value="livestock">Livestock Farm</MenuItem>
-                  <MenuItem value="mixed">Mixed Farm</MenuItem>
-                  <MenuItem value="aquaculture">Aquaculture</MenuItem>
-                  <MenuItem value="poultry">Poultry Farm</MenuItem>
+                  <MenuItem value="crop">{t('farms.farmTypes.crop')}</MenuItem>
+                  <MenuItem value="livestock">{t('farms.farmTypes.livestock')}</MenuItem>
+                  <MenuItem value="mixed">{t('farms.farmTypes.mixed')}</MenuItem>
+                  <MenuItem value="aquaculture">{t('farms.farmTypes.aquaculture')}</MenuItem>
+                  <MenuItem value="poultry">{t('farms.farmTypes.poultry')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -226,7 +260,7 @@ const EditFarmContent = ({ farmId }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Description"
+                label={t('farms.description')}
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
@@ -238,17 +272,17 @@ const EditFarmContent = ({ farmId }) => {
             {/* Location Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Location Information
+                {t('farms.locationInformation')}
               </Typography>
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
-                <InputLabel>District</InputLabel>
+                <InputLabel>{t('farms.district')}</InputLabel>
                 <Select
                   name="district"
                   value={formData.district}
-                  label="District"
+                  label={t('farms.district')}
                   onChange={handleChange}
                 >
                   {SRI_LANKAN_DISTRICTS.map((district) => (
@@ -263,7 +297,7 @@ const EditFarmContent = ({ farmId }) => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Cultivation Zone"
+                label={t('farms.cultivationZone')}
                 name="cultivationZone"
                 value={formData.cultivationZone}
                 onChange={handleChange}
@@ -271,7 +305,7 @@ const EditFarmContent = ({ farmId }) => {
                   readOnly: true,
                 }}
                 helperText={
-                  formData.district ? getZoneDescription(formData.district) : 'Select district first'
+                  formData.district ? getZoneDescription(formData.district) : t('farms.selectDistrictFirst')
                 }
               />
             </Grid>
@@ -279,7 +313,7 @@ const EditFarmContent = ({ farmId }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Address"
+                label={t('farms.address')}
                 name="location.address"
                 value={formData.location.address}
                 onChange={handleChange}
@@ -288,27 +322,27 @@ const EditFarmContent = ({ farmId }) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            {/* <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Zip Code"
+                label={t('farms.zipCode')}
                 name="location.zipCode"
                 value={formData.location.zipCode}
                 onChange={handleChange}
               />
-            </Grid>
+            </Grid> */}
 
             {/* Area Information */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Area Information
+                {t('farms.areaInformation')}
               </Typography>
             </Grid>
 
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Total Area Value"
+                label={t('farms.totalAreaValue')}
                 name="totalArea.value"
                 type="number"
                 value={formData.totalArea.value}
@@ -320,17 +354,17 @@ const EditFarmContent = ({ farmId }) => {
 
             <Grid item xs={12} sm={2}>
               <FormControl fullWidth required>
-                <InputLabel>Unit</InputLabel>
+                <InputLabel>{t('farms.unit')}</InputLabel>
                 <Select
                   name="totalArea.unit"
                   value={formData.totalArea.unit}
-                  label="Unit"
+                  label={t('farms.unit')}
                   onChange={handleChange}
                 >
-                  <MenuItem value="acres">Acres</MenuItem>
-                  <MenuItem value="hectares">Hectares</MenuItem>
-                  <MenuItem value="sq meters">Sq Meters</MenuItem>
-                  <MenuItem value="sq feet">Sq Feet</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
+                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
+                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -338,7 +372,7 @@ const EditFarmContent = ({ farmId }) => {
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                label="Cultivated Area Value"
+                label={t('farms.cultivatedAreaValue')}
                 name="cultivatedArea.value"
                 type="number"
                 value={formData.cultivatedArea.value}
@@ -349,17 +383,17 @@ const EditFarmContent = ({ farmId }) => {
 
             <Grid item xs={12} sm={2}>
               <FormControl fullWidth>
-                <InputLabel>Unit</InputLabel>
+                <InputLabel>{t('farms.unit')}</InputLabel>
                 <Select
                   name="cultivatedArea.unit"
                   value={formData.cultivatedArea.unit}
-                  label="Unit"
+                  label={t('farms.unit')}
                   onChange={handleChange}
                 >
-                  <MenuItem value="acres">Acres</MenuItem>
-                  <MenuItem value="hectares">Hectares</MenuItem>
-                  <MenuItem value="sq meters">Sq Meters</MenuItem>
-                  <MenuItem value="sq feet">Sq Feet</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
+                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
+                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -367,16 +401,16 @@ const EditFarmContent = ({ farmId }) => {
 
 
             {/* Coordinates */}
-            <Grid item xs={12}>
+            {/* <Grid item xs={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Coordinates (Optional)
+                {t('farms.coordinatesOptional')}
               </Typography>
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Latitude"
+                label={t('farms.latitude')}
                 name="location.coordinates.latitude"
                 type="number"
                 value={formData.location.coordinates.latitude}
@@ -388,14 +422,14 @@ const EditFarmContent = ({ farmId }) => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Longitude"
+                label={t('farms.longitude')}
                 name="location.coordinates.longitude"
                 type="number"
                 value={formData.location.coordinates.longitude}
                 onChange={handleChange}
                 inputProps={{ step: 'any' }}
               />
-            </Grid>
+            </Grid> */}
 
             {/* Action Buttons */}
             <Grid item xs={12}>
@@ -405,14 +439,14 @@ const EditFarmContent = ({ farmId }) => {
                   onClick={handleCancel}
                   disabled={saving}
                 >
-                  Cancel
+                  {t('farms.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   variant="contained"
                   disabled={saving}
                 >
-                  {saving ? <CircularProgress size={20} /> : 'Update Farm'}
+                  {saving ? <CircularProgress size={20} /> : t('farms.updateFarm')}
                 </Button>
               </Box>
             </Grid>
