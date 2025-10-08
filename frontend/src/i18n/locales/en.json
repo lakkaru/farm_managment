@@ -551,32 +551,50 @@
         "applyRecommendation": "Apply {{amount}} kg of Urea per acre",
         "guideTitle": "Leaf Color Chart Guide",
         "guide": {
+          "index1": {
+            "title": "Index 1 (Very Light Green):",
+            "desc": "Leaves appear very pale, almost yellowish-white, indicating severe nitrogen deficiency"
+          },
           "index2": {
             "title": "Index 2 (Light Green):",
-            "desc": "Leaves appear pale, yellowish-green"
+            "desc": "Leaves appear pale, yellowish-green, indicating nitrogen deficiency"
           },
           "index3": {
             "title": "Index 3 (Medium Green):",
-            "desc": "Normal healthy green color"
+            "desc": "Normal healthy green color, adequate nitrogen levels"
           },
           "index4": {
             "title": "Index 4 (Dark Green):",
-            "desc": "Deep, rich green color"
+            "desc": "Deep, rich green color, good nitrogen levels"
+          },
+          "index5": {
+            "title": "Index 5 (Very Dark Green):",
+            "desc": "Very deep green color, high nitrogen levels"
+          },
+          "index6": {
+            "title": "Index 6 (Extremely Dark Green):",
+            "desc": "Extremely dark, bluish-green color, excess nitrogen levels"
           },
           "compare": "Compare the youngest fully expanded leaf with the standard color chart"
         },
          "cultivationStarted": "Cultivation started: {{date}}",
         "labels": {
+          "1": "Very Light Green (Pale Yellow)",
           "2": "Light Green (Pale)",
           "3": "Medium Green (Normal)",
-          "4": "Dark Green (Rich)"
+          "4": "Dark Green (Rich)",
+          "5": "Very Dark Green (Deep)",
+          "6": "Extremely Dark Green (Bluish)"
         },
         "basedOn": "Based on {{weeks}} weeks plant age and leaf color index {{index}}",
         "totalFor": "Total for {{area}} acres: {{total}} kg",
         "selectPlaceholder": "Select leaf color index",
-
-      "cultivationDateNotAvailable": "Cultivation date not available",
-      "plantAgeHelper": "Plant age is automatically calculated from current date and cultivation date"},
+        "ageWarning": "Leaf Color Chart is most accurate for plants aged 2-8 weeks. Your plant is currently {{age}} weeks old.",
+        "noRecommendation": "No specific urea recommendation available for {{age}} weeks old plants with leaf color index {{index}}. Please consult an agricultural expert.",
+        "cultivationDateNotAvailable": "Cultivation date not available",
+        "plantAgeHelper": "Plant age is automatically calculated from current date and cultivation date",
+        "lccApplicationNotes": "LCC-based urea application - {{amount}}kg per acre recommended for plant age {{age}} weeks with leaf color index {{index}}"
+      },
       "adding": "Adding...",
       "addToFertilizerSchedule": "Add to Fertilizer Schedule",
       
@@ -587,7 +605,19 @@
         "6_weeks": "6 Weeks",
         "7_weeks": "7 Weeks",
         "8_weeks": "8 Weeks",
-        "9_weeks": "9 Weeks"
+        "9_weeks": "9 Weeks",
+        "lcc_application_week_1": "LCC Application - Week 1",
+        "lcc_application_week_2": "LCC Application - Week 2",
+        "lcc_application_week_3": "LCC Application - Week 3",
+        "lcc_application_week_4": "LCC Application - Week 4",
+        "lcc_application_week_5": "LCC Application - Week 5",
+        "lcc_application_week_6": "LCC Application - Week 6",
+        "lcc_application_week_7": "LCC Application - Week 7",
+        "lcc_application_week_8": "LCC Application - Week 8",
+        "lcc_application_week_9": "LCC Application - Week 9",
+        "lcc_application_week_10": "LCC Application - Week 10",
+        "lcc_application_week_11": "LCC Application - Week 11",
+        "lcc_application_week_12": "LCC Application - Week 12"
       },
       "fertilizerStageDescriptions": {
         "basic_application": "Apply TSP, MOP and Zinc Sulphate as basal fertilizer before planting",
@@ -597,7 +627,8 @@
         "7_weeks": "Apply Urea and MOP fertilizer before panicle initiation",
         "8_weeks": "Apply Urea fertilizer during panicle initiation stage",
         "9_weeks": "Final Urea application for grain filling stage",
-        "lcc_application": "Urea application based on Leaf Color Chart recommendations"
+        "lcc_application": "Urea application based on Leaf Color Chart recommendations",
+        "lcc_application_description": "Urea application based on Leaf Color Chart recommendations"
       },
       "fertilizerTypes": {
         "urea": "Urea",

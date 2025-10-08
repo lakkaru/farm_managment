@@ -48,6 +48,7 @@
     "required": "අත්‍යවශ්‍ය",
     "optional": "අත්‍යවශ්‍ය නැත"
   },
+
   "navigation": {
     "home": "මුල් පිටුව",
     "dashboard": "මුල් පිටුව",
@@ -68,6 +69,7 @@
     "diseaseReferences": "රෝග සඳහන්",
     "userManagement": "පරිශීලක කළමනාකරණය"
   },
+
   "auth": {
     "signIn": "ඇතුල් වීම",
     "signUp": "ලියාපදිංචි වීම",
@@ -110,6 +112,7 @@
     "clickSignUp": "ගිණුමක් නැද්ද? ඉහත 'ලියාපදිංචි වීම' ටැබ් එක ක්ලික් කරන්න.",
     "clickSignIn": "දැනටමත් ගිණුමක් තිබේද? ඉහත 'ඇතුල් වීම' ටැබ් එක ක්ලික් කරන්න."
   },
+
   "roles": {
     "admin": "පරිපාලක",
     "expert": "කෘෂිකර්ම විශේෂඥ",
@@ -118,6 +121,7 @@
     "worker": "ගොවිපල කම්කරුවා",
     "viewer": "නරඹන්නා"
   },
+
   "dashboard": {
     "title": "උපකරණ පුවරු",
     "totalFarms": "මුළු ගොවිපල්",
@@ -133,6 +137,7 @@
     "weatherInfo": "කාලගුණ තොරතුරු",
     "notifications": "නිවේදන"
   },
+
   "farms": {
     "title": "ගොවිපල කළමනාකරණය",
     "createFarm": "ගොවිපල නිර්මාණය",
@@ -185,6 +190,7 @@
     "notSpecified": "නියම කර නැත",
     "notAvailable": "නැත"
   },
+
   "seasonPlans": {
     "title": "කන්න සැලසුම්",
     "createNew": "නව කන්න සැලසුමක් නිර්මාණය",
@@ -288,27 +294,6 @@
       }
     },
     "viewPage": {
-      "title": "කන්න සැලසුම් විස්තර",
-      "loading": "කන්න සැලසුම පූරණය වෙමින්...",
-      "notFound": "කන්න සැලසුම හමු නොවීය",
-      "notFoundMessage": "ඔබ සොයන කන්න සැලසුම හමු නොවීය.",
-      "backToList": "කන්න සැලසුම් වෙත ආපසු යන්න",
-      "editPlan": "සැලසුම සංස්කරණය කරන්න",
-      "deletePlan": "සැලසුම මකන්න",
-      "confirmDelete": "ඔබට මෙම කන්න සැලසුම මකා දැමීමට ඇත්ත වශයෙන් අවශ්‍යද?",
-      "confirmDeleteMessage": "මෙම ක්‍රියාව ආපසු හැරවිය නොහැක. සැලසුමට සම්බන්ධ සියලු දත්ත ස්ථায়ীව ඉවත් වේ.",
-      "planDeleted": "කන්න සැලසුම සාර්ථකව මකා දමන ලදි",
-      "harvestInformation": "අස්වනු තොරතුරු",
-      "farmName": "ගොවිපල නම",
-      "farmLocation": "ගොවිපල ස්ථානය",
-      "expectedHarvest": "අපේක්ෂිත අස්වනු",
-      "district": "දිස්ත්‍රික්කය",
-      "climateZone": "දේශගුණ කලාපය",
-      "paddyVariety": "වී ප්‍රභේදය",
-      "cultivatingArea": "වගා කරන ප්‍රමාණය",
-      "cultivationDate": "වගා දිනය",
-      "irrigationMethod": "වාරිමාර්ග ක්‍රමය",
-      "soilCondition": "පස් තත්ත්වය",
       "basicInfo": "මූලික තොරතුරු",
       "farmDetails": "ගොවිපල විස්තර",
       "seasonInfo": "කන්න තොරතුරු",
@@ -454,8 +439,7 @@
         "ageWarning": "පත්‍ර වර්ණ ප්‍රස්ථාරය සති 2-8 වයසේ ශාක සඳහා වඩාත්ම නිවැරදි ය. ඔබේ ශාකය දැනට සති {{age}} ක් පරණයි.",
         "noRecommendation": "සති {{age}} ක් පරණ ශාක සහ පත්‍ර වර්ණ දර්ශකය {{index}} සඳහා විශේෂ යූරියා නිර්දේශ නොමැත. කරුණාකර කෘෂි විශේෂඥයෙකුගෙන් උපදෙස් ලබාගන්න.",
         "cultivationDateNotAvailable": "වගා දිනය ලබාගත නොහැක",
-        "plantAgeHelper": "වර්තමාන දිනය සහ වගා දිනය මත ශාක වයස ස්වයංක්‍රීයව ගණනය කරයි",
-        "lccApplicationNotes": "LCC පදනම්ව යූරියා යෙදීම - සති {{age}} ක් පරණ ශාක සහ පත්‍ර වර්ණ දර්ශකය {{index}} සඳහා අක්කරකට යූරියා {{amount}}කි.ග්‍රෑ නිර්දේශිතයි"
+        "plantAgeHelper": "වර්තමාන දිනය සහ වගා දිනය මත ශාක වයස ස්වයංක්‍රීයව ගණනය කරයි"
       },
       "adding": "එක් කරන ලදී...",
       "addToFertilizerSchedule": "පෝෂක කාලසටහනට එක් කරන්න",
@@ -466,19 +450,7 @@
         "6_weeks": "සති 6",
         "7_weeks": "සති 7",
         "8_weeks": "සති 8",
-        "9_weeks": "සති 9",
-        "lcc_application_week_1": "LCC අනුව යෙදීම - සති 1",
-        "lcc_application_week_2": "LCC අනුව යෙදීම - සති 2",
-        "lcc_application_week_3": "LCC අනුව යෙදීම - සති 3",
-        "lcc_application_week_4": "LCC අනුව යෙදීම - සති 4",
-        "lcc_application_week_5": "LCC අනුව යෙදීම - සති 5",
-        "lcc_application_week_6": "LCC අනුව යෙදීම - සති 6",
-        "lcc_application_week_7": "LCC අනුව යෙදීම - සති 7",
-        "lcc_application_week_8": "LCC අනුව යෙදීම - සති 8",
-        "lcc_application_week_9": "LCC අනුව යෙදීම - සති 9",
-        "lcc_application_week_10": "LCC අනුව යෙදීම - සති 10",
-        "lcc_application_week_11": "LCC අනුව යෙදීම - සති 11",
-        "lcc_application_week_12": "LCC අනුව යෙදීම - සති 12"
+        "9_weeks": "සති 9"
       },
       "fertilizerStageDescriptions": {
         "basic_application": "වගා කිරීමට පෙර TSP, MOP සහ සින්ක් සල්ෆේට් මූලික පොහොර ලෙස යොදන්න",
@@ -488,8 +460,7 @@
         "7_weeks": "පිදීම ආරම්භයට පෙර යූරියා සහ MOP පොහොර යොදන්න",
         "8_weeks": "පිදීම ආරම්භයේ අදියරේදී යූරියා පොහොර යොදන්න",
         "9_weeks": "කිරි පිරවීමේ අදියර සඳහා අවසාන යූරියා යෙදීම",
-        "lcc_application": "පත්‍ර වර්ණ දර්ශක නිර්දේශ මත යූරියා යෙදීම",
-        "lcc_application_description": "පත්‍ර වර්ණ දර්ශක නිර්දේශ මත යූරියා යෙදීම"
+        "lcc_application": "පත්‍ර වර්ණ දර්ශක නිර්දේශ මත යූරියා යෙදීම"
       },
       "fertilizerTypes": {
         "urea": "යූරියා",

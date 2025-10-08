@@ -332,15 +332,15 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     return (completedStages / totalStages) * 100;
   };
 
-  // Leaf Color Chart calculation
+  // Leaf Color Chart calculation with all 6 color indices
   const leafColorChart = {
-    2: { 2: 25 },
-    3: { 2: 25 },
-    4: { 2: 60, 3: 20 },
-    5: { 2: 80, 3: 40 },
-    6: { 2: 37, 3: 22, 4: 7.5 },
-    7: { 2: 30, 3: 15 },
-    8: { 2: 30, 3: 15 },
+    2: { 1: 75, 2: 50, 3: 25, 4: 0, 5: 0, 6: 0 },
+    3: { 1: 75, 2: 50, 3: 25, 4: 0, 5: 0, 6: 0 },
+    4: { 1: 100, 2: 75, 3: 50, 4: 25, 5: 0, 6: 0 },
+    5: { 1: 125, 2: 100, 3: 75, 4: 50, 5: 25, 6: 0 },
+    6: { 1: 100, 2: 75, 3: 50, 4: 25, 5: 12, 6: 0 },
+    7: { 1: 75, 2: 50, 3: 25, 4: 12, 5: 0, 6: 0 },
+    8: { 1: 75, 2: 50, 3: 25, 4: 12, 5: 0, 6: 0 },
   };
 
   const calculateUreaRecommendation = (plantAge, leafColorIndex) => {
@@ -396,12 +396,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     toastShownRef.current = false;
 
     try {
-      const response = await seasonPlanAPI.addLCCFertilizerApplication(id, {
+      const lccData = {
         plantAge: leafColorData.plantAge,
         leafColorIndex: leafColorData.leafColorIndex,
         recommendedUrea: leafColorData.recommendedUrea,
-        notes: `LCC-based urea application - ${leafColorData.recommendedUrea}kg per acre recommended for plant age ${leafColorData.plantAge} weeks with leaf color index ${leafColorData.leafColorIndex}`,
-      });
+        applicationDate: leafColorData.currentDate, // Use the selected date from dialog
+        notes: t('seasonPlans.viewPage.leafColor.lccApplicationNotes', {
+          amount: leafColorData.recommendedUrea,
+          age: leafColorData.plantAge,
+          index: leafColorData.leafColorIndex
+        }),
+      };
+      
+      // Debug logging to verify date is being sent correctly
+      console.log('Sending LCC Application Data:', lccData);
+      
+      const response = await seasonPlanAPI.addLCCFertilizerApplication(id, lccData);
 
       setPlan(response.data.data);
       setLeafColorDialog(false);
@@ -2689,13 +2699,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   const dateString = newValue
                     ? newValue.format("YYYY-MM-DD")
                     : "";
-                  setLeafColorData((prev) => ({
-                    ...prev,
-                    currentDate: dateString,
-                    plantAge: "",
-                    recommendedUrea: 0,
-                  }));
-
+                  
                   // Auto-calculate plant age when date changes
                   if (dateString && plan?.cultivationDate) {
                     const calculatedAge = calculatePlantAge(
@@ -2706,6 +2710,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       ...prev,
                       currentDate: dateString,
                       plantAge: calculatedAge.toString(),
+                      leafColorIndex: "", // Reset color index when age changes
+                      recommendedUrea: 0,
+                    }));
+                  } else {
+                    setLeafColorData((prev) => ({
+                      ...prev,
+                      currentDate: dateString,
+                      plantAge: "",
+                      leafColorIndex: "", // Reset color index when date is cleared
+                      recommendedUrea: 0,
                     }));
                   }
                 }}
@@ -2737,9 +2751,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               }}
             />
 
-            {leafColorData.plantAge &&
-              parseInt(leafColorData.plantAge) >= 2 &&
-              parseInt(leafColorData.plantAge) <= 8 && (
+            {leafColorData.plantAge && (
                 <TextField
                   label={t('seasonPlans.viewPage.leafColor.colorIndex')}
                   select
@@ -2774,21 +2786,19 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   helperText={t('seasonPlans.viewPage.leafColor.helper')}
                 >
                   <option value="" disabled>{t('seasonPlans.viewPage.leafColor.selectPlaceholder')}</option>
-                  {leafColorData.plantAge &&
-                    leafColorChart[leafColorData.plantAge] &&
-                    Object.keys(leafColorChart[leafColorData.plantAge]).map(
-                      (colorIndex) => (
-                        <option key={colorIndex} value={colorIndex}>
-                          {t(`seasonPlans.viewPage.leafColor.indexLabel`, {
-                            index: colorIndex,
-                            label: t(`seasonPlans.viewPage.leafColor.labels.${colorIndex}`, { defaultValue: '' }),
-                          })}
-                        </option>
-                      )
-                    )}
+                  {/* Show all color indices 1-6 regardless of plant age */}
+                  {['1', '2', '3', '4', '5', '6'].map((colorIndex) => (
+                    <option key={colorIndex} value={colorIndex}>
+                      {t(`seasonPlans.viewPage.leafColor.indexLabel`, {
+                        index: colorIndex,
+                        label: t(`seasonPlans.viewPage.leafColor.labels.${colorIndex}`, { defaultValue: '' }),
+                      })}
+                    </option>
+                  ))}
                 </TextField>
               )}
 
+            {/* Warning for plant age outside recommended range */}
             {leafColorData.plantAge &&
               (parseInt(leafColorData.plantAge) < 2 ||
                 parseInt(leafColorData.plantAge) > 8) && (
@@ -2802,9 +2812,33 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#F57C00" }}>
-                    ⚠️ Leaf Color Chart is applicable only for plants aged 2-8
-                    weeks. Your plant is currently {leafColorData.plantAge}{" "}
-                    weeks old.
+                    ⚠️ {t('seasonPlans.viewPage.leafColor.ageWarning', { age: leafColorData.plantAge })}
+                  </Typography>
+                </Box>
+              )}
+
+            {/* Warning when no urea recommendation available for selected combination */}
+            {leafColorData.plantAge &&
+              leafColorData.leafColorIndex &&
+              leafColorData.recommendedUrea === 0 &&
+              (parseInt(leafColorData.plantAge) < 2 ||
+                parseInt(leafColorData.plantAge) > 8 ||
+                !leafColorChart[leafColorData.plantAge] ||
+                !leafColorChart[leafColorData.plantAge][leafColorData.leafColorIndex]) && (
+                <Box
+                  sx={{
+                    p: 2,
+                    backgroundColor: "#E3F2FD",
+                    borderRadius: 2,
+                    border: "2px solid #90CAF9",
+                    mb: 3,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#1976D2" }}>
+                    ℹ️ {t('seasonPlans.viewPage.leafColor.noRecommendation', {
+                      age: leafColorData.plantAge,
+                      index: leafColorData.leafColorIndex
+                    })}
                   </Typography>
                 </Box>
               )}
@@ -2887,15 +2921,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               >
                 {`📋 ${t('seasonPlans.viewPage.leafColor.guideTitle')}`}
               </Typography>
-              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index2.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index2.desc')}
-              </Typography>
-              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index3.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index3.desc')}
-              </Typography>
-              <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index4.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index4.desc')}
-              </Typography>
+              {[1, 2, 3, 4, 5, 6].map((index) => (
+                <Typography key={index} variant="caption" display="block" sx={{ mb: 0.5 }}>
+                  • <strong>{t(`seasonPlans.viewPage.leafColor.guide.index${index}.title`)}</strong> {t(`seasonPlans.viewPage.leafColor.guide.index${index}.desc`)}
+                </Typography>
+              ))}
               <Typography
                 variant="caption"
                 display="block"

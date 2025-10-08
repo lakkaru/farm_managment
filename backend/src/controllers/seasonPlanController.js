@@ -745,7 +745,10 @@ const updateHarvest = async (req, res) => {
 const addLCCFertilizerApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const { plantAge, leafColorIndex, recommendedUrea, notes } = req.body;
+    const { plantAge, leafColorIndex, recommendedUrea, notes, applicationDate } = req.body;
+
+    // Debug logging to verify applicationDate is received
+    console.log('LCC Application Data:', { plantAge, leafColorIndex, recommendedUrea, applicationDate });
 
     const plan = await SeasonPlan.findById(id);
     
@@ -764,24 +767,35 @@ const addLCCFertilizerApplication = async (req, res) => {
       });
     }
 
-    // Calculate the application date based on plant age (weeks from cultivation date)
-    const applicationDate = new Date(plan.cultivationDate);
-    applicationDate.setDate(applicationDate.getDate() + (plantAge * 7)); // Convert weeks to days
+    // Use the provided application date (selected date from dialog) or calculate based on plant age if not provided
+    const appDate = applicationDate ? new Date(applicationDate) : (() => {
+      const calculatedDate = new Date(plan.cultivationDate);
+      calculatedDate.setDate(calculatedDate.getDate() + (plantAge * 7)); // Convert weeks to days
+      return calculatedDate;
+    })();
+
+    // Debug logging to verify which date is being used
+    console.log('Date selection:', { 
+      providedDate: applicationDate, 
+      usedDate: appDate.toISOString(),
+      cultivationDate: plan.cultivationDate,
+      isUsingProvidedDate: !!applicationDate 
+    });
 
     // Calculate urea amount for the cultivating area (convert from per acre to total amount)
     const totalUreaAmount = recommendedUrea * plan.cultivatingArea;
 
     // Create new LCC-based fertilizer application
     const lccApplication = {
-      stage: `LCC Application - Week ${plantAge}`,
-      date: applicationDate,
+      stage: `lcc_application_week_${plantAge}`, // Use translation key instead of hardcoded text
+      date: appDate,
       fertilizers: {
         urea: Math.round(totalUreaAmount * 100) / 100,
         tsp: 0,
         mop: 0,
         zincSulphate: 0
       },
-      description: `Urea application based on Leaf Color Chart - Plant Age: ${plantAge} weeks, Leaf Color Index: ${leafColorIndex}`,
+      description: `lcc_application_description`, // Use translation key instead of hardcoded text
       applied: false,
       implementedDate: null,
       notes: notes || '',
