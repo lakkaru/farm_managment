@@ -32,6 +32,7 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { seasonPlanAPI } from '../../../services/api';
@@ -39,6 +40,7 @@ import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
 
 const SeasonPlansContent = () => {
+  const { t, i18n } = useTranslation();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, plan: null });
@@ -59,7 +61,7 @@ const SeasonPlansContent = () => {
       setPlans(response.data.data || []);
     } catch (error) {
       console.error('Error loading season plans:', error);
-      toast.error('Failed to load season plans');
+      toast.error(t('seasonPlans.failedToLoad'));
       setPlans([]);
     } finally {
       setLoading(false);
@@ -69,12 +71,12 @@ const SeasonPlansContent = () => {
   const handleDelete = async (plan) => {
     try {
       await seasonPlanAPI.deleteSeasonPlan(plan._id);
-      toast.success('Season plan deleted successfully');
+      toast.success(t('seasonPlans.seasonPlanDeleted'));
       setDeleteDialog({ open: false, plan: null });
       loadSeasonPlans();
     } catch (error) {
       console.error('Error deleting season plan:', error);
-      toast.error('Failed to delete season plan');
+      toast.error(t('seasonPlans.failedToDelete'));
     }
   };
 
@@ -99,7 +101,7 @@ const SeasonPlansContent = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <Typography>Loading season plans...</Typography>
+        <Typography>{t('seasonPlans.loadingSeasonPlans')}</Typography>
       </Box>
     );
   }
@@ -114,14 +116,14 @@ const SeasonPlansContent = () => {
             onClick={() => navigate('/dashboard')}
             sx={{ mr: 2 }}
           >
-            Back
+            {t('common.back')}
           </Button>
           <Box>
             <Typography variant="h4" gutterBottom>
-              Season Plans
+              {t('seasonPlans.title')}
             </Typography>
             <Typography variant="body1" color="textSecondary">
-              Manage your paddy cultivation season plans
+              {t('seasonPlans.manageSeasonPlans')}
             </Typography>
           </Box>
         </Box>
@@ -131,14 +133,14 @@ const SeasonPlansContent = () => {
           onClick={() => navigate('/paddy/season-plans/create')}
           sx={{ minWidth: 150 }}
         >
-          Create Plan
+          {t('seasonPlans.createPlan')}
         </Button>
       </Box>
 
       {/* Farm Selection Warning */}
       {!selectedFarm && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Please select a farm from the sidebar to view and manage season plans for that farm.
+          {t('seasonPlans.selectFarmMessage')}
         </Alert>
       )}
 
@@ -147,12 +149,12 @@ const SeasonPlansContent = () => {
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <AgricultureIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
-            No Season Plans Found
+            {t('seasonPlans.noSeasonPlansFound')}
           </Typography>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
             {selectedFarm
-              ? `No season plans found for ${selectedFarm.name}. Create your first season plan to get started.`
-              : 'Select a farm from the sidebar to view season plans.'}
+              ? t('seasonPlans.noSeasonPlansForFarm', { farmName: selectedFarm.name })
+              : t('seasonPlans.selectFarmToView')}
           </Typography>
           {selectedFarm && (
             <Button
@@ -160,13 +162,22 @@ const SeasonPlansContent = () => {
               startIcon={<AddIcon />}
               onClick={() => navigate('/paddy/season-plans/create')}
             >
-              Create Your First Season Plan
+              {t('seasonPlans.createFirstSeasonPlan')}
             </Button>
           )}
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {plans.map((plan) => (
+          {plans.map((plan) => {
+            const completedStages = plan.growingStages ? plan.growingStages.filter(stage => stage.completed).length : 0;
+            const totalStages = plan.growingStages ? plan.growingStages.length : 0;
+            const actualYield = plan.actualHarvest?.actualYield;
+            const expectedYieldKg = plan.expectedHarvest?.estimatedYield ? plan.expectedHarvest.estimatedYield * 1000 : null; // expectedHarvest.estimatedYield is in tons
+            const percentOfExpected = actualYield && expectedYieldKg ? (actualYield / expectedYieldKg) * 100 : null;
+            const percentDisplay = percentOfExpected !== null
+              ? percentOfExpected.toLocaleString(i18n.language || 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+              : null;
+            return (
             <Grid item xs={12} sm={6} md={4} key={plan._id}>
               <Card
                 sx={{
@@ -198,12 +209,12 @@ const SeasonPlansContent = () => {
               >
                 <CardContent sx={{ flex: 1 }}>
                   {/* Farm and Season Info */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box sx={{mb:1}}>
                     <Typography variant="h6" gutterBottom>
                       {plan.farmId?.name || 'Unknown Farm'}
                     </Typography>
                     <Chip
-                      label={plan.season.toUpperCase()}
+                      label={t(`seasonPlans.${plan.season}`, { defaultValue: plan.season.toUpperCase() })}
                       size="small"
                       color={plan.season === 'maha' ? 'primary' : 'secondary'}
                       sx={{ textTransform: 'uppercase' }}
@@ -213,7 +224,7 @@ const SeasonPlansContent = () => {
                   {/* Status */}
                   <Box sx={{ mb: 2 }}>
                     <Chip
-                      label={plan.status.replace('_', ' ').toUpperCase()}
+                      label={t(`seasonPlans.${plan.status}`, { defaultValue: plan.status.replace('_', ' ').toUpperCase() })}
                       size="small"
                       color={getStatusColor(plan.status)}
                       variant={plan.status === 'active' ? 'filled' : 'outlined'}
@@ -225,13 +236,13 @@ const SeasonPlansContent = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <LocationIcon sx={{ fontSize: 16, mr: 1, color: 'grey.600' }} />
                       <Typography variant="body2" color="textSecondary">
-                        District: {plan.farmId?.district || 'Unknown District'}
+                        {t('seasonPlans.district')}: {plan.farmId?.district || t('common.notSpecified')}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <WaterIcon sx={{ fontSize: 16, mr: 1, color: 'grey.600' }} />
                       <Typography variant="body2" color="textSecondary">
-                        {plan.irrigationMethod}
+                        {t(`seasonPlans.irrigationMethods.${plan.irrigationMethod}`, { defaultValue: plan.irrigationMethod || t('common.notSpecified') })}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -244,18 +255,18 @@ const SeasonPlansContent = () => {
 
                   {/* Area and Variety */}
                   <Typography variant="body2" gutterBottom>
-                    <strong>Area:</strong> {plan.cultivatingArea} acres
+                    <strong>{t('seasonPlans.area')}:</strong> {plan.cultivatingArea} {t('seasonPlans.units.acres')}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
-                    <strong>Variety:</strong> {plan.paddyVariety?.name || 'Unknown Variety'}
+                    <strong>{t('seasonPlans.paddyVariety')}:</strong> {plan.paddyVariety?.name || t('common.notSpecified')}
                   </Typography>
 
                   {/* Expected Harvest */}
                   {plan.expectedHarvest?.date && (
                     <Typography variant="body2" color="primary">
-                      <strong>Expected Harvest:</strong> {formatDate(plan.expectedHarvest.date)}
+                      <strong>{t('seasonPlans.expectedHarvest')}:</strong> {formatDate(plan.expectedHarvest.date)}
                       {plan.expectedHarvest.estimatedYield && (
-                        <span> ({plan.expectedHarvest.estimatedYield} tons)</span>
+                        <span> ({plan.expectedHarvest.estimatedYield} {t('seasonPlans.units.tons')})</span>
                       )}
                     </Typography>
                   )}
@@ -273,28 +284,28 @@ const SeasonPlansContent = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                         <CheckCircleIcon sx={{ fontSize: 16, mr: 1, color: 'success.main' }} />
                         <Typography variant="body2" sx={{ color: 'success.dark', fontWeight: 'bold' }}>
-                          Harvest Completed
+                          {t('seasonPlans.viewPage.actualHarvest.completed')}
                         </Typography>
                       </Box>
                       <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem' }}>
-                        <strong>Date:</strong> {formatDate(plan.actualHarvest.date)}
+                        <strong>{t('seasonPlans.viewPage.actualHarvest.date')}:</strong> {formatDate(plan.actualHarvest.date)}
                       </Typography>
                       {plan.actualHarvest.actualYield && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                           <TrendingUpIcon sx={{ fontSize: 14, mr: 0.5, color: 'success.main' }} />
-                          <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem' }}>
-                            <strong>Yield:</strong> {plan.actualHarvest.actualYield} kg
-                            {plan.expectedHarvest?.estimatedYield && (
-                              <span style={{ color: '#666', fontSize: '0.8rem' }}>
-                                {' '}({((plan.actualHarvest.actualYield / (plan.expectedHarvest.estimatedYield * 1000)) * 100).toFixed(1)}% of expected)
-                              </span>
-                            )}
-                          </Typography>
+                            <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem' }}>
+                              <strong>{t('seasonPlans.viewPage.actualHarvest.yield')}:</strong> {plan.actualHarvest.actualYield} {t('seasonPlans.units.kg')}
+                              {percentDisplay && (
+                                <span style={{ color: '#666', fontSize: '0.8rem' }}>
+                                  {' '}({percentDisplay}% {t('seasonPlans.viewPage.actualHarvest.ofExpected')})
+                                </span>
+                              )}
+                            </Typography>
                         </Box>
                       )}
                       {plan.actualHarvest.quality && (
                         <Typography variant="body2" sx={{ color: 'success.main', fontSize: '0.85rem', mt: 0.5 }}>
-                          <strong>Quality:</strong> {plan.actualHarvest.quality}
+                          <strong>{t('seasonPlans.viewPage.actualHarvest.quality')}:</strong> {plan.actualHarvest.quality}
                         </Typography>
                       )}
                     </Box>
@@ -304,7 +315,11 @@ const SeasonPlansContent = () => {
                   {plan.status === 'active' && plan.growingStages && (
                     <Box sx={{ mt: 1 }}>
                       <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'info.main' }}>
-                        Progress: {plan.growingStages.filter(stage => stage.completed).length}/{plan.growingStages.length} stages completed
+                        {t('seasonPlans.progressSummary', {
+                          done: completedStages.toLocaleString(i18n.language || 'en-US'),
+                          total: totalStages.toLocaleString(i18n.language || 'en-US'),
+                          defaultValue: `Progress: ${completedStages}/${totalStages} stages completed`
+                        })}
                       </Typography>
                     </Box>
                   )}
@@ -343,7 +358,8 @@ const SeasonPlansContent = () => {
                 </CardActions>
               </Card>
             </Grid>
-          ))}
+            );
+          })}
         </Grid>
       )}
 
@@ -367,24 +383,25 @@ const SeasonPlansContent = () => {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, plan: null })}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>{t('seasonPlans.confirmDeleteTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete the season plan for{' '}
-            <strong>{deleteDialog.plan?.farmId?.name}</strong>?
-            This action cannot be undone.
+            {t('seasonPlans.confirmDeleteMessage', {
+              season: deleteDialog.plan?.season,
+              year: new Date(deleteDialog.plan?.cultivationDate).getFullYear()
+            })}
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialog({ open: false, plan: null })}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={() => handleDelete(deleteDialog.plan)}
             color="error"
             variant="contained"
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

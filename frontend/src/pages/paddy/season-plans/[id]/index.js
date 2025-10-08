@@ -2,12 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
   List,
   ListItem,
   ListItemText,
@@ -30,6 +24,12 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  Chip,
+  Button,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -67,7 +67,10 @@ import {
   AttachMoney as MoneyIcon,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
+import GrowingStages from "./index/GrowingStages";
+import FertilizerSchedule from "./index/FertilizerSchedule";
 import { navigate } from "gatsby";
+import { useTranslation } from "react-i18next";
 import Layout from "../../../../components/Layout/Layout";
 import AppProviders from "../../../../providers/AppProviders";
 import { seasonPlanAPI } from "../../../../services/api";
@@ -172,205 +175,83 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             "❌ Thumbnail failed to load via backend API:",
             imageUrl
           );
-          console.error("Error details:", e);
-        }}
-      />
-    </Box>
-  );
-};
+        }} />
 
-const SeasonPlanViewContent = ({ id }) => {
-  const [plan, setPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [deleteDialog, setDeleteDialog] = useState(false);
-  const [error, setError] = useState("");
-
-  // Use imported paddy cultivation categories
-  const remarkCategories = PADDY_REMARK_CATEGORIES;
-
-  // Implementation tracking states
-  const [fertilizerDialog, setFertilizerDialog] = useState({
-    open: false,
-    index: null,
-  });
-  const [stageDialog, setStageDialog] = useState({ open: false, index: null });
-  const [implementationData, setImplementationData] = useState({
-    applied: false,
-    implementedDate: "",
-    notes: "",
-    completed: false,
-    actualStartDate: "",
-    actualEndDate: "",
-  });
-  const [saving, setSaving] = useState(false); // Prevent duplicate saves
-  const toastShownRef = useRef(false);
-
-  // Harvest tracking states
-  const [harvestDialog, setHarvestDialog] = useState(false);
-  const [harvestData, setHarvestData] = useState({
-    date: "",
-    actualYield: "",
-    quality: "",
-    notes: "",
-  });
-
-  // Leaf Color Chart states
-  const [leafColorEnabled, setLeafColorEnabled] = useState(false);
-  const [leafColorDialog, setLeafColorDialog] = useState(false);
-  const [leafColorData, setLeafColorData] = useState({
-    currentDate: "",
-    plantAge: "",
-    leafColorIndex: "",
-    recommendedUrea: 0,
-  });
-
-  // Daily Remarks states
-  const [remarkDialog, setRemarkDialog] = useState(false);
-
-  // Expense Management states
-  const [expenseDialog, setExpenseDialog] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [expenseData, setExpenseData] = useState({
-    date: dayjs().format("YYYY-MM-DD"),
-    category: "other",
-    subcategory: "",
-    description: "",
-    amount: "",
-    quantity: "",
-    unit: "",
-    unitPrice: "",
-    vendor: "",
-    receiptNumber: "",
-    paymentMethod: "cash",
-    remarks: "",
-  });
-  const [expenseSummary, setExpenseSummary] = useState(null);
-  const [loadingExpenses, setLoadingExpenses] = useState(false);
-
-  // Accordion state for better UX
-  const [expandedSections, setExpandedSections] = useState({
-    growingStages: false,
-    fertilizerSchedule: false,
-    dailyRemarks: false,
-    expenseManagement: false,
-  });
-
-  const handleAccordionChange = (section) => (event, isExpanded) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: isExpanded,
-    }));
+      </Box>
+    );
   };
 
-  // Expense categories with icons
-  const expenseCategories = [
-    { value: "seeds", label: "Seeds & Seedlings", icon: "🌱" },
-    { value: "fertilizer", label: "Fertilizers", icon: "🌿" },
-    { value: "pesticide", label: "Pesticides", icon: "🐛" },
-    { value: "herbicide", label: "Herbicides", icon: "🌾" },
-    { value: "fungicide", label: "Fungicides", icon: "🦠" },
-    { value: "labor", label: "Labor Costs", icon: "👷" },
-    { value: "machinery", label: "Machinery & Equipment", icon: "🚜" },
-    { value: "fuel", label: "Fuel & Energy", icon: "⛽" },
-    { value: "irrigation", label: "Irrigation", icon: "💧" },
-    { value: "transportation", label: "Transportation", icon: "🚛" },
-    { value: "equipment", label: "Tools & Equipment", icon: "🔧" },
-    { value: "land_preparation", label: "Land Preparation", icon: "🚜" },
-    { value: "harvesting", label: "Harvesting", icon: "🌾" },
-    { value: "storage", label: "Storage & Processing", icon: "🏪" },
-    { value: "certification", label: "Certification & Testing", icon: "📋" },
-    { value: "insurance", label: "Insurance", icon: "🛡️" },
-    { value: "utilities", label: "Utilities", icon: "⚡" },
-    { value: "other", label: "Other Expenses", icon: "💰" },
+  const SeasonPlanViewContent = ({ id }) => {
+  const { t, i18n } = useTranslation();
+
+  // Local component state (restored after refactor)
+  const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [leafColorData, setLeafColorData] = useState({ currentDate: "", plantAge: "", leafColorIndex: "", recommendedUrea: 0 });
+  const [leafColorDialog, setLeafColorDialog] = useState(false);
+  const toastShownRef = useRef(false);
+
+  const [loadingExpenses, setLoadingExpenses] = useState(false);
+  const [expenseSummary, setExpenseSummary] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [expenseData, setExpenseData] = useState({});
+  const [expenseDialog, setExpenseDialog] = useState(false);
+
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [remarkImages, setRemarkImages] = useState([]);
+  const [remarkDialog, setRemarkDialog] = useState(false);
+  const [editingRemark, setEditingRemark] = useState(null);
+  const [remarkData, setRemarkData] = useState({ date: dayjs().format("YYYY-MM-DD"), category: "general", title: "", description: "", images: [] });
+  const [deleteRemarkId, setDeleteRemarkId] = useState(null);
+  const [deleteRemarkDialog, setDeleteRemarkDialog] = useState(false);
+
+  const [implementationData, setImplementationData] = useState({});
+  const [fertilizerDialog, setFertilizerDialog] = useState({ open: false, index: null });
+  const [stageDialog, setStageDialog] = useState({ open: false, index: null });
+
+  const [harvestData, setHarvestData] = useState({ date: "", actualYield: "", quality: "", notes: "" });
+  const [harvestDialog, setHarvestDialog] = useState(false);
+
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteFertilizerIndex, setDeleteFertilizerIndex] = useState(null);
+  const [deleteFertilizerDialogOpen, setDeleteFertilizerDialogOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({ growingStages: true, fertilizerSchedule: false, dailyRemarks: false });
+  const [leafColorEnabled, setLeafColorEnabled] = useState(false);
+
+  // Basic categories used in expense UI (minimal defaults)
+  const [expenseCategories] = useState([
+    { value: "other", label: "Other", icon: null },
+  ]);
+
+  // Accordion section toggle handler
+  const handleAccordionChange = (section) => (event, isExpanded) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: isExpanded }));
+  };
+
+  // Remark categories derived from constants (fallback)
+  const remarkCategories = PADDY_REMARK_CATEGORIES || [
+    { key: 'general', label: 'General' }
   ];
 
+  // Wrapper to remove an image from remarkImages (keeps previous API)
+  const removeRemarkImage = (index) => {
+    setRemarkImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Payment methods and units used in expense UI
   const paymentMethods = [
-    { value: "cash", label: "Cash" },
-    { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "check", label: "Check" },
-    { value: "card", label: "Card Payment" },
-    { value: "credit", label: "Credit" },
-    { value: "other", label: "Other" },
+    { value: 'cash', label: 'Cash' },
+    { value: 'card', label: 'Card' },
+    { value: 'bank', label: 'Bank Transfer' },
   ];
 
   const units = [
-    { value: "kg", label: "Kilograms (kg)" },
-    { value: "g", label: "Grams (g)" },
-    { value: "L", label: "Liters (L)" },
-    { value: "ml", label: "Milliliters (ml)" },
-    { value: "units", label: "Units" },
-    { value: "hours", label: "Hours" },
-    { value: "days", label: "Days" },
-    { value: "acres", label: "Acres" },
-    { value: "meters", label: "Meters" },
-    { value: "other", label: "Other" },
+    { value: 'kg', label: 'kg' },
+    { value: 'ltr', label: 'ltr' },
+    { value: 'unit', label: 'unit' },
   ];
-  const [editingRemark, setEditingRemark] = useState(null);
-  const [remarkData, setRemarkData] = useState({
-    date: dayjs().format("YYYY-MM-DD"),
-    category: "general",
-    title: "",
-    description: "",
-    images: [],
-  });
-  const [remarkImages, setRemarkImages] = useState([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [deleteRemarkDialog, setDeleteRemarkDialog] = useState(false);
-  const [deleteRemarkId, setDeleteRemarkId] = useState(null);
-
-  // Remove image from daily remark
-  const removeRemarkImage = async (remarkId, imageFilename) => {
-    if (saving) return;
-    setSaving(true);
-
-    try {
-      console.log("=== FRONTEND REMOVE IMAGE DEBUG ===");
-      console.log("Season plan ID:", id);
-      console.log("Remark ID:", remarkId);
-      console.log("Image filename:", imageFilename);
-      console.log("Full API call details:", {
-        url: `/season-plans/${id}/daily-remarks/${remarkId}/remove-image`,
-        data: { imageFilename },
-      });
-      console.log("=====================================");
-
-      const response = await seasonPlanAPI.removeRemarkImage(
-        id,
-        remarkId,
-        imageFilename
-      );
-
-      // Update the main plan state
-      setPlan(response.data.data);
-
-      // Update remarkData if we're currently editing this remark
-      if (editingRemark && editingRemark._id === remarkId) {
-        const updatedRemark = response.data.data.dailyRemarks.find(
-          (r) => r._id === remarkId
-        );
-        if (updatedRemark) {
-          setRemarkData((prev) => ({
-            ...prev,
-            images: updatedRemark.images || [],
-          }));
-          setEditingRemark(updatedRemark);
-        }
-      }
-
-      toast.success("🖼️ Image removed successfully");
-    } catch (error) {
-      console.error("Error removing image:", error);
-      let message = "Failed to remove image";
-      if (error.response?.data?.message) {
-        message = error.response.data.message;
-      } else if (error.message) {
-        message = error.message;
-      }
-      toast.error(message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const loadSeasonPlan = useCallback(async () => {
     try {
@@ -419,6 +300,25 @@ const SeasonPlanViewContent = ({ id }) => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  // Short date formatter (e.g. 08 Oct 2025)
+  const formatShortDate = (date) => {
+    if (!date) return "";
+    return dayjs(date).format("DD MMM YYYY");
+  };
+
+  const formatRangeShortDate = (start, end) => {
+    if (!start && !end) return "";
+    if (!end) return formatShortDate(start);
+    if (!start) return formatShortDate(end);
+    try {
+      return dayjs(start).isSame(end, "day")
+        ? formatShortDate(start)
+        : `${formatShortDate(start)} - ${formatShortDate(end)}`;
+    } catch (e) {
+      return `${formatShortDate(start)} - ${formatShortDate(end)}`;
+    }
   };
 
   const getCompletedStages = () => {
@@ -580,6 +480,20 @@ const SeasonPlanViewContent = ({ id }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const requestDeleteFertilizerApplication = (applicationIndex) => {
+    // Open confirmation dialog instead of deleting immediately
+    setDeleteFertilizerIndex(applicationIndex);
+    setDeleteFertilizerDialogOpen(true);
+  };
+
+  const confirmDeleteFertilizerApplication = async () => {
+    if (deleteFertilizerIndex === null) return;
+    setDeleteFertilizerDialogOpen(false);
+    const idx = deleteFertilizerIndex;
+    setDeleteFertilizerIndex(null);
+    await deleteFertilizerApplication(idx);
   };
 
   // Implementation tracking functions
@@ -1211,7 +1125,7 @@ const SeasonPlanViewContent = ({ id }) => {
   if (loading) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography>Loading season plan...</Typography>
+        <Typography>{t('seasonPlans.viewPage.loading')}</Typography>
       </Box>
     );
   }
@@ -1219,13 +1133,13 @@ const SeasonPlanViewContent = ({ id }) => {
   if (error || !plan) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error || "Season plan not found"}</Alert>
+        <Alert severity="error">{error || t('seasonPlans.viewPage.notFound')}</Alert>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate("/paddy/season-plans")}
           sx={{ mt: 2 }}
         >
-          Back to Season Plans
+          {t('seasonPlans.viewPage.backToList')}
         </Button>
       </Box>
     );
@@ -1248,18 +1162,17 @@ const SeasonPlanViewContent = ({ id }) => {
             onClick={() => navigate("/paddy/season-plans")}
             sx={{ mr: 2 }}
           >
-            Back
+            {t('common.back')}
           </Button>
           <Box>
-            <Typography variant="h4" gutterBottom>
-              {plan.farmId?.name} - {plan.season.toUpperCase()} Season
-            </Typography>
-            <Chip
-              label={plan.status.replace("_", " ").toUpperCase()}
-              color={getStatusColor(plan.status)}
-              size="medium"
-              sx={{ textTransform: "uppercase" }}
-            />
+            <Box >
+              <Typography variant="h4" gutterBottom>
+                {plan.farmId?.name}
+              </Typography>
+              <Typography variant="h6" gutterBottom>
+                {t(`seasonPlans.${plan.season}`, { defaultValue: plan.season.toUpperCase() })} {t('seasonPlans.season')}
+              </Typography>
+            </Box>
           </Box>
         </Box>
         <Box>
@@ -1269,7 +1182,7 @@ const SeasonPlanViewContent = ({ id }) => {
             onClick={() => navigate(`/paddy/season-plans/${id}/edit`)}
             sx={{ mr: 1, minWidth:'97px', mb: { xs: 1, sm: 0 } }}
           >
-            Edit
+            {t('seasonPlans.viewPage.editPlan')}
           </Button>
           <Button
             startIcon={<DeleteIcon />}
@@ -1277,7 +1190,7 @@ const SeasonPlanViewContent = ({ id }) => {
             color="error"
             onClick={() => setDeleteDialog(true)}
           >
-            Delete
+            {t('seasonPlans.viewPage.deletePlan')}
           </Button>
         </Box>
       </Box>
@@ -1288,7 +1201,7 @@ const SeasonPlanViewContent = ({ id }) => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Basic Information
+                {t('seasonPlans.viewPage.basicInfo')}
               </Typography>
               <List dense>
                 <ListItem>
@@ -1296,8 +1209,8 @@ const SeasonPlanViewContent = ({ id }) => {
                     <LocationIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="District"
-                    secondary={plan.farmId?.district || "N/A"}
+                    primary={t('seasonPlans.viewPage.district')}
+                    secondary={plan.farmId?.district || t('common.notSpecified')}
                   />
                 </ListItem>
                 <ListItem>
@@ -1305,7 +1218,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     <TerrainIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Climate Zone"
+                    primary={t('seasonPlans.viewPage.climateZone')}
                     secondary={plan.climateZone}
                   />
                 </ListItem>
@@ -1314,7 +1227,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     <WaterIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Irrigation Method"
+                    primary={t('seasonPlans.viewPage.irrigationMethod')}
                     secondary={plan.irrigationMethod}
                   />
                 </ListItem>
@@ -1323,7 +1236,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     <SpaIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Soil Condition"
+                    primary={t('seasonPlans.viewPage.soilCondition')}
                     secondary={plan.soilCondition}
                   />
                 </ListItem>
@@ -1332,8 +1245,8 @@ const SeasonPlanViewContent = ({ id }) => {
                     <GrassIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Paddy Variety"
-                    secondary={`${plan.paddyVariety?.name || "N/A"} (${plan.paddyVariety?.duration || 0} days)`}
+                    primary={t('seasonPlans.viewPage.paddyVariety')}
+                    secondary={`${plan.paddyVariety?.name || t('common.notSpecified')} (${plan.paddyVariety?.duration || 0} ${t('seasonPlans.days')})`}
                   />
                 </ListItem>
                 <ListItem>
@@ -1341,8 +1254,8 @@ const SeasonPlanViewContent = ({ id }) => {
                     <AreaIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Cultivating Area"
-                    secondary={`${plan.cultivatingArea} acres`}
+                    primary={t('seasonPlans.viewPage.cultivatingArea')}
+                    secondary={`${plan.cultivatingArea} ${t('seasonPlans.units.acres')}`}
                   />
                 </ListItem>
               </List>
@@ -1355,7 +1268,7 @@ const SeasonPlanViewContent = ({ id }) => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Timeline & Progress
+                {t('seasonPlans.viewPage.timeline')}
               </Typography>
               <List dense>
                 <ListItem>
@@ -1363,8 +1276,8 @@ const SeasonPlanViewContent = ({ id }) => {
                     <CalendarIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Cultivation Date"
-                    secondary={formatDate(plan.cultivationDate)}
+                    primary={t('seasonPlans.viewPage.cultivationDate')}
+                    secondary={formatShortDate(plan.cultivationDate)}
                   />
                 </ListItem>
                 {plan.expectedHarvest?.date && (
@@ -1373,8 +1286,8 @@ const SeasonPlanViewContent = ({ id }) => {
                       <CalendarIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Expected Harvest"
-                      secondary={formatDate(plan.expectedHarvest.date)}
+                      primary={t('seasonPlans.viewPage.expectedHarvest')}
+                      secondary={formatShortDate(plan.expectedHarvest.date)}
                     />
                   </ListItem>
                 )}
@@ -1384,8 +1297,8 @@ const SeasonPlanViewContent = ({ id }) => {
                       <CheckCircleIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Actual Harvest"
-                      secondary={formatDate(plan.actualHarvest.date)}
+                      primary={t('seasonPlans.viewPage.actualHarvest')}
+                      secondary={formatShortDate(plan.actualHarvest.date)}
                     />
                   </ListItem>
                 )}
@@ -1394,7 +1307,7 @@ const SeasonPlanViewContent = ({ id }) => {
               {/* Progress */}
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle1" gutterBottom>
-                🌾 Growing Stages Progress
+                🌾 {t('seasonPlans.viewPage.growingStages')}
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <LinearProgress
@@ -1417,8 +1330,7 @@ const SeasonPlanViewContent = ({ id }) => {
                   color="textSecondary"
                   sx={{ mt: 1 }}
                 >
-                  🌱 {getCompletedStages()} of {plan.growingStages?.length || 0}{" "}
-                  stages completed
+                  🌱 {t('seasonPlans.viewPage.stageProgress', { current: getCompletedStages(), total: plan.growingStages?.length || 0 })}
                 </Typography>
               </Box>
 
@@ -1433,7 +1345,7 @@ const SeasonPlanViewContent = ({ id }) => {
                 }}
               >
                 <Typography variant="subtitle1">
-                  🌾 Harvest Information
+                  🌾   {t('seasonPlans.viewPage.harvestInformation')}
                 </Typography>
                 <Button
                   variant="contained"
@@ -1451,8 +1363,8 @@ const SeasonPlanViewContent = ({ id }) => {
                   }}
                 >
                   {plan.actualHarvest?.date
-                    ? "Update Harvest"
-                    : "Record Harvest"}
+                    ? t('seasonPlans.viewPage.updateHarvest')
+                    : t('seasonPlans.viewPage.recordHarvest')}
                 </Button>
               </Box>
 
@@ -1470,24 +1382,17 @@ const SeasonPlanViewContent = ({ id }) => {
                     variant="body2"
                     sx={{ color: "#006400", fontWeight: "bold", mb: 1 }}
                   >
-                    ✅ Harvest Completed: {formatDate(plan.actualHarvest.date)}
+                    ✅ {t('seasonPlans.viewPage.harvestCompleted')}: {formatShortDate(plan.actualHarvest.date)}
                   </Typography>
                   {plan.actualHarvest.actualYield && (
                     <Typography
                       variant="body2"
                       sx={{ color: "#228B22", mb: 0.5 }}
                     >
-                      📊 Actual Yield: {plan.actualHarvest.actualYield} kg
+                      📊 {t('seasonPlans.viewPage.actualYield')}: {plan.actualHarvest.actualYield} kg
                       {plan.expectedHarvest?.estimatedYield && (
                         <span style={{ color: "#666", marginLeft: 8 }}>
-                          (Expected: {plan.expectedHarvest.estimatedYield} tons
-                          -{" "}
-                          {(
-                            (plan.actualHarvest.actualYield /
-                              (plan.expectedHarvest.estimatedYield * 1000)) *
-                            100
-                          ).toFixed(1)}
-                          % achieved)
+                          ({t('seasonPlans.viewPage.expectedHarvest')}: {plan.expectedHarvest.estimatedYield} {t('seasonPlans.units.tons')} - {((plan.actualHarvest.actualYield / (plan.expectedHarvest.estimatedYield * 1000)) * 100).toFixed(1)}% {t('seasonPlans.viewPage.actualHarvest.ofExpected')})
                         </span>
                       )}
                     </Typography>
@@ -1497,7 +1402,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       variant="body2"
                       sx={{ color: "#228B22", mb: 0.5 }}
                     >
-                      🏆 Quality: {plan.actualHarvest.quality}
+                      🏆 {t('seasonPlans.viewPage.yieldQuality')}: {plan.actualHarvest.quality}
                     </Typography>
                   )}
                   {plan.actualHarvest.notes && (
@@ -1505,7 +1410,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       variant="body2"
                       sx={{ color: "#228B22", fontStyle: "italic" }}
                     >
-                      📝 Notes: {plan.actualHarvest.notes}
+                      📝 {t('seasonPlans.viewPage.harvestNotes')}: {plan.actualHarvest.notes}
                     </Typography>
                   )}
                 </Box>
@@ -1522,7 +1427,7 @@ const SeasonPlanViewContent = ({ id }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#B8860B" }}>
-                    📅 Expected Harvest: {formatDate(plan.expectedHarvest.date)}
+                    📅 {t('seasonPlans.viewPage.expectedHarvest')}: {formatShortDate(plan.expectedHarvest.date)}
                     {plan.expectedHarvest.estimatedYield && (
                       <span style={{ marginLeft: 8 }}>
                         (Estimated: {plan.expectedHarvest.estimatedYield} tons)
@@ -1536,591 +1441,33 @@ const SeasonPlanViewContent = ({ id }) => {
         </Grid>
 
         {/* Growing Stages */}
-        <Grid item xs={12}>
-          <Accordion
-            expanded={expandedSections.growingStages}
-            onChange={handleAccordionChange("growingStages")}
-            sx={{ boxShadow: 3 }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{
-                backgroundColor: "#f8f9fa",
-                "&:hover": { backgroundColor: "#e9ecef" },
-                "& .MuiAccordionSummary-content": { margin: "16px 0" },
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  pr: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                >
-                  🌾 Growing Stages
-                  {plan.growingStages && (
-                    <Chip
-                      label={`${getCompletedStages()} of ${plan.growingStages.length} completed`}
-                      size="small"
-                      color={
-                        getCompletedStages() === plan.growingStages.length
-                          ? "success"
-                          : "default"
-                      }
-                      sx={{ ml: 2 }}
-                    />
-                  )}
-                </Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                {plan.growingStages?.map((stage, index) => (
-                  <Grid item xs={12} sm={6} lg={4} key={index}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        height: "100%",
-                        background: stage.completed
-                          ? "linear-gradient(135deg, #90EE90, #98FB98)"
-                          : "linear-gradient(135deg, #F5F5F5, #E8F5E8)",
-                        borderLeft: `4px solid ${stage.completed ? "#006400" : "#90EE90"}`,
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 4px 12px rgba(144, 238, 144, 0.4)",
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            mb: 1,
-                            gap: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          <ScheduleIcon
-                            sx={{
-                              color: stage.completed
-                                ? "success.main"
-                                : "grey.400",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              flex: 1,
-                              minWidth: 0,
-                              wordBreak: "break-word",
-                              overflowWrap: "break-word",
-                            }}
-                          >
-                            {stage.stage}
-                          </Typography>
-                          {stage.completed && (
-                            <CheckCircleIcon
-                              sx={{ color: "success.main", flexShrink: 0 }}
-                            />
-                          )}
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                          gutterBottom
-                          sx={{ wordBreak: "break-word", lineHeight: 1.4 }}
-                        >
-                          Planned: {formatDate(stage.startDate)} -{" "}
-                          {formatDate(stage.endDate)}
-                        </Typography>
-                        {stage.actualStartDate && stage.actualEndDate && (
-                          <Typography
-                            variant="body2"
-                            color="success.main"
-                            gutterBottom
-                            sx={{ wordBreak: "break-word", lineHeight: 1.4 }}
-                          >
-                            ✓ Actual: {formatDate(stage.actualStartDate)} -{" "}
-                            {formatDate(stage.actualEndDate)}
-                          </Typography>
-                        )}
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            wordBreak: "break-word",
-                            overflowWrap: "break-word",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {stage.description}
-                        </Typography>
-                        {stage.notes && (
-                          <Box
-                            sx={{
-                              mt: 1,
-                              p: { xs: 1, sm: 1.5 },
-                              backgroundColor: "grey.50",
-                              borderRadius: 1,
-                              borderLeft: 3,
-                              borderColor: "info.main",
-                              wordBreak: "break-word",
-                              overflowWrap: "break-word",
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "info.dark",
-                                fontStyle: "italic",
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              📝 Notes: {stage.notes}
-                            </Typography>
-                          </Box>
-                        )}
-                        <Box
-                          sx={{
-                            mt: 2,
-                            display: "flex",
-                            gap: 1,
-                            justifyContent: "flex-start",
-                          }}
-                        >
-                          <Tooltip
-                            title={
-                              stage.completed
-                                ? "Mark as Incomplete"
-                                : "Mark as Complete"
-                            }
-                          >
-                            <IconButton
-                              size="small"
-                              color={stage.completed ? "success" : "primary"}
-                              onClick={() => handleStageImplementation(index)}
-                              sx={{ flexShrink: 0 }}
-                            >
-                              {stage.completed ? (
-                                <CheckIcon />
-                              ) : (
-                                <PlayArrowIcon />
-                              )}
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Add Notes">
-                            <IconButton
-                              size="small"
-                              color="info"
-                              onClick={() => handleStageImplementation(index)}
-                              sx={{ flexShrink: 0 }}
-                            >
-                              <NotesIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        </Grid>
+        <GrowingStages
+          plan={plan}
+          expandedSections={expandedSections}
+          handleAccordionChange={handleAccordionChange}
+          handleStageImplementation={handleStageImplementation}
+          getCompletedStages={getCompletedStages}
+          t={t}
+          formatDate={formatDate}
+        />
 
         {/* Fertilizer Schedule */}
-        <Grid item xs={12} >
-          <Accordion
-            expanded={expandedSections.fertilizerSchedule}
-            onChange={handleAccordionChange("fertilizerSchedule")}
-            sx={{ boxShadow: 3 }}
-          >
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{
-                backgroundColor: "#f8f9fa",
-                "&:hover": { backgroundColor: "#e9ecef" },
-                "& .MuiAccordionSummary-content": { margin: "16px 0" },
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  pr: 2,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                >
-                  🌿 Fertilizer Schedule
-                  {plan.fertilizerSchedule && (
-                    <Chip
-                      label={`${plan.fertilizerSchedule.filter((app) => app.applied).length} of ${plan.fertilizerSchedule.length} applied`}
-                      size="small"
-                      color={
-                        plan.fertilizerSchedule.filter((app) => app.applied)
-                          .length === plan.fertilizerSchedule.length
-                          ? "success"
-                          : "default"
-                      }
-                      sx={{ ml: 2, display: { xs: 'none', sm: 'inline-flex' } }}
-                    />
-                  )}
-                </Typography>
-                <Box sx={{ 
-                  display: "flex", 
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: "stretch", sm: "center" }, 
-                  justifyContent: { xs: 'center', sm: 'flex-end' },  
-                  gap: 1,
-                  width: { xs: '100%', sm: 'auto' }
-                }}>
-                  {plan.fertilizerSchedule && (
-                    <Chip
-                      label={`${plan.fertilizerSchedule.filter((app) => app.applied).length} of ${plan.fertilizerSchedule.length} applied`}
-                      size="small"
-                      color={
-                        plan.fertilizerSchedule.filter((app) => app.applied)
-                          .length === plan.fertilizerSchedule.length
-                          ? "success"
-                          : "default"
-                      }
-                      sx={{ display: { xs: 'flex', sm: 'none' }, alignSelf: 'center' }}
-                    />
-                  )}
+        <FertilizerSchedule
+          plan={plan}
+          expandedSections={expandedSections}
+          handleAccordionChange={handleAccordionChange}
+          handleFertilizerImplementation={handleFertilizerImplementation}
+          deleteFertilizerApplication={deleteFertilizerApplication}
+          onRequestDelete={requestDeleteFertilizerApplication}
+          leafColorEnabled={leafColorEnabled}
+          setLeafColorEnabled={setLeafColorEnabled}
+          setLeafColorData={setLeafColorData}
+          setLeafColorDialog={setLeafColorDialog}
+          saving={saving}
+          t={t}
+        />
 
-                  <Box sx={{ 
-                    display: "flex", 
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: "center", 
-                    gap: { xs: 1, sm: 2 }
-                  }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="body2">Leaf Color Chart:</Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => setLeafColorEnabled(!leafColorEnabled)}
-                        sx={{
-                          color: leafColorEnabled ? "success.main" : "grey.400",
-                        }}
-                      >
-                        {leafColorEnabled ? <ToggleOnIcon /> : <ToggleOffIcon />}
-                      </IconButton>
-                    </Box>
-                    {leafColorEnabled && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<ColorizeIcon />}
-                        onClick={() => {
-                          setLeafColorData({
-                            currentDate: dayjs().format("YYYY-MM-DD"),
-                            plantAge: "",
-                            leafColorIndex: "",
-                            recommendedUrea: 0,
-                          });
-                          setLeafColorDialog(true);
-                        }}
-                        sx={{
-                          borderColor: "#90EE90",
-                          color: "#228B22",
-                          "&:hover": {
-                            borderColor: "#228B22",
-                            backgroundColor: "#F0FFF0",
-                          },
-                        }}
-                      >
-                        Check Leaf Color
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                {plan.fertilizerSchedule?.map((app, index) => (
-                  <Grid item xs={12} sm={6} lg={4} key={index}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        height: "100%",
-                        background: app.applied
-                          ? "linear-gradient(135deg, #98FB98, #90EE90)"
-                          : app.isLCCBased
-                            ? "linear-gradient(135deg, #E3F2FD, #BBDEFB)"
-                            : "linear-gradient(135deg, #F5F5F5, #FFF8E7)",
-                        borderLeft: `4px solid ${app.applied ? "#006400" : app.isLCCBased ? "#1976D2" : "#FFD700"}`,
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: app.isLCCBased
-                            ? "0 4px 12px rgba(25, 118, 210, 0.4)"
-                            : "0 4px 12px rgba(255, 215, 0, 0.4)",
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            mb: 1,
-                            minWidth: 0,
-                          }}
-                        >
-                          {app.isLCCBased ? (
-                            <ColorizeIcon
-                              sx={{
-                                mr: 1,
-                                color: app.applied
-                                  ? "success.main"
-                                  : "primary.main",
-                                flexShrink: 0,
-                              }}
-                            />
-                          ) : (
-                            <ScienceIcon
-                              sx={{
-                                mr: 1,
-                                color: app.applied
-                                  ? "success.main"
-                                  : "grey.400",
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              flex: 1,
-                              minWidth: 0,
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {app.stage}
-                          </Typography>
-                          {app.applied && (
-                            <CheckCircleIcon
-                              sx={{
-                                ml: 1,
-                                color: "success.main",
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
-                          {app.isLCCBased && !app.applied && (
-                            <Chip
-                              label="LCC"
-                              size="small"
-                              sx={{
-                                ml: 1,
-                                bgcolor: "primary.main",
-                                color: "white",
-                                fontSize: "0.6rem",
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                          gutterBottom
-                        >
-                          Scheduled: {formatDate(app.date)}
-                        </Typography>
-                        {app.implementedDate && (
-                          <Typography
-                            variant="body2"
-                            color="success.main"
-                            gutterBottom
-                          >
-                            ✓ Implemented: {formatDate(app.implementedDate)}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" gutterBottom>
-                          {app.description}
-                        </Typography>
-
-                        {/* LCC Data Display */}
-                        {app.isLCCBased && app.lccData && (
-                          <Box
-                            sx={{
-                              mt: 1,
-                              p: { xs: 1, sm: 1.5 },
-                              backgroundColor: "#E3F2FD",
-                              borderRadius: 1,
-                              borderLeft: 3,
-                              borderColor: "primary.main",
-                              wordBreak: "break-word",
-                              overflowWrap: "break-word",
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "primary.dark",
-                                fontWeight: "bold",
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              📊 LCC Data: Age {app.lccData.plantAge}w, Color
-                              Index {app.lccData.leafColorIndex}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{
-                                color: "primary.dark",
-                                lineHeight: 1.3,
-                                mt: 0.5,
-                              }}
-                            >
-                              Recommended: {app.lccData.recommendedPerAcre}
-                              kg/acre × {app.lccData.totalArea} acres
-                            </Typography>
-                          </Box>
-                        )}
-
-                        <Box
-                          sx={{
-                            mt: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 0.25,
-                          }}
-                        >
-                          {app.fertilizers?.urea > 0 && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ wordBreak: "break-word" }}
-                            >
-                              Urea: {app.fertilizers.urea} kg
-                            </Typography>
-                          )}
-                          {app.fertilizers?.tsp > 0 && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ wordBreak: "break-word" }}
-                            >
-                              TSP: {app.fertilizers.tsp} kg
-                            </Typography>
-                          )}
-                          {app.fertilizers?.mop > 0 && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ wordBreak: "break-word" }}
-                            >
-                              MOP: {app.fertilizers.mop} kg
-                            </Typography>
-                          )}
-                          {app.fertilizers?.zincSulphate > 0 && (
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              sx={{ wordBreak: "break-word" }}
-                            >
-                              Zinc Sulphate: {app.fertilizers.zincSulphate} kg
-                            </Typography>
-                          )}
-                        </Box>
-                        {app.notes && (
-                          <Box
-                            sx={{
-                              mt: 1,
-                              p: { xs: 1, sm: 1.5 },
-                              backgroundColor: "grey.50",
-                              borderRadius: 1,
-                              borderLeft: 3,
-                              borderColor: "info.main",
-                              wordBreak: "break-word",
-                              overflowWrap: "break-word",
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "info.dark",
-                                fontStyle: "italic",
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              📝 Notes: {app.notes}
-                            </Typography>
-                          </Box>
-                        )}
-                        <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                          <Tooltip
-                            title={
-                              app.applied
-                                ? "Mark as Not Applied"
-                                : "Mark as Applied"
-                            }
-                          >
-                            <IconButton
-                              size="small"
-                              color={app.applied ? "success" : "primary"}
-                              onClick={() =>
-                                handleFertilizerImplementation(index)
-                              }
-                            >
-                              {app.applied ? <CheckIcon /> : <PlayArrowIcon />}
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Add Notes">
-                            <IconButton
-                              size="small"
-                              color="info"
-                              onClick={() =>
-                                handleFertilizerImplementation(index)
-                              }
-                            >
-                              <NotesIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {!app.applied && (
-                            <Tooltip
-                              title={`Delete ${app.isLCCBased ? "LCC-based" : "scheduled"} fertilizer application`}
-                            >
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() =>
-                                  deleteFertilizerApplication(index)
-                                }
-                                disabled={saving}
-                              >
-                                <CloseIcon />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        </Grid>
-
-        {/* Daily Remarks */}
+             {/* Daily Remarks */}
         <Grid item xs={12}>
           <Accordion
             expanded={expandedSections.dailyRemarks}
@@ -2149,10 +1496,10 @@ const SeasonPlanViewContent = ({ id }) => {
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
                   <CommentIcon />
-                  Daily Remarks
+                  {t('seasonPlans.viewPage.dailyRemarks')}
                   {plan.dailyRemarks && (
                     <Chip
-                      label={`${plan.dailyRemarks.length} remarks`}
+                      label={`${plan.dailyRemarks.length} ${t('seasonPlans.viewPage.remarks')}`}
                       size="small"
                       color={
                         plan.dailyRemarks.length > 0 ? "success" : "default"
@@ -2196,7 +1543,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       minWidth: { xs: 'auto', sm: '64px' }
                     }}
                   >
-                    Add Remark
+                    {t('seasonPlans.viewPage.addRemark')}
                   </Button>
                 </Box>
               </Box>
@@ -2274,7 +1621,7 @@ const SeasonPlanViewContent = ({ id }) => {
                                     flexShrink: 0,
                                   }}
                                 >
-                                  <Tooltip title="Edit">
+                                  <Tooltip title={t('common.edit')}>
                                     <IconButton
                                       size="small"
                                       onClick={() => openRemarkDialog(remark)}
@@ -2282,7 +1629,7 @@ const SeasonPlanViewContent = ({ id }) => {
                                       <EditIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-                                  <Tooltip title="Delete">
+                                  <Tooltip title={t('common.delete')}>
                                     <IconButton
                                       size="small"
                                       color="error"
@@ -2300,7 +1647,7 @@ const SeasonPlanViewContent = ({ id }) => {
                                 gutterBottom
                                 sx={{ wordBreak: "break-word" }}
                               >
-                                📅 {formatDate(remark.date)}
+                                📅 {formatShortDate(remark.date)}
                               </Typography>
 
                               <Typography
@@ -2501,7 +1848,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     onClick={() => openRemarkDialog()}
                     sx={{ color: "#4CAF50", borderColor: "#4CAF50" }}
                   >
-                    Add Your First Remark
+                    {t('seasonPlans.viewPage.addFirstRemark')}
                   </Button>
                 </Box>
               )}
@@ -2538,7 +1885,7 @@ const SeasonPlanViewContent = ({ id }) => {
                   variant="h6"
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  💰 Expense Management
+                  💰 {t('seasonPlans.viewPage.expenses')}
                   {expenseSummary && (
                     <Chip
                       label={`${expenseSummary.expenseCount} records | ${formatCurrency(expenseSummary.totalExpenses)}`}
@@ -2587,7 +1934,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       minWidth: { xs: 'auto', sm: '64px' }
                     }}
                   >
-                    Add Expense
+                    {t('seasonPlans.viewPage.addExpense')}
                   </Button>
                 </Box>
               </Box>
@@ -2611,7 +1958,7 @@ const SeasonPlanViewContent = ({ id }) => {
                           {formatCurrency(expenseSummary.totalExpenses)}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
-                          Total Expenses
+                          {t('seasonPlans.viewPage.totalExpenses')}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -2690,7 +2037,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     gutterBottom
                     sx={{ fontWeight: "bold", mb: 2 }}
                   >
-                    Expense Records ({plan.expenses.length})
+                    {t('seasonPlans.viewPage.recentExpenses')} ({plan.expenses.length})
                   </Typography>
                   <Grid container spacing={2}>
                     {plan.expenses
@@ -2806,7 +2153,7 @@ const SeasonPlanViewContent = ({ id }) => {
                                   variant="body2"
                                   color="textSecondary"
                                 >
-                                  {formatDate(expense.date)}
+                                  {formatShortDate(expense.date)}
                                 </Typography>
                               </Box>
 
@@ -2903,20 +2250,19 @@ const SeasonPlanViewContent = ({ id }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  🌾 Harvest Information
+                  {t('seasonPlans.viewPage.harvestInformation')}
                 </Typography>
                 <Grid container spacing={3}>
                   {plan.expectedHarvest && (
                     <Grid item xs={12} md={6}>
                       <Typography variant="subtitle1" gutterBottom>
-                        Expected Harvest
+                        {t('seasonPlans.viewPage.expectedHarvest')}
                       </Typography>
                       <Typography variant="body2">
-                        Date: {formatDate(plan.expectedHarvest.date)}
+                        {t('seasonPlans.viewPage.actualHarvest.date')}: {formatShortDate(plan.expectedHarvest.date)}
                       </Typography>
                       <Typography variant="body2">
-                        Estimated Yield: {plan.expectedHarvest.estimatedYield}{" "}
-                        tons
+                        {t('seasonPlans.viewPage.actualHarvest.yield')}: {plan.expectedHarvest.estimatedYield} {t('seasonPlans.units.tons')}
                       </Typography>
                     </Grid>
                   )}
@@ -2926,7 +2272,7 @@ const SeasonPlanViewContent = ({ id }) => {
                         Actual Harvest
                       </Typography>
                       <Typography variant="body2">
-                        Date: {formatDate(plan.actualHarvest.date)}
+                        Date: {formatShortDate(plan.actualHarvest.date)}
                       </Typography>
                       {plan.actualHarvest.actualYield && (
                         <Typography variant="body2">
@@ -2957,14 +2303,15 @@ const SeasonPlanViewContent = ({ id }) => {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this season plan? This action cannot
-            be undone.
+            {t('seasonPlans.viewPage.deleteConfirm')}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteDialog(false)}>
+            {t('common.cancel')}
+          </Button>
           <Button onClick={handleDelete} color="error" variant="contained">
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2977,11 +2324,22 @@ const SeasonPlanViewContent = ({ id }) => {
         fullWidth
       >
         <DialogTitle>
-          Update Fertilizer Application
+          {t('seasonPlans.viewPage.updateFertilizerApplication')}
           {fertilizerDialog.index !== null &&
             plan?.fertilizerSchedule?.[fertilizerDialog.index] && (
               <Typography variant="subtitle2" color="textSecondary">
-                {plan.fertilizerSchedule[fertilizerDialog.index].stage}
+                {(() => {
+                  const stage = plan.fertilizerSchedule[fertilizerDialog.index].stage || "";
+                  // slugify stage to match translation keys (e.g., 'Zinc Sulphate' -> 'zinc_sulphate')
+                  const slug = stage
+                    .toString()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "_")
+                    .replace(/^_+|_+$/g, "");
+                  const key = `seasonPlans.viewPage.fertilizerStages.${slug}`;
+                  const translated = t(key);
+                  return translated === key || !translated ? stage : translated;
+                })()}
               </Typography>
             )}
         </DialogTitle>
@@ -2999,14 +2357,14 @@ const SeasonPlanViewContent = ({ id }) => {
                   }
                 />
               }
-              label="Mark as Applied"
+              label={t('seasonPlans.applied')}
               sx={{ mb: 2 }}
             />
 
             {implementationData.applied && (
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Implementation Date"
+                  label={t('seasonPlans.viewPage.implementationDate')}
                   value={
                     implementationData.implementedDate
                       ? dayjs(implementationData.implementedDate)
@@ -3032,7 +2390,7 @@ const SeasonPlanViewContent = ({ id }) => {
             )}
 
             <TextField
-              label="Notes (optional)"
+              label={`${t('seasonPlans.viewPage.notes')} (${t('common.optional')})`}
               multiline
               rows={3}
               value={implementationData.notes}
@@ -3043,20 +2401,43 @@ const SeasonPlanViewContent = ({ id }) => {
                 })
               }
               fullWidth
-              placeholder="Add any notes about the fertilizer application..."
+              placeholder={t('seasonPlans.notesPlaceholder')}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeFertilizerDialog} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={saveFertilizerImplementation}
             variant="contained"
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save"}
+            {saving ? t('seasonPlans.viewPage.saving') : t('common.save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Fertilizer delete confirmation dialog */}
+      <Dialog
+        open={deleteFertilizerDialogOpen}
+        onClose={() => setDeleteFertilizerDialogOpen(false)}
+      >
+        <DialogTitle>{t('seasonPlans.viewPage.deleteFertilizerTitle') || 'Confirm Delete'}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('seasonPlans.viewPage.deleteFertilizerConfirm') || 'Are you sure you want to delete this fertilizer application? This action cannot be undone.'}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteFertilizerDialogOpen(false)}>{t('common.cancel')}</Button>
+          <Button
+            onClick={confirmDeleteFertilizerApplication}
+            color="error"
+            variant="contained"
+          >
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3069,7 +2450,7 @@ const SeasonPlanViewContent = ({ id }) => {
         fullWidth
       >
         <DialogTitle>
-          Update Growing Stage
+          {t('seasonPlans.viewPage.updateImplementation')}
           {stageDialog.index !== null &&
             plan?.growingStages?.[stageDialog.index] && (
               <Typography variant="subtitle2" color="textSecondary">
@@ -3091,7 +2472,7 @@ const SeasonPlanViewContent = ({ id }) => {
                   }
                 />
               }
-              label="Mark as Completed"
+              label={t('seasonPlans.viewPage.markComplete')}
               sx={{ mb: 2 }}
             />
 
@@ -3187,16 +2568,16 @@ const SeasonPlanViewContent = ({ id }) => {
         fullWidth
       >
         <DialogTitle>
-          🌾 Record Harvest Data
+          {`🌾 ${t('seasonPlans.viewPage.recordHarvest')}`}
           <Typography variant="subtitle2" color="textSecondary">
-            Update your actual harvest information
+            {t('seasonPlans.viewPage.recordHarvestSubtitle')}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
-                label="Harvest Date"
+                label={t('seasonPlans.viewPage.harvestDate')}
                 value={harvestData.date ? dayjs(harvestData.date) : null}
                 onChange={(newValue) => {
                   const dateString = newValue
@@ -3214,7 +2595,7 @@ const SeasonPlanViewContent = ({ id }) => {
             </LocalizationProvider>
 
             <TextField
-              label="Actual Yield (kg)"
+              label={`${t('seasonPlans.viewPage.actualYield')} (${t('seasonPlans.units.kg')})`}
               type="number"
               value={harvestData.actualYield}
               onChange={(e) =>
@@ -3223,11 +2604,11 @@ const SeasonPlanViewContent = ({ id }) => {
               fullWidth
               sx={{ mb: 2 }}
               inputProps={{ min: 0, step: 0.1 }}
-              placeholder="Enter actual yield in kg"
+              placeholder={t('seasonPlans.viewPage.placeholders.actualYield')}
             />
 
             <TextField
-              label="Quality Grade"
+              label={t('seasonPlans.viewPage.yieldQuality')}
               select
               value={harvestData.quality}
               onChange={(e) =>
@@ -3235,20 +2616,21 @@ const SeasonPlanViewContent = ({ id }) => {
               }
               fullWidth
               sx={{ mb: 2 }}
+              InputLabelProps={{ shrink: true }}
               SelectProps={{
                 native: true,
               }}
             >
-              <option value="">Select quality grade</option>
-              <option value="Premium">Premium</option>
-              <option value="Grade A">Grade A</option>
-              <option value="Grade B">Grade B</option>
-              <option value="Grade C">Grade C</option>
-              <option value="Below Grade">Below Grade</option>
+              <option value="">{t('seasonPlans.viewPage.qualityOptions.select')}</option>
+              <option value="Premium">{t('seasonPlans.viewPage.qualityOptions.premium')}</option>
+              <option value="Grade A">{t('seasonPlans.viewPage.qualityOptions.gradeA')}</option>
+              <option value="Grade B">{t('seasonPlans.viewPage.qualityOptions.gradeB')}</option>
+              <option value="Grade C">{t('seasonPlans.viewPage.qualityOptions.gradeC')}</option>
+              <option value="Below Grade">{t('seasonPlans.viewPage.qualityOptions.belowGrade')}</option>
             </TextField>
 
             <TextField
-              label="Notes (optional)"
+              label={t('seasonPlans.viewPage.harvestNotes') + ' (' + t('common.optional') + ')'}
               multiline
               rows={3}
               value={harvestData.notes}
@@ -3256,13 +2638,13 @@ const SeasonPlanViewContent = ({ id }) => {
                 setHarvestData({ ...harvestData, notes: e.target.value })
               }
               fullWidth
-              placeholder="Add any notes about the harvest (weather conditions, challenges, etc.)"
+              placeholder={t('seasonPlans.viewPage.placeholders.notes')}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeHarvestDialog} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={saveHarvestData}
@@ -3275,7 +2657,7 @@ const SeasonPlanViewContent = ({ id }) => {
               },
             }}
           >
-            {saving ? "Saving..." : "Save Harvest"}
+            {saving ? t('common.saving') : t('seasonPlans.viewPage.saveHarvest')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3288,16 +2670,16 @@ const SeasonPlanViewContent = ({ id }) => {
         fullWidth
       >
         <DialogTitle>
-          🌱 Leaf Color Chart - Urea Recommendation
+          {`🌱 ${t('seasonPlans.viewPage.leafColorChartTitle')}`}
           <Typography variant="subtitle2" color="textSecondary">
-            Check leaf color and get urea recommendation for your paddy field
+            {t('seasonPlans.viewPage.leafColorChartSubtitle')}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Current Date"
+                <DatePicker
+                  label={t('seasonPlans.viewPage.leafColor.currentDate')}
                 value={
                   leafColorData.currentDate
                     ? dayjs(leafColorData.currentDate)
@@ -3332,22 +2714,22 @@ const SeasonPlanViewContent = ({ id }) => {
                     fullWidth: true,
                     sx: { mb: 3 },
                     helperText: plan?.cultivationDate
-                      ? `Cultivation started: ${formatDate(plan.cultivationDate)}`
-                      : "Cultivation date not available",
+                      ? t('seasonPlans.viewPage.leafColor.cultivationStarted', { date: formatShortDate(plan.cultivationDate) })
+                      : t('seasonPlans.viewPage.leafColor.cultivationDateNotAvailable'),
                   },
                 }}
               />
             </LocalizationProvider>
 
             <TextField
-              label="Plant Age"
+              label={t('seasonPlans.viewPage.leafColor.plantAge')}
               value={
-                leafColorData.plantAge ? `${leafColorData.plantAge} weeks` : ""
+                leafColorData.plantAge ? `${leafColorData.plantAge} ${t('seasonPlans.viewPage.leafColor.weeks')}` : ""
               }
               fullWidth
               disabled
               sx={{ mb: 3 }}
-              helperText="Plant age is automatically calculated from current date and cultivation date"
+              helperText={t('seasonPlans.viewPage.leafColor.plantAgeHelper')}
               InputProps={{
                 style: {
                   backgroundColor: "#f5f5f5",
@@ -3359,7 +2741,7 @@ const SeasonPlanViewContent = ({ id }) => {
               parseInt(leafColorData.plantAge) >= 2 &&
               parseInt(leafColorData.plantAge) <= 8 && (
                 <TextField
-                  label="Leaf Color Index"
+                  label={t('seasonPlans.viewPage.leafColor.colorIndex')}
                   select
                   value={leafColorData.leafColorIndex}
                   onChange={(e) => {
@@ -3389,22 +2771,18 @@ const SeasonPlanViewContent = ({ id }) => {
                   InputLabelProps={{
                     shrink: true,
                   }}
-                  helperText="Compare your paddy leaves with the color chart and select the closest match"
+                  helperText={t('seasonPlans.viewPage.leafColor.helper')}
                 >
-                  <option value="" disabled>
-                    Select leaf color index
-                  </option>
+                  <option value="" disabled>{t('seasonPlans.viewPage.leafColor.selectPlaceholder')}</option>
                   {leafColorData.plantAge &&
                     leafColorChart[leafColorData.plantAge] &&
                     Object.keys(leafColorChart[leafColorData.plantAge]).map(
                       (colorIndex) => (
                         <option key={colorIndex} value={colorIndex}>
-                          Index {colorIndex} -{" "}
-                          {colorIndex === "2"
-                            ? "Light Green (Pale)"
-                            : colorIndex === "3"
-                              ? "Medium Green (Normal)"
-                              : "Dark Green (Rich)"}
+                          {t(`seasonPlans.viewPage.leafColor.indexLabel`, {
+                            index: colorIndex,
+                            label: t(`seasonPlans.viewPage.leafColor.labels.${colorIndex}`, { defaultValue: '' }),
+                          })}
                         </option>
                       )
                     )}
@@ -3451,27 +2829,30 @@ const SeasonPlanViewContent = ({ id }) => {
                   }}
                 >
                   <ColorizeIcon sx={{ mr: 1 }} />
-                  Urea Recommendation
+                  {t('seasonPlans.viewPage.leafColor.ureaRecommendation')}
                 </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ color: "#228B22", fontWeight: "bold", mb: 1 }}
-                >
-                  Apply {leafColorData.recommendedUrea} kg of Urea per acre
-                </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: "#228B22", fontWeight: "bold", mb: 1 }}
+                  >
+                    {t('seasonPlans.viewPage.leafColor.applyRecommendation', { amount: leafColorData.recommendedUrea })}
+                  </Typography>
                 <Typography variant="body2" sx={{ color: "#666", mb: 1 }}>
-                  Based on {leafColorData.plantAge} weeks plant age and leaf
-                  color index {leafColorData.leafColorIndex}
+                  {t('seasonPlans.viewPage.leafColor.basedOn', {
+                    weeks: leafColorData.plantAge,
+                    index: leafColorData.leafColorIndex,
+                  })}
                 </Typography>
                 <Typography
                   variant="body2"
                   sx={{ color: "#228B22", fontWeight: "bold" }}
                 >
-                  Total for {plan?.cultivatingArea} acres:{" "}
-                  {(
-                    leafColorData.recommendedUrea * (plan?.cultivatingArea || 0)
-                  ).toFixed(1)}{" "}
-                  kg
+                  {t('seasonPlans.viewPage.leafColor.totalFor', {
+                    area: plan?.cultivatingArea || 0,
+                    total: (
+                      leafColorData.recommendedUrea * (plan?.cultivatingArea || 0)
+                    ).toFixed(1),
+                  })}
                 </Typography>
               </Box>
             )}
@@ -3504,32 +2885,29 @@ const SeasonPlanViewContent = ({ id }) => {
                 gutterBottom
                 sx={{ fontWeight: "bold" }}
               >
-                📋 Leaf Color Chart Guide:
+                {`📋 ${t('seasonPlans.viewPage.leafColor.guideTitle')}`}
               </Typography>
               <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>Index 2 (Light Green):</strong> Leaves appear pale,
-                yellowish-green
+                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index2.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index2.desc')}
               </Typography>
               <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>Index 3 (Medium Green):</strong> Normal healthy green
-                color
+                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index3.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index3.desc')}
               </Typography>
               <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
-                • <strong>Index 4 (Dark Green):</strong> Deep, rich green color
+                • <strong>{t('seasonPlans.viewPage.leafColor.guide.index4.title')}</strong> {t('seasonPlans.viewPage.leafColor.guide.index4.desc')}
               </Typography>
               <Typography
                 variant="caption"
                 display="block"
                 sx={{ mt: 1, fontStyle: "italic", color: "#666" }}
               >
-                Compare the youngest fully expanded leaf with the standard color
-                chart
+                {t('seasonPlans.viewPage.leafColor.guide.compare')}
               </Typography>
             </Box>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={resetLeafColorDialog}>Close</Button>
+    <Button onClick={resetLeafColorDialog}>{t('common.close')}</Button>
           {leafColorData.recommendedUrea > 0 && (
             <Button
               variant="contained"
@@ -3542,7 +2920,7 @@ const SeasonPlanViewContent = ({ id }) => {
               }}
               onClick={saveLCCFertilizerApplication}
             >
-              {saving ? "Adding..." : "Add to Fertilizer Schedule"}
+              {saving ? t('seasonPlans.viewPage.adding') : t('seasonPlans.viewPage.addToFertilizerSchedule')}
             </Button>
           )}
         </DialogActions>
@@ -3917,7 +3295,7 @@ const SeasonPlanViewContent = ({ id }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeRemarkDialog}>Cancel</Button>
+          <Button onClick={closeRemarkDialog}>{t('common.cancel')}</Button>
           <Button
             variant="contained"
             onClick={saveRemark}
@@ -3933,7 +3311,7 @@ const SeasonPlanViewContent = ({ id }) => {
               },
             }}
           >
-            {saving ? "Saving..." : editingRemark ? "Update" : "Add Remark"}
+            {saving ? t('seasonPlans.viewPage.saving') : editingRemark ? t('common.update') : t('seasonPlans.viewPage.addRemark')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3943,21 +3321,20 @@ const SeasonPlanViewContent = ({ id }) => {
         open={deleteRemarkDialog}
         onClose={() => setDeleteRemarkDialog(false)}
       >
-        <DialogTitle>Confirm Delete Daily Remark</DialogTitle>
+        <DialogTitle>{t('seasonPlans.viewPage.deleteRemark')}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this daily remark? This action
-            cannot be undone.
+            {t('seasonPlans.confirmDeleteMessage')}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteRemarkDialog(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteRemarkDialog(false)}>{t('common.cancel')}</Button>
           <Button
             onClick={confirmDeleteRemark}
             color="error"
             variant="contained"
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3970,7 +3347,7 @@ const SeasonPlanViewContent = ({ id }) => {
         fullWidth
       >
         <DialogTitle>
-          {editingExpense ? "Edit Expense" : "Add New Expense"}
+          {editingExpense ? t('seasonPlans.viewPage.editExpense') : t('seasonPlans.viewPage.addExpense')}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -3979,7 +3356,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
-                    label="Date *"
+                    label={`${t('seasonPlans.viewPage.expenseDate')} *`}
                     value={expenseData.date ? dayjs(expenseData.date) : null}
                     onChange={(newValue) => {
                       const dateString = newValue
@@ -4005,7 +3382,7 @@ const SeasonPlanViewContent = ({ id }) => {
                 <TextField
                   fullWidth
                   select
-                  label="Category"
+                  label={t('seasonPlans.viewPage.expenseCategory')}
                   value={expenseData.category}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, category: e.target.value })
@@ -4029,7 +3406,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Subcategory (Optional)"
+                  label={`Subcategory (${t('common.optional')})`}
                   value={expenseData.subcategory}
                   onChange={(e) =>
                     setExpenseData({
@@ -4046,7 +3423,7 @@ const SeasonPlanViewContent = ({ id }) => {
                 <TextField
                   fullWidth
                   select
-                  label="Payment Method"
+                  label={t('seasonPlans.viewPage.paymentMethod')}
                   value={expenseData.paymentMethod}
                   onChange={(e) =>
                     setExpenseData({
@@ -4067,7 +3444,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Description"
+                  label={t('seasonPlans.viewPage.expenseDescription')}
                   value={expenseData.description}
                   onChange={(e) =>
                     setExpenseData({
@@ -4086,7 +3463,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Amount (LKR)"
+                  label={t('seasonPlans.viewPage.expenseAmount')}
                   type="number"
                   value={expenseData.amount}
                   onChange={(e) =>
@@ -4101,7 +3478,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label="Quantity (Optional)"
+                  label={`${t('seasonPlans.viewPage.quantity')} (${t('common.optional')})`}
                   type="number"
                   value={expenseData.quantity}
                   onChange={(e) => {
@@ -4128,7 +3505,7 @@ const SeasonPlanViewContent = ({ id }) => {
                 <TextField
                   fullWidth
                   select
-                  label="Unit (Optional)"
+                  label={`${t('seasonPlans.viewPage.unit')} (${t('common.optional')})`}
                   value={expenseData.unit}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, unit: e.target.value })
@@ -4146,7 +3523,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Unit Price (LKR) - Auto-calculated"
+                  label={t('seasonPlans.viewPage.unitPrice')}
                   type="number"
                   value={expenseData.unitPrice}
                   onChange={(e) =>
@@ -4156,7 +3533,7 @@ const SeasonPlanViewContent = ({ id }) => {
                     })
                   }
                   inputProps={{ min: 0, step: 0.01 }}
-                  helperText="Automatically calculated from Amount ÷ Quantity"
+                  helperText={t('seasonPlans.viewPage.unitPriceHelper')}
                 />
               </Grid>
 
@@ -4164,12 +3541,12 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Vendor/Supplier (Optional)"
+                  label={`${t('seasonPlans.viewPage.vendor')} (${t('common.optional')})`}
                   value={expenseData.vendor}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, vendor: e.target.value })
                   }
-                  placeholder="Name of vendor or supplier"
+                  placeholder={t('seasonPlans.viewPage.vendorPlaceholder')}
                 />
               </Grid>
 
@@ -4177,7 +3554,7 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Receipt Number (Optional)"
+                  label={`${t('seasonPlans.viewPage.receiptNumber')} (${t('common.optional')})`}
                   value={expenseData.receiptNumber}
                   onChange={(e) =>
                     setExpenseData({
@@ -4185,7 +3562,7 @@ const SeasonPlanViewContent = ({ id }) => {
                       receiptNumber: e.target.value,
                     })
                   }
-                  placeholder="Receipt or invoice number"
+                  placeholder={t('seasonPlans.viewPage.receiptPlaceholder')}
                 />
               </Grid>
 
@@ -4193,12 +3570,12 @@ const SeasonPlanViewContent = ({ id }) => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Remarks (Optional)"
+                  label={`${t('seasonPlans.viewPage.remarks')} (${t('common.optional')})`}
                   value={expenseData.remarks}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, remarks: e.target.value })
                   }
-                  placeholder="Additional notes or comments"
+                  placeholder={t('seasonPlans.viewPage.remarksPlaceholder')}
                   multiline
                   rows={2}
                 />
@@ -4207,7 +3584,7 @@ const SeasonPlanViewContent = ({ id }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setExpenseDialog(false)}>Cancel</Button>
+          <Button onClick={() => setExpenseDialog(false)}>{t('common.cancel')}</Button>
           <Button
             onClick={handleSaveExpense}
             variant="contained"
@@ -4216,7 +3593,7 @@ const SeasonPlanViewContent = ({ id }) => {
               "&:hover": { backgroundColor: "#45a049" },
             }}
           >
-            {editingExpense ? "Update Expense" : "Add Expense"}
+            {editingExpense ? t('seasonPlans.viewPage.editExpense') : t('seasonPlans.viewPage.addExpense')}
           </Button>
         </DialogActions>
       </Dialog>

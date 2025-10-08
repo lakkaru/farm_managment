@@ -23,6 +23,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { navigate } from 'gatsby';
+import { useTranslation } from 'react-i18next';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../services/api';
@@ -30,6 +31,7 @@ import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
 
 const CreateSeasonPlanContent = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [paddyVarieties, setPaddyVarieties] = useState([]);
@@ -118,7 +120,7 @@ const CreateSeasonPlanContent = () => {
       setPaddyVarieties(sortedVarieties);
     } catch (error) {
       console.error('Error loading paddy varieties:', error);
-      toast.error('Failed to load paddy varieties');
+      toast.error(t('seasonPlans.failedToLoad'));
     }
   };
 
@@ -128,7 +130,7 @@ const CreateSeasonPlanContent = () => {
       setFarms(response.data.data || []);
     } catch (error) {
       console.error('Error loading farms:', error);
-      toast.error('Failed to load farms');
+      toast.error(t('farms.failedToLoad'));
     }
   };
 
@@ -295,30 +297,30 @@ const CreateSeasonPlanContent = () => {
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
-        setError('Please fill in all required fields');
+        setError(t('seasonPlans.createForm.validation.fillAllFields'));
         return;
       }
 
       if (!formData.cultivationDate) {
-        setError('Please select a cultivation date');
+        setError(t('seasonPlans.createForm.validation.selectCultivationDate'));
         return;
       }
 
       if (!formData.expectedHarvestDate) {
-        setError('Please ensure both cultivation and harvest dates are set');
+        setError(t('seasonPlans.createForm.validation.ensureBothDates'));
         return;
       }
 
       // Validate harvest date is after cultivation date
       if (dayjs(formData.expectedHarvestDate).isBefore(dayjs(formData.cultivationDate))) {
-        setError('Harvest date must be after cultivation date');
+        setError(t('seasonPlans.createForm.validation.harvestAfterCultivation'));
         return;
       }
 
       // Validate season duration is reasonable (at least 60 days)
       const seasonDuration = dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day');
       if (seasonDuration < 60) {
-        setError('Season duration must be at least 60 days');
+        setError(t('seasonPlans.createForm.validation.minimumDuration'));
         return;
       }
 
@@ -330,7 +332,10 @@ const CreateSeasonPlanContent = () => {
         const farmArea = parseFloat(selectedFarmInfo.totalArea);
         
         if (cultivatingArea > (farmArea + tolerance)) {
-          setError(`Cultivating area cannot exceed the farm's total area of ${selectedFarmInfo.totalArea} ${selectedFarmInfo.areaUnit}`);
+          setError(t('seasonPlans.createForm.validation.areaExceedsLimit', { 
+            total: selectedFarmInfo.totalArea, 
+            unit: selectedFarmInfo.areaUnit 
+          }));
           return;
         }
       }
@@ -351,13 +356,13 @@ const CreateSeasonPlanContent = () => {
       console.log('Sending season plan data:', planData);
 
       await seasonPlanAPI.createSeasonPlan(planData);
-      toast.success('Season plan created successfully!');
+      toast.success(t('seasonPlans.seasonPlanCreated'));
       navigate('/paddy/season-plans');
     } catch (err) {
       console.error('Season plan creation error:', err);
       console.error('Error response:', err.response);
       
-      let message = 'Failed to create season plan';
+      let message = t('seasonPlans.failedToCreate');
       if (err.response?.data?.message) {
         message = err.response.data.message;
       } else if (err.response?.data?.errors) {
@@ -381,19 +386,19 @@ const CreateSeasonPlanContent = () => {
           onClick={() => navigate('/paddy/season-plans')}
           sx={{ mr: 2 }}
         >
-          Back
+          {t('common.back')}
         </Button>
         <Typography variant="h4" gutterBottom>
-          Create Season Plan
+          {t('seasonPlans.createForm.title')}
         </Typography>
       </Box>
       <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
-        Plan your next paddy cultivation season
+        {t('seasonPlans.createForm.subtitle')}
       </Typography>
 
       {!selectedFarm && farms.length === 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          No farms available. Please create a farm first before creating a season plan.
+          {t('seasonPlans.createForm.noFarmsAvailable')}
         </Alert>
       )}
 
@@ -409,12 +414,12 @@ const CreateSeasonPlanContent = () => {
             {/* Farm Selection */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Farm *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.farmRequired')}</InputLabel>
                 <Select
                   name="farmId"
                   value={formData.farmId}
                   onChange={handleChange}
-                  label="Farm *"
+                  label={t('seasonPlans.createForm.farmRequired')}
                 >
                   {farms.map(farm => (
                     <MenuItem key={farm._id} value={farm._id}>
@@ -428,15 +433,15 @@ const CreateSeasonPlanContent = () => {
             {/* Season */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Season *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.seasonRequired')}</InputLabel>
                 <Select
                   name="season"
                   value={formData.season}
                   onChange={handleChange}
-                  label="Season *"
+                  label={t('seasonPlans.createForm.seasonRequired')}
                 >
-                  <MenuItem value="maha">Maha (October - March)</MenuItem>
-                  <MenuItem value="yala">Yala (April - September)</MenuItem>
+                  <MenuItem value="maha">{t('seasonPlans.maha')}</MenuItem>
+                  <MenuItem value="yala">{t('seasonPlans.yala')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -446,10 +451,10 @@ const CreateSeasonPlanContent = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="District"
+                  label={t('seasonPlans.createForm.district')}
                   value={selectedFarmInfo.district}
                   InputProps={{ readOnly: true }}
-                  helperText="From selected farm"
+                  helperText={t('seasonPlans.createForm.fromSelectedFarm')}
                 />
               </Grid>
             )}
@@ -459,10 +464,10 @@ const CreateSeasonPlanContent = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Climate Zone"
+                  label={t('seasonPlans.createForm.climateZone')}
                   value={selectedFarmInfo.cultivationZone}
                   InputProps={{ readOnly: true }}
-                  helperText="From selected farm"
+                  helperText={t('seasonPlans.createForm.fromSelectedFarm')}
                 />
               </Grid>
             )}
@@ -470,15 +475,15 @@ const CreateSeasonPlanContent = () => {
             {/* Irrigation Method */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Irrigation Method *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.irrigationMethodRequired')}</InputLabel>
                 <Select
                   name="irrigationMethod"
                   value={formData.irrigationMethod}
                   onChange={handleChange}
-                  label="Irrigation Method *"
+                  label={t('seasonPlans.createForm.irrigationMethodRequired')}
                 >
-                  <MenuItem value="Rain fed">Rain fed</MenuItem>
-                  <MenuItem value="Under irrigation">Under irrigation</MenuItem>
+                  <MenuItem value="Rain fed">{t('seasonPlans.createForm.irrigationMethods.rainfed')}</MenuItem>
+                  <MenuItem value="Under irrigation">{t('seasonPlans.createForm.irrigationMethods.irrigated')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -486,19 +491,19 @@ const CreateSeasonPlanContent = () => {
             {/* Soil Condition */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Soil Condition *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.soilConditionRequired')}</InputLabel>
                 <Select
                   name="soilCondition"
                   value={formData.soilCondition}
                   onChange={handleChange}
-                  label="Soil Condition *"
+                  label={t('seasonPlans.createForm.soilConditionRequired')}
                 >
-                  <MenuItem value="Sandy">Sandy</MenuItem>
-                  <MenuItem value="Clay">Clay</MenuItem>
-                  <MenuItem value="Loam">Loam</MenuItem>
-                  <MenuItem value="Sandy Loam">Sandy Loam</MenuItem>
-                  <MenuItem value="Clay Loam">Clay Loam</MenuItem>
-                  <MenuItem value="Silt Loam">Silt Loam</MenuItem>
+                  <MenuItem value="Sandy">{t('seasonPlans.createForm.soilOptions.sandy')}</MenuItem>
+                  <MenuItem value="Clay">{t('seasonPlans.createForm.soilOptions.clay')}</MenuItem>
+                  <MenuItem value="Loam">{t('seasonPlans.createForm.soilOptions.loam')}</MenuItem>
+                  <MenuItem value="Sandy Loam">{t('seasonPlans.createForm.soilOptions.sandyLoam')}</MenuItem>
+                  <MenuItem value="Clay Loam">{t('seasonPlans.createForm.soilOptions.clayLoam')}</MenuItem>
+                  <MenuItem value="Silt Loam">{t('seasonPlans.createForm.soilOptions.siltLoam')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -506,17 +511,17 @@ const CreateSeasonPlanContent = () => {
             {/* Paddy Variety */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Paddy Variety *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.paddyVarietyRequired')}</InputLabel>
                 <Select
                   name="paddyVariety"
                   value={formData.paddyVariety}
                   onChange={handleChange}
-                  label="Paddy Variety *"
+                  label={t('seasonPlans.createForm.paddyVarietyRequired')}
                   disabled={dataLoading}
                 >
                   {paddyVarieties.length === 0 && !dataLoading ? (
                     <MenuItem disabled>
-                      No paddy varieties available
+                      {t('seasonPlans.createForm.noPaddyVarieties')}
                     </MenuItem>
                   ) : (
                     paddyVarieties.map(variety => (
@@ -530,13 +535,13 @@ const CreateSeasonPlanContent = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <CircularProgress size={16} sx={{ mr: 1 }} />
                     <Typography variant="caption" color="textSecondary">
-                      Loading varieties...
+                      {t('seasonPlans.createForm.loadingVarieties')}
                     </Typography>
                   </Box>
                 )}
                 {!dataLoading && paddyVarieties.length === 0 && (
                   <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                    No paddy varieties found. Please check your connection or contact support.
+                    {t('seasonPlans.createForm.noPaddyVarietiesFound')}
                   </Typography>
                 )}
               </FormControl>
@@ -547,10 +552,10 @@ const CreateSeasonPlanContent = () => {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Total Farm Area"
+                  label={t('seasonPlans.createForm.totalFarmArea')}
                   value={`${selectedFarmInfo.totalArea} ${selectedFarmInfo.areaUnit}`}
                   InputProps={{ readOnly: true }}
-                  helperText="Total area of selected farm"
+                  helperText={t('seasonPlans.createForm.totalAreaHelperText')}
                 />
               </Grid>
             )}
@@ -559,7 +564,7 @@ const CreateSeasonPlanContent = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label={`Cultivating Area (${selectedFarmInfo.areaUnit || 'acres'}) *`}
+                label={t('seasonPlans.createForm.cultivatingAreaRequired', { unit: selectedFarmInfo.areaUnit || 'acres' })}
                 name="cultivatingArea"
                 type="number"
                 value={formData.cultivatingArea}
@@ -571,8 +576,12 @@ const CreateSeasonPlanContent = () => {
                   max: selectedFarmInfo.totalArea ? parseFloat(selectedFarmInfo.totalArea) + 0.01 : undefined
                 }}
                 helperText={selectedFarmInfo.totalArea ? 
-                  `Available: ${selectedFarmInfo.totalArea} ${selectedFarmInfo.areaUnit || 'acres'} (Max: ${selectedFarmInfo.totalArea})` :
-                  `Minimum 0.01 ${selectedFarmInfo.areaUnit || 'acres'}`
+                  t('seasonPlans.createForm.cultivatingAreaAvailable', { 
+                    total: selectedFarmInfo.totalArea, 
+                    unit: selectedFarmInfo.areaUnit || 'acres',
+                    max: selectedFarmInfo.totalArea 
+                  }) :
+                  t('seasonPlans.createForm.cultivatingAreaMinimum', { unit: selectedFarmInfo.areaUnit || 'acres' })
                 }
                 InputProps={{
                   endAdornment: <InputAdornment position="end">{selectedFarmInfo.areaUnit || 'acres'}</InputAdornment>,
@@ -585,10 +594,10 @@ const CreateSeasonPlanContent = () => {
             <Grid item xs={12}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="h6" gutterBottom>
-                  Date Planning
+                  {t('seasonPlans.createForm.datePlanning')}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                  Choose how you want to plan your season dates
+                  {t('seasonPlans.createForm.datePlanningSubtitle')}
                 </Typography>
                 <ToggleButtonGroup
                   value={calculationMode}
@@ -599,17 +608,17 @@ const CreateSeasonPlanContent = () => {
                 >
                   <ToggleButton value="from-cultivation" aria-label="from cultivation date">
                     <Box sx={{ textAlign: 'left' }}>
-                      <Typography variant="subtitle2">Set Cultivation Date</Typography>
+                      <Typography variant="subtitle2">{t('seasonPlans.createForm.setCultivationDate')}</Typography>
                       <Typography variant="caption" color="textSecondary">
-                        Calculate harvest date
+                        {t('seasonPlans.createForm.setCultivationDateDesc')}
                       </Typography>
                     </Box>
                   </ToggleButton>
                   <ToggleButton value="from-harvest" aria-label="from harvest date">
                     <Box sx={{ textAlign: 'left' }}>
-                      <Typography variant="subtitle2">Set Harvest Date</Typography>
+                      <Typography variant="subtitle2">{t('seasonPlans.createForm.setHarvestDate')}</Typography>
                       <Typography variant="caption" color="textSecondary">
-                        Calculate cultivation date
+                        {t('seasonPlans.createForm.setHarvestDateDesc')}
                       </Typography>
                     </Box>
                   </ToggleButton>
@@ -621,7 +630,7 @@ const CreateSeasonPlanContent = () => {
             <Grid item xs={12} md={6}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Cultivation Date *"
+                  label={t('seasonPlans.createForm.cultivationDateRequired')}
                   value={formData.cultivationDate}
                   onChange={calculationMode === 'from-cultivation' ? handleCultivationDateChange : handleDateChange}
                   disabled={calculationMode === 'from-harvest' && !formData.paddyVariety}
@@ -630,10 +639,10 @@ const CreateSeasonPlanContent = () => {
                       fullWidth: true,
                       required: true,
                       helperText: calculationMode === 'from-cultivation' 
-                        ? "Select cultivation date (past or future dates allowed for records)"
+                        ? t('seasonPlans.createForm.cultivationDateHelper')
                         : formData.paddyVariety 
-                          ? "Auto-calculated from harvest date"
-                          : "Select paddy variety first",
+                          ? t('seasonPlans.createForm.cultivationDateAuto')
+                          : t('seasonPlans.createForm.selectPaddyVarietyFirst'),
                       InputProps: calculationMode === 'from-harvest' ? { readOnly: true } : {}
                     }
                   }}
@@ -642,7 +651,7 @@ const CreateSeasonPlanContent = () => {
               {calculationMode === 'from-cultivation' && formData.cultivationDate && (
                 <Chip 
                   size="small" 
-                  label="Primary Date" 
+                  label={t('seasonPlans.createForm.primaryDate')} 
                   color="primary" 
                   sx={{ mt: 1 }} 
                 />
@@ -653,7 +662,7 @@ const CreateSeasonPlanContent = () => {
             <Grid item xs={12} md={6}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Expected Harvest Date *"
+                  label={t('seasonPlans.createForm.expectedHarvestDateRequired')}
                   value={formData.expectedHarvestDate}
                   onChange={calculationMode === 'from-harvest' ? handleHarvestDateChange : () => {}}
                   disabled={calculationMode === 'from-cultivation' && !formData.paddyVariety}
@@ -662,10 +671,10 @@ const CreateSeasonPlanContent = () => {
                       fullWidth: true,
                       required: true,
                       helperText: calculationMode === 'from-harvest' 
-                        ? "Select target harvest date (past or future dates allowed for records)"
+                        ? t('seasonPlans.createForm.harvestDateHelper')
                         : formData.paddyVariety 
-                          ? "Auto-calculated from cultivation date"
-                          : "Select paddy variety first",
+                          ? t('seasonPlans.createForm.harvestDateAuto')
+                          : t('seasonPlans.createForm.selectPaddyVarietyFirst'),
                       InputProps: calculationMode === 'from-cultivation' ? { readOnly: true } : {},
                       sx: calculationMode === 'from-cultivation' ? {
                         '& .MuiInputBase-input': {
@@ -680,7 +689,7 @@ const CreateSeasonPlanContent = () => {
               {calculationMode === 'from-harvest' && formData.expectedHarvestDate && (
                 <Chip 
                   size="small" 
-                  label="Primary Date" 
+                  label={t('seasonPlans.createForm.primaryDate')} 
                   color="primary" 
                   sx={{ mt: 1 }} 
                 />
@@ -693,14 +702,14 @@ const CreateSeasonPlanContent = () => {
                 <Alert severity="info" sx={{ mt: 1 }}>
                   <Box>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      <strong>Selected Variety:</strong> {paddyVarieties.find(v => v._id === formData.paddyVariety)?.name} 
+                      <strong>{t('seasonPlans.createForm.selectedVariety')}</strong> {paddyVarieties.find(v => v._id === formData.paddyVariety)?.name} 
                       {' '}({paddyVarieties.find(v => v._id === formData.paddyVariety)?.duration})
                     </Typography>
                     
                     {formData.cultivationDate && formData.expectedHarvestDate && (
                       <Box sx={{ mt: 2 }}>
                         <Typography variant="body2" sx={{ mb: 1 }}>
-                          <strong>Season Timeline:</strong>
+                          <strong>{t('seasonPlans.createForm.seasonTimeline')}</strong>
                         </Typography>
                         
                         <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -718,13 +727,13 @@ const CreateSeasonPlanContent = () => {
                               justifyContent: 'space-between'
                             }}>
                               <Typography variant="caption" color="warning.dark" sx={{ fontWeight: 'bold' }}>
-                                FIRST PLOWING
+                                {t('seasonPlans.createForm.firstPlowing')}
                               </Typography>
                               <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
                                 {getFirstPlowingDate()}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                Start 10 days early
+                                {t('seasonPlans.createForm.startEarly')}
                               </Typography>
                             </Box>
                           </Grid>
@@ -743,13 +752,13 @@ const CreateSeasonPlanContent = () => {
                               justifyContent: 'space-between'
                             }}>
                               <Typography variant="caption" color="success.dark" sx={{ fontWeight: 'bold' }}>
-                                CULTIVATION DATE
+                                {t('seasonPlans.createForm.cultivationDate')}
                               </Typography>
                               <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
                                 {dayjs(formData.cultivationDate).format('MMM DD, YYYY')}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                Planting day
+                                {t('seasonPlans.createForm.plantingDay')}
                               </Typography>
                             </Box>
                           </Grid>
@@ -768,13 +777,13 @@ const CreateSeasonPlanContent = () => {
                               justifyContent: 'space-between'
                             }}>
                               <Typography variant="caption" color="primary.dark" sx={{ fontWeight: 'bold' }}>
-                                HARVEST DATE
+                                {t('seasonPlans.createForm.harvestDate')}
                               </Typography>
                               <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
                                 {dayjs(formData.expectedHarvestDate).format('MMM DD, YYYY')}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {Math.round(dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day'))} days total
+                                {t('seasonPlans.createForm.daysTotal', { days: Math.round(dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day')) })}
                               </Typography>
                             </Box>
                           </Grid>
@@ -794,7 +803,7 @@ const CreateSeasonPlanContent = () => {
               onClick={() => navigate('/paddy/season-plans')}
               disabled={loading}
             >
-              Cancel
+              {t('seasonPlans.createForm.cancel')}
             </Button>
             <Button
               type="submit"
@@ -802,7 +811,7 @@ const CreateSeasonPlanContent = () => {
               disabled={loading}
               startIcon={loading && <CircularProgress size={20} />}
             >
-              {loading ? 'Creating...' : 'Create Season Plan'}
+              {loading ? t('seasonPlans.createForm.creating') : t('seasonPlans.createForm.createSeasonPlan')}
             </Button>
           </Box>
         </Box>

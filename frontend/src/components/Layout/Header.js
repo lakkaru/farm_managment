@@ -129,7 +129,7 @@ const Header = () => {
                   {user?.profile?.firstName} {user?.profile?.lastName}
                 </Typography>
                 <Typography variant="caption" color="textSecondary" sx={{ textTransform: 'capitalize' }}>
-                  {user?.role?.replace('_', ' ')}
+                  {t(`roles.${user.role}`, user.role?.replace('_', ' '))}
                 </Typography>
               </Box>
             )}
