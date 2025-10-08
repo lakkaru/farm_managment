@@ -187,9 +187,20 @@ const Sidebar = () => {
     const farm = farms.find(f => f._id === farmId);
     setSelectedFarm(farm || null);
     
-    // Navigate to farm detail page when a farm is selected
+    // Navigate to farm detail page when a farm is selected, except when
+    // the user is currently viewing the season-plans list. In that case
+    // we only set the selected farm so the season-plans page can filter.
     if (farmId && farm) {
-      navigate(`/farms/${farmId}`);
+      const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
+      if (!pathname.startsWith('/paddy/season-plans')) {
+        navigate(`/farms/${farmId}`);
+        setCurrentPath(`/farms/${farmId}`);
+      } else {
+        // stay on the season-plans page so it can react to selectedFarm
+        setCurrentPath(pathname);
+      }
+      // close drawer on mobile after selection
+      if (isMobile) handleDrawerToggle();
     }
   };
 
