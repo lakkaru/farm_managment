@@ -40,9 +40,9 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if email exists (only if email is provided)
-  if (email) {
-    const emailExists = await User.findOne({ email });
+  // Check if email exists (only if email is provided and not empty)
+  if (email && email.trim()) {
+    const emailExists = await User.findOne({ email: email.trim() });
     if (emailExists) {
       return res.status(400).json({
         success: false,
@@ -64,10 +64,11 @@ const registerUser = asyncHandler(async (req, res) => {
     role: profile.role || 'farm_owner',
   };
 
-  // Only add email if provided
+  // Only add email if provided and not empty
   if (email && email.trim()) {
-    userData.email = email;
+    userData.email = email.trim();
   }
+  // If no email provided, don't set the field at all (undefined)
 
   // Create user
   const user = await User.create(userData);

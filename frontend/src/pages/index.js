@@ -394,8 +394,22 @@ const IndexPage = () => {
 
 const AuthWrapper = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const [showLanding, setShowLanding] = React.useState(false);
 
-  if (isLoading) {
+  // Add a timeout for loading state to prevent infinite loading
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Auth loading timeout - showing landing page');
+        setShowLanding(true);
+      }
+    }, 5000); // Show landing page after 5 seconds if still loading
+
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // If loading for too long, show the landing page
+  if (isLoading && !showLanding) {
     return (
       <Box
         sx={{
@@ -403,9 +417,19 @@ const AuthWrapper = () => {
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '100vh',
+          flexDirection: 'column',
+          gap: 2,
         }}
       >
         <Typography>Loading...</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Verifying authentication...
+        </Typography>
+        {typeof window !== 'undefined' && (
+          <Typography variant="caption" color="textSecondary">
+            API: {process.env.GATSBY_API_URL || 'localhost'}
+          </Typography>
+        )}
       </Box>
     );
   }

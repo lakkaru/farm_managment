@@ -144,8 +144,13 @@ userSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
-// Pre-save middleware to hash password
+// Pre-save middleware to hash password and handle empty email
 userSchema.pre('save', async function(next) {
+  // Convert empty email strings to undefined for proper sparse indexing
+  if (this.email === '' || this.email === null) {
+    this.email = undefined;
+  }
+  
   if (!this.isModified('password')) return next();
   
   try {

@@ -8,6 +8,7 @@ module.exports = {
     author: `@lakkaru`,
     siteUrl: `https://farm.lakkaru.com`, // Update this to your actual deployment URL
   },
+  pathPrefix: `/`,
   plugins: [
     `gatsby-plugin-react-helmet`,
     {
