@@ -31,6 +31,9 @@ const GrowingStages = ({
   t,
   formatDate,
 }) => {
+  // Guard for server-side rendering: if plan or growingStages is not available,
+  // avoid rendering the component to prevent "reading 'growingStages' of undefined" errors.
+  if (!plan || !plan.growingStages) return null;
   const formatShortDate = (date) => {
     if (!date) return "";
     return dayjs(date).format("DD MMM YYYY");

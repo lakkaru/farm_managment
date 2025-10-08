@@ -41,6 +41,8 @@ const FertilizerSchedule = ({
   saving,
   t,
 }) => {
+  // Guard for SSR: avoid reading properties on `plan` when it's undefined during Gatsby's build
+  if (!plan) return null;
   const formatShortDate = (date) => {
     if (!date) return "";
     return dayjs(date).format("DD MMM YYYY");
