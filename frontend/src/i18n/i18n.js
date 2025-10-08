@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translation files
 import enTranslations from './locales/en.json';
+// Sinhala consolidated translations
 import siTranslations from './locales/si.json';
 
 i18n
