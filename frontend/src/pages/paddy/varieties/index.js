@@ -14,9 +14,9 @@ import {
 import {
   Search as SearchIcon,
   Agriculture as AgricultureIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import BackButton from '../../../components/BackButton';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { useTranslation } from 'react-i18next';
@@ -233,16 +233,10 @@ const PaddyVarietiesContent = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={() => navigate('/dashboard')}
-              sx={{ mr: 2 }}
-            >
-              {t('paddyVarieties.back')}
-            </Button>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Header - responsive */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
+            <BackButton to="/dashboard" sx={{ mr: { sm: 2 }, mb: { xs: 1, sm: 0 } }} />
             <Box>
               <Typography variant="h4" gutterBottom>
                 {t('paddyVarieties.title')}
@@ -267,7 +261,7 @@ const PaddyVarietiesContent = () => {
               </InputAdornment>
             ),
           }}
-          sx={{ maxWidth: 500 }}
+          sx={{ maxWidth: { xs: '100%', sm: 500 } }}
         />
       </Box>
 

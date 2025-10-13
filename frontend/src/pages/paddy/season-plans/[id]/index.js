@@ -36,7 +36,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import {
-  ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   LocationOn as LocationIcon,
@@ -67,6 +66,7 @@ import {
   AttachMoney as MoneyIcon,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
+import BackButton from '../../../../components/BackButton';
 import GrowingStages from "./index/GrowingStages";
 import FertilizerSchedule from "./index/FertilizerSchedule";
 import { navigate } from "gatsby";
@@ -1144,13 +1144,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error || t('seasonPlans.viewPage.notFound')}</Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/paddy/season-plans")}
-          sx={{ mt: 2 }}
-        >
+        <BackButton to="/paddy/season-plans" sx={{ mt: 2 }}>
           {t('seasonPlans.viewPage.backToList')}
-        </Button>
+        </BackButton>
       </Box>
     );
   }
@@ -1167,13 +1163,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/paddy/season-plans")}
-            sx={{ mr: 2 }}
-          >
+          <BackButton to="/paddy/season-plans" sx={{ mr: 2 }}>
             {t('common.back')}
-          </Button>
+          </BackButton>
           <Box>
             <Box >
               <Typography variant="h4" gutterBottom>

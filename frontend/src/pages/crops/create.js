@@ -11,7 +11,7 @@ import AppProviders from '../../providers/AppProviders';
 
 const CreateCropContent = () => {
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+  <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: { xs: '100%', sm: 800 }, mx: 'auto' }}>
       <Typography variant="h4" gutterBottom>
         Add New Crop
       </Typography>
@@ -19,7 +19,7 @@ const CreateCropContent = () => {
         Track a new crop in your farm management system
       </Typography>
 
-      <Paper elevation={2} sx={{ p: 4, textAlign: 'center' }}>
+  <Paper elevation={2} sx={{ p: { xs: 2, sm: 4 }, textAlign: 'center' }}>
         <Typography variant="h6" gutterBottom>
           Crop Management Coming Soon
         </Typography>
@@ -27,7 +27,7 @@ const CreateCropContent = () => {
           This feature is under development. You can add crops through the season planning system for now.
         </Typography>
         
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexDirection: { xs: 'column', sm: 'row' } }}>
           <Button
             variant="outlined"
             onClick={() => navigate('/dashboard')}

@@ -29,9 +29,9 @@ import {
   WaterDrop as WaterIcon,
   CheckCircle as CheckCircleIcon,
   TrendingUp as TrendingUpIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import BackButton from '../../../components/BackButton';
 import { useTranslation } from 'react-i18next';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
@@ -107,34 +107,31 @@ const SeasonPlansContent = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box display="flex" alignItems="center">
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/dashboard')}
-            sx={{ mr: 2 }}
-          >
-            {t('common.back')}
-          </Button>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Header - responsive */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
+        <Box display="flex" alignItems="center" sx={{ width: '100%' }}>
+          <BackButton to="/dashboard" sx={{ mr: { sm: 2 }, mb: { xs: 1, sm: 0 } }} />
           <Box>
             <Typography variant="h4" gutterBottom>
               {t('seasonPlans.title')}
             </Typography>
-            <Typography variant="body1" color="textSecondary">
+            {/* <Typography variant="body1" color="textSecondary">
               {t('seasonPlans.manageSeasonPlans')}
-            </Typography>
+            </Typography> */}
           </Box>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/paddy/season-plans/create')}
-          sx={{ minWidth: 150 }}
-        >
-          {t('seasonPlans.createPlan')}
-        </Button>
+        <Box sx={{ mt: { xs: 1, sm: 0 } }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/paddy/season-plans/create')}
+            sx={{ minWidth: { xs: 'auto', sm: 150 } }}
+            size="small"
+          >
+            {t('seasonPlans.createPlan')}
+          </Button>
+        </Box>
       </Box>
 
       {/* Farm Selection Warning */}
@@ -325,7 +322,7 @@ const SeasonPlansContent = () => {
                   )}
                 </CardContent>
 
-                <CardActions sx={{ justifyContent: 'space-between', p: 2 }} onClick={(e) => e.stopPropagation()}>
+                <CardActions sx={{ justifyContent: 'space-between', p: 2, flexWrap: 'wrap', gap: 1 }} onClick={(e) => e.stopPropagation()}>
                   <Box>
                     <Tooltip title="View Details">
                       <IconButton

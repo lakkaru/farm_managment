@@ -11,7 +11,7 @@ import AppProviders from '../../providers/AppProviders';
 
 const CreateLivestockContent = () => {
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+  <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: { xs: '100%', sm: 800 }, mx: 'auto' }}>
       <Typography variant="h4" gutterBottom>
         Add Livestock
       </Typography>
@@ -19,7 +19,7 @@ const CreateLivestockContent = () => {
         Add animals to your livestock management system
       </Typography>
 
-      <Paper elevation={2} sx={{ p: 4, textAlign: 'center' }}>
+  <Paper elevation={2} sx={{ p: { xs: 2, sm: 4 }, textAlign: 'center' }}>
         <Typography variant="h6" gutterBottom>
           Livestock Management Coming Soon
         </Typography>
@@ -27,7 +27,7 @@ const CreateLivestockContent = () => {
           This feature is under development. Focus on crop management for now.
         </Typography>
         
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexDirection: { xs: 'column', sm: 'row' } }}>
           <Button
             variant="outlined"
             onClick={() => navigate('/dashboard')}

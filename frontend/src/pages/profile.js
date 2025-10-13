@@ -25,11 +25,11 @@ import {
   Settings as SettingsIcon,
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
-  ArrowBack as ArrowBackIcon,
   Language as LanguageIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { navigate } from 'gatsby';
+import BackButton from '../components/BackButton';
 import Layout from '../components/Layout/Layout';
 import PrivateRoute from '../components/PrivateRoute';
 import ProfileEditDialog from '../components/ProfileEditDialog';
@@ -136,13 +136,7 @@ const ProfileContent = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/dashboard')}
-          sx={{ mr: 2 }}
-        >
-          Back
-        </Button>
+        <BackButton to="/dashboard" sx={{ mr: 2 }} />
         <Typography variant="h4">
           {t('profile.title')}
         </Typography>

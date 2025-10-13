@@ -30,9 +30,9 @@ import {
   Info as InfoIcon,
   BugReport as DiseaseIcon,
   Check as CheckIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import BackButton from '../../../components/BackButton';
 import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { diseaseDetectionAPI } from '../../../services/api';
@@ -171,16 +171,10 @@ const PlantDiseaseDetectionContent = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-      {/* Header */}
-      <Box display="flex" alignItems="center" mb={3}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/dashboard')}
-          sx={{ mr: 2 }}
-        >
-          Back
-        </Button>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: { xs: '100%', md: 1200 }, mx: 'auto' }}>
+      {/* Header - responsive */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
+        <BackButton to="/dashboard" sx={{ mr: { sm: 2 }, mb: { xs: 1, sm: 0 } }} />
         <Box>
           <Typography variant="h4" gutterBottom>
             Plant Disease Detection
@@ -194,7 +188,7 @@ const PlantDiseaseDetectionContent = () => {
       <Grid container spacing={3}>
         {/* Upload Section */}
         <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+          <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Upload Plant Image
             </Typography>

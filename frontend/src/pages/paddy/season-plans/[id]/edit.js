@@ -17,7 +17,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import BackButton from '../../../../components/BackButton';
 import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
 import AppProviders from '../../../../providers/AppProviders';
@@ -191,13 +191,9 @@ const EditSeasonPlanContent = ({ id }) => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
-        <Button 
-          startIcon={<ArrowBackIcon />} 
-          onClick={() => navigate('/paddy/season-plans')}
-          sx={{ mt: 2 }}
-        >
-          Back to Season Plans
-        </Button>
+        <BackButton to="/paddy/season-plans" sx={{ mt: 2 }}>
+          {t('seasonPlans.viewPage.backToList')}
+        </BackButton>
       </Box>
     );
   }
@@ -206,13 +202,9 @@ const EditSeasonPlanContent = ({ id }) => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(`/paddy/season-plans/${id}`)}
-          sx={{ mr: 2 }}
-        >
-          Back
-        </Button>
+        <BackButton to={`/paddy/season-plans/${id}`} sx={{ mr: 2 }}>
+          {t('common.back')}
+        </BackButton>
         <Box>
           <Typography variant="h4" gutterBottom>
             Edit Season Plan

@@ -12,7 +12,8 @@ import {
   Alert,
 } from '@mui/material';
 import { navigate } from 'gatsby';
-import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Edit as EditIcon } from '@mui/icons-material';
+import BackButton from '../../components/BackButton';
 import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
 import AppProviders from '../../providers/AppProviders';
@@ -89,61 +90,56 @@ const FarmDetailContent = ({ farmId }) => {
 
   if (error) {
     return (
-      <Box>
+        <Box>
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/farms')}
-          sx={{ mr: 2 }}
-        >
-          Back
-        </Button>
+        <BackButton to="/farms" sx={{ mr: 2 }} aria-label={t('common.back')} />
       </Box>
     );
   }
 
   if (!farm) {
     return (
-      <Box>
+        <Box>
         <Alert severity="warning" sx={{ mb: 3 }}>
           Farm not found
         </Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/farms')}
-          sx={{ mr: 2 }}
-        >
-          Back
-        </Button>
+        <BackButton to="/farms" sx={{ mr: 2 }} aria-label={t('common.back')} />
       </Box>
     );
   }
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box component="div">
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/farms')}
-            sx={{ mr: 2, mb: 2 }}
-          >
-            {t('common.back')}
-          </Button>
+      {/* Header - responsive */}
+      <Box
+        mb={3}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 },
+        }}
+      >
+        <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-start' }}>
+          <BackButton to="/farms" sx={{ mr: { sm: 2 }, mb: { xs: 1, sm: 0 } }} aria-label={t('common.back')} />
           <Typography variant="h4" component="h1">
             {farm.name}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<EditIcon />}
-          onClick={handleEdit}
-        >
-          {t('farms.editFarm')}
-        </Button>
+        <Box sx={{ mt: { xs: 1, sm: 0 }, width: { xs: '100%', sm: 'auto' } }}>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
+            onClick={handleEdit}
+            size="small"
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            {t('farms.editFarm')}
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
@@ -157,7 +153,7 @@ const FarmDetailContent = ({ farmId }) => {
               <Divider sx={{ mb: 2 }} />
               
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
                     {t('farms.farmType')}
                   </Typography>
@@ -168,7 +164,7 @@ const FarmDetailContent = ({ farmId }) => {
                   />
                 </Grid>
                 
-                <Grid item xs={6}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary">
                     {t('farms.totalAreaValue')}
                   </Typography>
@@ -193,7 +189,20 @@ const FarmDetailContent = ({ farmId }) => {
                     <Typography variant="body2" color="textSecondary">
                       {t('farms.description')}
                     </Typography>
-                    <Typography variant="body1">
+                    <Typography
+                      variant="body1"
+                      sx={(theme) => ({
+                        mt: 0.5,
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        WebkitLineClamp: 3,
+                        [theme.breakpoints.up('sm')]: {
+                          WebkitLineClamp: 5,
+                        },
+                        textOverflow: 'ellipsis',
+                      })}
+                    >
                       {farm.description}
                     </Typography>
                   </Grid>

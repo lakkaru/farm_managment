@@ -22,9 +22,9 @@ import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import BackButton from '../../components/BackButton';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
@@ -129,27 +129,33 @@ const FarmsPageContent = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center">
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/dashboard')}
-            sx={{ mr: 2 }}
-          >
-            {t('common.back')}
-          </Button>
-          <Typography variant="h4" component="h1">
+      {/* Header - responsive: stack on xs */}
+      <Box
+        mb={3}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: { xs: 'space-between', sm: 'flex-start' } }}>
+          <BackButton to="/dashboard" sx={{ mr: { sm: 2 }, minWidth: { xs: '40px', sm: 'auto' } }} />
+          <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, flex: 1 }}>
             {t('farms.farmManagement')}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateFarm}
-        >
-          {t('farms.addNewFarm')}
-        </Button>
+        <Box sx={{ mt: { xs: 1, sm: 0 } }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateFarm}
+            size="small"
+          >
+            {t('farms.addNewFarm')}
+          </Button>
+        </Box>
       </Box>
 
       {/* Error Alert */}
@@ -217,15 +223,30 @@ const FarmsPageContent = () => {
                   <Typography variant="body2" color="textSecondary">
                     <strong>{t('farms.area')}:</strong> {formatArea(farm.totalArea)}
                   </Typography>
-                  
+
                   {farm.description && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={(theme) => ({
+                        mt: 1,
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        WebkitLineClamp: 3,
+                        [theme.breakpoints.up('sm')]: {
+                          WebkitLineClamp: 5,
+                        },
+                        // Fallback for non-webkit browsers
+                        textOverflow: 'ellipsis',
+                        maxHeight: '5.4em',
+                      })}
+                    >
                       {farm.description}
                     </Typography>
                   )}
                 </CardContent>
                 
-                <CardActions onClick={(e) => e.stopPropagation()}>
+                <CardActions onClick={(e) => e.stopPropagation()} sx={{ flexWrap: 'wrap', gap: 1, px: 1 }}>
                   <Tooltip title={t('farms.viewDetails')}>
                     <IconButton
                       size="small"

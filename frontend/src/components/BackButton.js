@@ -1,24 +1,4 @@
-import React from 'react';
-import { IconButton, Tooltip } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
-import { navigate } from 'gatsby';
-
-const BackButton = ({ to = -1, tooltip = 'Go back', ...props }) => {
-  const handleClick = () => {
-    if (typeof to === 'string') {
-      navigate(to);
-    } else {
-      window.history.back();
-    }
-  };
-
-  return (
-    <Tooltip title={tooltip}>
-      <IconButton onClick={handleClick} {...props}>
-        <ArrowBackIcon />
-      </IconButton>
-    </Tooltip>
-  );
-};
-
-export default BackButton;
+// Deprecated single-icon BackButton wrapper kept for compatibility.
+// Re-export the main BackButton component from the folder's concrete file
+// to avoid ambiguous resolution that can cause a circular import.
+export { default } from './BackButton/BackButton';

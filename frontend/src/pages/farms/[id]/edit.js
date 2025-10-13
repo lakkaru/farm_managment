@@ -13,7 +13,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import BackButton from '../../../components/BackButton';
 import { navigate } from 'gatsby';
 import { useTranslation } from 'react-i18next';
 import Layout from '../../../components/Layout/Layout';
@@ -200,13 +200,9 @@ const EditFarmContent = ({ farmId }) => {
   return (
     <Box>
       <Box display="flex" alignItems="center" mb={2}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(`/farms/${farmId}`)}
-          sx={{ mr: 2 }}
-        >
+        <BackButton to={`/farms/${farmId}`} sx={{ mr: 2 }}>
           {t('common.back')}
-        </Button>
+        </BackButton>
         <Typography variant="h4" component="h1">
           {t('farms.editFarm')}
         </Typography>

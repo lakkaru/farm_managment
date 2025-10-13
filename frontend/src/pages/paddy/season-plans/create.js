@@ -17,7 +17,7 @@ import {
   ToggleButtonGroup,
   Chip,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import BackButton from '../../../components/BackButton';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -381,20 +381,16 @@ const CreateSeasonPlanContent = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box display="flex" alignItems="center" mb={2}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/paddy/season-plans')}
-          sx={{ mr: 2 }}
-        >
+        <BackButton to="/paddy/season-plans" sx={{ mr: 2 }}>
           {t('common.back')}
-        </Button>
+        </BackButton>
         <Typography variant="h4" gutterBottom>
           {t('seasonPlans.createForm.title')}
         </Typography>
       </Box>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+      {/* <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
         {t('seasonPlans.createForm.subtitle')}
-      </Typography>
+      </Typography> */}
 
       {!selectedFarm && farms.length === 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>

@@ -13,7 +13,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import BackButton from '../../components/BackButton';
 import { navigate } from 'gatsby';
 import { useTranslation } from 'react-i18next';
 import Layout from '../../components/Layout/Layout';
@@ -170,24 +170,18 @@ const CreateFarmContent = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: { xs: '100%', sm: 800 }, mx: 'auto' }}>
       <Box display="flex" alignItems="center" mb={2}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/farms')}
-          sx={{ mr: 2 }}
-        >
-          {t('common.back')}
-        </Button>
+        <BackButton to="/farms" sx={{ mr: 2 }} />
         <Typography variant="h4" gutterBottom>
-          {t('farms.createNewFarm')}
+          {t('farms.addNewFarm')}
         </Typography>
       </Box>
-      <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
+      {/* <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
         {t('farms.addNewFarmDescription')}
-      </Typography>
+      </Typography> */}
 
-      <Paper elevation={2} sx={{ p: 4 }}>
+  <Paper elevation={2} sx={{ p: { xs: 2, sm: 4 } }}>
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
@@ -398,11 +392,12 @@ const CreateFarmContent = () => {
 
             {/* Action Buttons */}
             <Grid item xs={12} sx={{ mt: 3 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Button
                   variant="outlined"
                   onClick={() => navigate('/dashboard')}
                   disabled={loading}
+                  fullWidth={{ xs: true, sm: false }}
                 >
                   {t('farms.cancel')}
                 </Button>
@@ -411,6 +406,8 @@ const CreateFarmContent = () => {
                   variant="contained"
                   disabled={loading}
                   startIcon={loading && <CircularProgress size={20} />}
+                  sx={{ minWidth: { sm: 120 } }}
+                  fullWidth={{ xs: true, sm: false }}
                 >
                   {loading ? t('farms.creating') : t('farms.createFarmButton')}
                 </Button>

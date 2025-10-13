@@ -69,29 +69,29 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
           startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
           variant="outlined"
           sx={{
-            minWidth: '70px',
-            fontSize: '0.9rem',
+            minWidth: { xs: 40, sm: '70px' },
+            fontSize: { xs: '0.75rem', sm: '0.9rem' },
             textTransform: 'none',
             color: 'primary.main',
             fontWeight: 600,
-            px: 2,
-            py: 1,
+            px: { xs: 0.75, sm: 2 },
+            py: { xs: 0.5, sm: 1 },
             borderRadius: 3,
             border: '2px solid',
             borderColor: 'primary.main',
-            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-            boxShadow: '0 2px 8px rgba(76, 175, 80, 0.2)',
+            backgroundColor: 'rgba(76, 175, 80, 0.06)',
+            boxShadow: { xs: 'none', sm: '0 2px 8px rgba(76, 175, 80, 0.2)' },
             '&:hover': {
               backgroundColor: 'primary.main',
               color: 'white',
               borderColor: 'primary.main',
-              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
-              transform: 'translateY(-1px)',
+              boxShadow: { xs: 'none', sm: '0 4px 12px rgba(76, 175, 80, 0.3)' },
+              transform: { xs: 'none', sm: 'translateY(-1px)' },
             },
-            transition: 'all 0.2s ease-in-out',
+            transition: 'all 0.15s ease-in-out',
           }}
         >
-          {currentLanguage.code.toUpperCase()}
+          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{currentLanguage.code.toUpperCase()}</Box>
         </Button>
         
         <Menu
@@ -144,7 +144,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
       <Button
         onClick={handleClick}
         startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
-        endIcon={<LanguageIcon />}
+        endIcon={<LanguageIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
         variant="outlined"
         size="small"
         sx={{
@@ -152,7 +152,8 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
           borderColor: 'primary.main',
           color: 'primary.main',
           fontWeight: 500,
-          px: 2,
+          px: { xs: 0.75, sm: 2 },
+          minWidth: { xs: 'auto', sm: 'initial' },
           '&:hover': {
             borderColor: 'primary.dark',
             backgroundColor: 'primary.light',
@@ -160,7 +161,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
           },
         }}
       >
-        {currentLanguage.nativeName}
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{currentLanguage.nativeName}</Box>
       </Button>
       
       <Menu

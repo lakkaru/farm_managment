@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { Button, IconButton, Tooltip, Box } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 
@@ -10,6 +10,7 @@ const BackButton = ({
   color = 'primary',
   size = 'medium',
   sx = {},
+  compactOnXs = true,
   ...props 
 }) => {
   const handleBack = () => {
@@ -57,7 +58,13 @@ const BackButton = ({
       }}
       {...props}
     >
-      {label}
+      {compactOnXs ? (
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          {label}
+        </Box>
+      ) : (
+        label
+      )}
     </Button>
   );
 };

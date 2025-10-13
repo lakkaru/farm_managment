@@ -27,9 +27,9 @@ import {
   Person as PersonIcon,
   Phone as PhoneIcon,
   Agriculture as AgricultureIcon,
-  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
+import BackButton from '../components/BackButton';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-toastify';
@@ -234,18 +234,15 @@ const LoginPage = () => {
       }}
     >
       <Box sx={{ position: 'absolute', top: 16, left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBackToHome}
+        <BackButton
+          to="/"
           sx={{ 
             color: 'white',
             '&:hover': {
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             },
           }}
-        >
-          {t('auth.backToHome')}
-        </Button>
+        />
         <Box sx={{ 
           '& .MuiButton-root': {
             backgroundColor: 'rgba(255, 255, 255, 0.9) !important',
