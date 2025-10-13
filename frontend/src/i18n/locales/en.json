@@ -719,7 +719,97 @@
     "recommendedRegions": "Recommended Regions",
     "description": "Description",
     "varietyCreated": "Paddy variety created successfully!",
-    "varietyUpdated": "Paddy variety updated successfully!"
+    "varietyUpdated": "Paddy variety updated successfully!",
+    "subtitle": "Browse available paddy varieties for your cultivation plans",
+    "searchPlaceholder": "Search varieties by name or type...",
+    "noVarietiesFound": "No Varieties Found",
+    "noPaddyVarietiesAvailable": "No Paddy Varieties Available",
+    "noVarietiesMatch": "No varieties match your search \"{{term}}\". Try different keywords.",
+    "durationLabel": "Duration:",
+    "grainColorLabel": "Grain Color:",
+    "grainSizeLabel": "Grain Shape:",
+    "releasedLabel": "Released:",
+    "popularNameLabel": "Popular Name:",
+    "parentageLabel": "Parentage:",
+    "recommendationLabel": "Recommendation:",
+    "characteristicsTitle": "Characteristics:",
+    "yieldLabel": "Yield:",
+    "resistanceLabel": "Resistance:",
+    "suitableSeasonsLabel": "Suitable Seasons:",
+    "grainTypeLabel": "Grain Type:",
+    "showingCount": "Showing {{shown}} of {{total}} varieties",
+    "back": "Back",
+    "monthsUnit": "months",
+    "daysUnit": "days",
+    "colors": {
+      "white": "White",
+      "red": "Red"
+    },
+    "grainSizes": {
+      "long_medium": "Long Medium",
+      "intermediate_medium": "Intermediate Medium",
+      "short_round": "Short Round",
+      "intermediate_bold": "Intermediate Bold",
+      "long_slender": "Long Slender",
+      "short_oblong": "Short Oblong",
+      "extra_long_slender": "Extra Long Slender"
+    },
+    "recommendations": {
+      "general_cultivation": "General cultivation",
+      "mawee_lands": "Mawee lands",
+      "rainfed_manawari": "Rainfed / Manawari",
+      "iron_toxic_acidic_soil": "Iron toxic soil and acidic soil",
+      "southern_province": "Southern Province",
+      "low_country_intermediate_zone": "Low Country Intermediate Zone",
+      "low_country_wet_zone": "Low Country Wet Zone",
+      "low_country_wet_half_bog": "Low Country Wet Zone - Suitable for half bog and bog soil",
+      "major_irrigation_dry_intermediate": "Major irrigation in Dry Zone and Intermediate Zone",
+      "high_potential_low_country_wet": "High potential areas in Low Country Wet Zone (mineral soil)",
+      "rainfed_dry_intermediate": "Rainfed - Dry Zone and Intermediate Zone",
+      "saline_acidic_soil": "Saline and acidic soil",
+      "saline_areas": "Saline prone areas",
+      "dry_intermediate_assured_water": "Dry Zone and Intermediate Zone with assured supply of water",
+      "wz": "WZ",
+      "rainfed_drought_escape_reestablishment": "Rainfed, Drought escape variety / Re-establishment of flood damaged areas",
+      "suitable_for_water_logging": "Suitable for water logging conditions",
+      "rainfed_areas": "Rainfed areas"
+    }
+    ,
+    "characteristics": {
+      "resistances": {
+        "bph": "Brown Planthopper",
+        "brown_planthopper": "Brown Planthopper",
+        "blast": "Blast",
+        "rice_gall_midge": "Rice Gall Midge",
+        "bacterial_leaf_blight": "Bacterial Leaf Blight"
+      },
+      "suitableZones": {
+        "general_cultivation": "General cultivation",
+        "mawee_lands": "Mawee lands",
+        "mawee_land": "Mawee Land",
+        "rainfed_manawari": "Rainfed / Manawari",
+        "low_country_wet_zone": "Low Country Wet Zone",
+        "low_country_wet_zone_suitable_for_half_bog_and_bog_soil": "Low Country Wet Zone - Suitable for half bog and bog soil",
+        "low_country_intermediate_zone": "Low Country Intermediate Zone",
+        "wet_zone": "Wet Zone",
+        "dry_zone": "Dry Zone",
+        "intermediate_zone": "Intermediate Zone",
+        "rainfed_dry_zone_and_intermediate_zone": "Rainfed - Dry Zone and Intermediate Zone",
+        "saline_areas": "Saline areas",
+        "saline_soil": "Saline soil",
+        "saline_and_acidic_soil": "Saline and acidic soil",
+        "iron_toxic_soil": "Iron toxic soil",
+        "acidic_soil": "acidic soil",
+        "major_irrigation_in_dry_zone": "Major irrigation in Dry Zone",
+        "southern_province": "Southern province",
+        "high_potential_low_country_wet_zone_mineral_soil": "High potential areas in Low Country Wet Zone (mineral soil)",
+        "kaluthara_and_galle_districts": "Kaluthara and Galle Districts",
+        "costal_saline_areas": "Costal saline areas"
+      }
+    },
+    "units": {
+      "tonPerHectare": "ton/ha"
+    }
   },
   
   "diseaseDetection": {
