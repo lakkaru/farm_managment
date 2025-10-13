@@ -20,7 +20,7 @@ import Layout from '../../../components/Layout/Layout';
 import AppProviders from '../../../providers/AppProviders';
 import { farmAPI } from '../../../services/api';
 import { toast } from 'react-toastify';
-import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../../constants/districts';
+import { SRI_LANKAN_DISTRICTS, getZoneDescription, getDistrictZone } from '../../../constants/districts';
 
 const EditFarmContent = ({ farmId }) => {
   const { t } = useTranslation();
@@ -64,7 +64,7 @@ const EditFarmContent = ({ farmId }) => {
         description: farm.description || '',
         farmType: farm.farmType || '',
         district: farm.district || farm.location?.district || '',
-        cultivationZone: farm.cultivationZone || farm.location?.cultivationZone || '',
+  cultivationZone: farm.cultivationZone || farm.location?.cultivationZone || getDistrictZone(farm.district || farm.location?.district) || '',
         location: {
           address: farm.location?.address || '',
           country: 'Sri Lanka',
@@ -121,13 +121,11 @@ const EditFarmContent = ({ farmId }) => {
 
     // Auto-populate cultivation zone when district changes
     if (name === 'district') {
-      const selectedDistrict = SRI_LANKAN_DISTRICTS.find(d => d.name === value);
-      if (selectedDistrict) {
-        setFormData(prev => ({
-          ...prev,
-          cultivationZone: selectedDistrict.cultivationZone
-        }));
-      }
+      const zoneCode = getDistrictZone(value);
+      setFormData(prev => ({
+        ...prev,
+        cultivationZone: zoneCode || ''
+      }));
     }
   };
 
@@ -301,7 +299,7 @@ const EditFarmContent = ({ farmId }) => {
                   readOnly: true,
                 }}
                 helperText={
-                  formData.district ? getZoneDescription(formData.district) : t('farms.selectDistrictFirst')
+                  formData.cultivationZone ? getZoneDescription(formData.cultivationZone) : t('farms.selectDistrictFirst')
                 }
               />
             </Grid>
