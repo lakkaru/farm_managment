@@ -80,13 +80,15 @@ const AppProviders = ({ children, emotionCache = cache }) => {
     // Check if this is the browser environment and if user hasn't selected language before
     if (typeof window !== 'undefined') {
       const hasSelectedLanguage = localStorage.getItem('hasSelectedLanguage');
-      const preferredLanguage = localStorage.getItem('preferredLanguage');
+      // support both our preferredLanguage key and i18next's own key
+      const preferredLanguageRaw = localStorage.getItem('preferredLanguage') || localStorage.getItem('i18nextLng');
+      const preferredLanguage = preferredLanguageRaw ? preferredLanguageRaw.split('-')[0] : null;
       
       if (!hasSelectedLanguage && !preferredLanguage) {
         // Show language selection dialog for first-time users
         setShowLanguageDialog(true);
       } else if (preferredLanguage) {
-        // Set saved language preference
+        // Set saved language preference (normalize regional variants like 'si-LK' -> 'si')
         i18n.changeLanguage(preferredLanguage);
       }
     }

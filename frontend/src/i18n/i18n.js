@@ -13,7 +13,11 @@ i18n
   .init({
     debug: process.env.NODE_ENV === 'development',
     
-    fallbackLng: 'en',
+    // Normalize regional variants to base language (e.g. 'si-LK' -> 'si')
+    load: 'languageOnly',
+
+    // Prefer Sinhala, fall back to English when keys are missing
+    fallbackLng: ['si', 'en'],
     lng: 'si', // Default to Sinhala for Sri Lankan farmers
     
     interpolation: {

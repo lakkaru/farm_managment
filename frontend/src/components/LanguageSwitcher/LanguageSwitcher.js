@@ -27,10 +27,12 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
   };
 
   const handleLanguageChange = (language) => {
-    i18n.changeLanguage(language);
+    const base = language.split('-')[0];
+    i18n.changeLanguage(base);
     
-    // Store preference in localStorage for persistence
-    localStorage.setItem('preferredLanguage', language);
+    // Store preference in localStorage for persistence (both our key and i18next's key)
+    localStorage.setItem('preferredLanguage', base);
+    localStorage.setItem('i18nextLng', base);
     
     // Show feedback to user
     if (typeof window !== 'undefined' && window.toast) {

@@ -145,7 +145,7 @@
     "welcomeActivity": "ඔබේ වී ගොවිපල කළමනාකරණ පද්ධතියට සාදරයෙන් පිළිගනිමු!",
     "createFirstFarmActivity": "ඔබේ පළමු ගොවිපල සාදා වී වගා කන්න සැලසුම් කිරීම ආරම්භ කරන්න"
   },
-   "farms": {
+  "farms": {
     "title": "ගොවිපල",
     "myFarms": "මගේ ගොවිපල",
     "farmManagement": "ගොවිපල කළමනාකරණය",
@@ -209,7 +209,6 @@
       "hectares": "හෙක්ටයාර්",
       "sqMeters": "වර්ග මීටර්",
       "sqFeet": "වර්ග අඩි"
-      
     },
     "ownerInformation": "අයිතිකරු තොරතුරු",
     "farmManagers": "ගොවිපල කළමනාකරුවන්",
@@ -222,7 +221,52 @@
     "notSpecified": "සඳහන් කර නැත",
     "notAvailable": "නැත"
   },
-   "seasonPlans": {
+  "districts": {
+    "colombo": "කොළඹ",
+  "gampaha": "ගම්පහ",
+  "kalutara": "කලුතර",
+  "kandy": "මහනුවර",
+  "matale": "මාතලේ",
+  "nuwara_eliya": "නුවරඑළිය",
+  "galle": "ගාල්ල",
+  "matara": "මාතර",
+  "hambantota": "හම්බන්තොට",
+  "jaffna": "යාපනය",
+  "kilinochchi": "කිලිනොච්චි",
+  "mannar": "මන්නාරම",
+  "vavuniya": "වව්නියාව",
+  "mullaitivu": "මුලතිව්",
+  "batticaloa": "මඩකලපුව",
+  "ampara": "අම්පාර",
+  "trincomalee": "ත්‍රිකුණාමලය",
+  "kurunegala": "කුරුණෑගල",
+  "puttalam": "පුත්තලම",
+  "anuradhapura": "අනුරාධපුර",
+  "polonnaruwa": "පොළොන්නරුව",
+  "badulla": "බදුල්ල",
+  "moneragala": "මොනරාගල",
+  "ratnapura": "රත්නපුර",
+  "kegalle": "කෑගල්ල",
+    "zones": {
+      "WL1": "තෙත් කලාපය - පහත රට (WL1)",
+      "WL2": "තෙත් කලාපය - පහත රට (WL2)",
+      "WL3": "තෙත් කලාපය - පහත රට (WL3)",
+      "WM1": "තෙත් කලාපය - මැද රට (WM1)",
+      "WM2": "තෙත් කලාපය - මැද රට (WM2)",
+      "WM3": "තෙත් කලාපය - මැද රට (WM3)",
+      "WU1": "තෙත් කලාපය - උඩ රට (WU1)",
+      "DL1": "වියළි කලාපය - පහත රට (DL1)",
+      "DL2": "වියළි කලාපය - පහත රට (DL2)",
+      "DL3": "වියළි කලාපය - පහත රට (DL3)",
+      "IL1": "අතරමැදි කලාපය - පහත රට (IL1)",
+      "IM1": "අතරමැදි කලාපය - මැද රට (IM1)",
+      "IM2": "අතරමැදි කලාපය - මැද රට (IM2)"
+    }
+  },
+  "forms": {
+    "requiredFieldsNote": "* සමඟ සලකුණු කරන ලද ක්ෂේත්‍ර අත්‍යවශ්‍ය වේ"
+  },
+  "seasonPlans": {
     "title": "කන්න සැලසුම්",
     "createNew": "නව කන්න සැලැස්මක් සාදන්න",
     "createPlan": "සැලැස්මක් සාදන්න",
@@ -272,7 +316,7 @@
     "areaInfo": "ප්‍රමාණ තොරතුරු",
     "timeline": "කාල සටහන",
     "progress": "ප්‍රගතිය",
-  "progressSummary": "ප්‍රගතිය: {{done}}/{{total}} අදියර සම්පූර්ණයි",
+    "progressSummary": "ප්‍රගතිය: {{done}}/{{total}} අදියර සම්පූර්ණයි",
     "overview": "සමාලෝචනය",
     "activities": "ක්‍රියාකාරකම්",
     "fertilizer": "පොහොර",
@@ -292,7 +336,7 @@
     "enterCultivatingArea": "අක්කර වලින් වගා කරන ප්‍රමාණය ඇතුළත් කරන්න",
     "selectCultivationDate": "වගා කිරීමේ දිනය තෝරන්න",
     "selectHarvestDate": "අපේක්ෂිත අස්වනු දිනය තෝරන්න",
-     "units": {
+    "units": {
       "acres": "අක්කර",
       "hectares": "හෙක්ටයාර්",
       "sqMeters": "වර්ග මීටර්",
@@ -330,8 +374,6 @@
     "failedToCreate": "කන්න සැලැස්ම සෑදීමට අසමත් විය",
     "failedToUpdate": "කන්න සැලැස්ම යාවත්කාලීන කිරීමට අසමත් විය",
     "failedToDelete": "කන්න සැලැස්ම මකාදැමීමට අසමත් විය",
-
-    
     "createForm": {
       "title": "කන්න සැලැස්ම සාදන්න",
       "subtitle": "ඔබගේ ඊළඟ වී වගා කන්නය සැලසුම් කරන්න",
@@ -378,7 +420,6 @@
       "cancel": "අවලංගු කරන්න",
       "creating": "සාදමින්...",
       "createSeasonPlan": "කන්න සැලැස්ම සාදන්න",
-      
       "validation": {
         "fillAllFields": "කරුණාකර අනිවාර්ය සියලු ක්ෂේත්‍ර පුරවන්න",
         "selectCultivationDate": "කරුණාකර වගා දිනයක් තෝරන්න",
@@ -388,14 +429,13 @@
         "areaExceedsLimit": "වගා කරන ප්‍රමාණය ගොවිපලේ සම්පූර්ණ ප්‍රමාණය {{total}} {{unit}} ඉක්මවිය නොහැක"
       },
       "irrigationMethods": {
-      "rainfed": "වර්ෂා ජලයෙන්",
-      "irrigated": "වාරිමාර්ග",
-      "tube_well": "නල ළිං",
-      "canal": "ඇළ",
-      "tank": "වැව",
-      "well": "ළිං"
-    },
-      
+        "rainfed": "වර්ෂා ජලයෙන්",
+        "irrigated": "වාරිමාර්ග",
+        "tube_well": "නල ළිං",
+        "canal": "ඇළ",
+        "tank": "වැව",
+        "well": "ළිං"
+      },
       "soilOptions": {
         "sandy": "වැලි",
         "clay": "මැටි",
@@ -405,7 +445,6 @@
         "siltLoam": "සේදිමේන්ට් පස්"
       }
     },
-    
     "viewPage": {
       "title": "කන්න සැලැස්ම විස්තර",
       "loading": "කන්න සැලැස්ම පූරණය කරමින්...",
@@ -417,10 +456,10 @@
       "confirmDelete": "ඔබට මෙම කන්න සැලැස්ම මකා දැමීමට අවශ්‍යද?",
       "confirmDeleteMessage": "මෙම ක්‍රියාව අහෝසි කළ නොහැක. මෙම සැලැස්මට සම්බන්ධ සියලු දත්ත ස්ථිරවම ඉවත් වේ.",
       "planDeleted": "කන්න සැලැස්ම සාර්ථකව මකන ලදී",
-  "updateFertilizerApplication": "පොහොර යෙදීම යාවත්කරණය කරන්න",
-  "deleteConfirm": "ඔබට මෙම කාලසටහන මකන්න අවශ්‍යද? මෙම ක්‍රියාකාරකම ආපසු හැරවිය නොහැක.",
-  "deleteFertilizerTitle": "පොහොර යෙදීම මකන්න",
-  "deleteFertilizerConfirm": "ඔබට මෙම පොහොර යෙදීම මකා දැමීමට අවශ්‍යද? මෙය ආපසු හැරවිය නොහැකි ක්‍රියාවකි.",
+      "updateFertilizerApplication": "පොහොර යෙදීම යාවත්කරණය කරන්න",
+      "deleteConfirm": "ඔබට මෙම කාලසටහන මකන්න අවශ්‍යද? මෙම ක්‍රියාකාරකම ආපසු හැරවිය නොහැක.",
+      "deleteFertilizerTitle": "පොහොර යෙදීම මකන්න",
+      "deleteFertilizerConfirm": "ඔබට මෙම පොහොර යෙදීම මකා දැමීමට අවශ්‍යද? මෙය ආපසු හැරවිය නොහැකි ක්‍රියාවකි.",
       "leafColorChartTitle": "පත්‍ර වර්ණ දර්ශක - යුරියා නිර්දේශ",
       "leafColorChartSubtitle": "ඔබේ ගොයමේ පත්‍ර පැහැය පරීක්ෂා කර යුරියා නිර්දේශය ලබා ගන්න",
       "leafColor": {
@@ -448,22 +487,22 @@
           },
           "compare": "ලාබාලතම, සම්පූර්ණයෙන්ම පුළුල් වූ පත්‍රය පත්‍ර වර්ණ දර්ශකය සමඟ සසඳන්න"
         },
-      "cultivationStarted": "වගා ආරම්භ වුණේ: {{date}}",
-      "labels": {
-        "1": "ඉතා ලා කොළ (කහපාට)",
-        "2": "ලා කොළ (පැහැ)",
-        "3": "මධ්‍යම කොළ (සාමාන්‍ය)",
-        "4": "තද කොළ (දැඩි)",
-        "5": "ඉතා තද කොළ (ගැඹුරු)",
-        "6": "අධික තද කොළ (නිල්පාට)"
-      },
-      "basedOn": "{{weeks}} සති ශාක වයස සහ පත්‍ර වර්ණ දර්ශකය {{index}} මත පදනම්ව",
-      "totalFor": "සම්පූර්ණය {{area}} අක්කර සඳහා: {{total}} කි.ග්‍රෑ",
-      "selectPlaceholder": "පත්‍ර පැහැ දර්ශකය තෝරන්න",
-      "ageWarning": "පත්‍ර වර්ණ ප්‍රස්ථාරය සති 2-8 වයසේ ශාක සඳහා වඩාත්ම නිවැරදි ය. ඔබේ ශාකය දැනට සති {{age}} ක් පරණයි.",
-      "noRecommendation": "සති {{age}} ක් පරණ ශාක සහ පත්‍ර වර්ණ දර්ශකය {{index}} සඳහා විශේෂ යූරියා නිර්දේශ නොමැත. කරුණාකර කෘෂි විශේෂඥයෙකුගෙන් උපදෙස් ලබාගන්න.",
-      "cultivationDateNotAvailable": "වගා දිනය ලබාගත නොහැක",
-      "plantAgeHelper": "වර්තමාන දිනය සහ වගා දිනය මත ශාක වයස ස්වයංක්‍රීයව ගණනය කරයි"
+        "cultivationStarted": "වගා ආරම්භ වුණේ: {{date}}",
+        "labels": {
+          "1": "ඉතා ලා කොළ (කහපාට)",
+          "2": "ලා කොළ (පැහැ)",
+          "3": "මධ්‍යම කොළ (සාමාන්‍ය)",
+          "4": "තද කොළ (දැඩි)",
+          "5": "ඉතා තද කොළ (ගැඹුරු)",
+          "6": "අධික තද කොළ (නිල්පාට)"
+        },
+        "basedOn": "{{weeks}} සති ශාක වයස සහ පත්‍ර වර්ණ දර්ශකය {{index}} මත පදනම්ව",
+        "totalFor": "සම්පූර්ණය {{area}} අක්කර සඳහා: {{total}} කි.ග්‍රෑ",
+        "selectPlaceholder": "පත්‍ර පැහැ දර්ශකය තෝරන්න",
+        "ageWarning": "පත්‍ර වර්ණ ප්‍රස්ථාරය සති 2-8 වයසේ ශාක සඳහා වඩාත්ම නිවැරදි ය. ඔබේ ශාකය දැනට සති {{age}} ක් පරණයි.",
+        "noRecommendation": "සති {{age}} ක් පරණ ශාක සහ පත්‍ර වර්ණ දර්ශකය {{index}} සඳහා විශේෂ යූරියා නිර්දේශ නොමැත. කරුණාකර කෘෂි විශේෂඥයෙකුගෙන් උපදෙස් ලබාගන්න.",
+        "cultivationDateNotAvailable": "වගා දිනය ලබාගත නොහැක",
+        "plantAgeHelper": "වර්තමාන දිනය සහ වගා දිනය මත ශාක වයස ස්වයංක්‍රීයව ගණනය කරයි"
       },
       "adding": "එක් කරන ලදී...",
       "addToFertilizerSchedule": "පෝෂක කාලසටහනට එක් කරන්න",
@@ -478,7 +517,6 @@
       "expenses": "වියදම් කළමනාකරණය",
       "dailyRemarks": "දෛනික සටහන්",
       "reports": "වාර්තා සහ විශ්ලේෂණ",
-      
       "farmName": "ගොවිපල නම",
       "farmLocation": "ගොවිපල ස්ථානය",
       "district": "දිස්ත්‍රික්කය",
@@ -505,7 +543,6 @@
       "daysRemaining": "දින {{days}}ක් ඉතිරිය",
       "daysOverdue": "දින {{days}}කින් ප්‍රමාද",
       "completed": "{{date}} දින සම්පූර්ණ කරන ලදී",
-      
       "growingStages": "වර්ධන අදියර",
       "growingStageNames": {
         "first_plowing": "පළමු සී සෑම",
@@ -535,14 +572,13 @@
       "pestManagement": "පළිබෝධ කළමනාකරණය",
       "irrigationSchedule": "වාරිමාර්ග කාල සටහන",
       "harvestPlanning": "අස්වනු සැලසුම්",
-      
       "stageProgress": "අදියර {{current}} / {{total}}",
       "currentStage": "වත්මන් අදියර",
       "nextStage": "ඊළඟ අදියර",
       "markComplete": "සම්පූර්ණ ලෙස සලකුණු කරන්න",
       "markIncomplete": "අසම්පූර්ණ ලෙස සලකුණු කරන්න",
-  "planned": "නිර්දේශිත",
-  "actual": "සැබෑ",
+      "planned": "නිර්දේශිත",
+      "actual": "සැබෑ",
       "updateImplementation": "ක්‍රියාත්මක කිරීම යාවත්කාලීන කරන්න",
       "implementationDate": "ක්‍රියාත්මක කිරීමේ දිනය",
       "actualStartDate": "සැබෑ ආරම්භ දිනය",
@@ -552,7 +588,6 @@
       "pending": "බලාපොරොත්තුවෙන්",
       "inProgress": "ක්‍රියාත්මක වෙමින්",
       "overdue": "ප්‍රමාදයි",
-      
       "addExpense": "වියදමක් එක් කරන්න",
       "editExpense": "වියදම සංස්කරණය",
       "expenseCategory": "වර්ගය",
@@ -573,7 +608,6 @@
       "totalExpenses": "සම්පූර්ණ වියදම්",
       "expensesByCategory": "වර්ගය අනුව වියදම්",
       "recentExpenses": "මෑත වියදම්",
-      
       "addRemark": "දෛනික සටහනක් එක් කරන්න",
       "editRemark": "සටහන සංස්කරණය",
       "deleteRemark": "සටහන මකන්න",
@@ -586,7 +620,6 @@
       "removeImage": "පින්තූරය ඉවත් කරන්න",
       "noRemarks": "දෛනික සටහන් නැත",
       "addFirstRemark": "ප්‍රගතිය අනුගමනයට ඔබේ පළමු දෛනික සටහන එක් කරන්න",
-      
       "leafColorChart": "පත්‍ර වර්ණ දර්ශකය",
       "enableLeafColor": "පත්‍ර වර්ණ දර්ශකය සක්‍රීය කරන්න",
       "disableLeafColor": "පත්‍ර වර්ණ දර්ශකය අක්‍රිය කරන්න",
@@ -608,7 +641,6 @@
       "markNotApplied": "නොයෙදූ ලෙස සලකුණු කරන්න",
       "addNotes": "සටහන් එක් කරන්න",
       "deleteFertilizerApp": "{{type}} පොහොර යෙදීම මකන්න",
-      
       "fertilizerStages": {
         "basic_application": "මූලික යෙදීම",
         "2_weeks": "සති 2",
@@ -634,7 +666,6 @@
         "mop": "එම්.ඕ.පී.",
         "zinc_sulphate": "සින්ක් සල්ෆේට්"
       },
-      
       "harvestTracking": "අස්වනු අනුගමනය",
       "recordHarvest": "අස්වනු වාර්තාව",
       "harvestDate": "අස්වනු දිනය",
@@ -655,16 +686,14 @@
         "gradeC": "ශ්‍රේණිය C",
         "belowGrade": "ශ්‍රේණියට අඩු"
       },
-  "harvestInformation": "අස්වනු තොරතුරු",
-  "updateHarvest": "අස්වනු යාවත්කාලීන කරන්න",
+      "harvestInformation": "අස්වනු තොරතුරු",
+      "updateHarvest": "අස්වනු යාවත්කාලීන කරන්න",
       "yieldPerAcre": "අක්කරයකට අස්වැන්න",
       "totalYield": "සම්පූර්ණ අස්වැන්න",
-      
       "weatherInfo": "කාලගුණ තොරතුරු",
       "soilAnalysis": "පස් විශ්ලේෂණය",
       "recommendations": "නිර්දේශ",
       "alerts": "අනතුරු ඇඟවීම් සහ දැනුම්දීම්",
-      
       "imageUnavailable": "පින්තූරය නොමැත",
       "loadingImage": "පූරණය කරමින්...",
       "saving": "සුරකිමින්...",
@@ -673,43 +702,42 @@
       "updateError": "යාවත්කාලීන කිරීමට අසමත් විය",
       "deleteSuccess": "සාර්ථකව මකන ලදී",
       "deleteError": "මකාදැමීමට අසමත් විය"
-      }
-    },
-    "paddyVarieties": {
-      "title": "වී ප්‍රභේද",
-      "addNew": "නව ප්‍රභේදයක් එකතු කරන්න",
-      "editVariety": "ප්‍රභේදය සංස්කරණය කරන්න",
-      "varietyName": "ප්‍රභේද නම",
-      "type": "වර්ගය",
-      "duration": "කාල සීමාව",
-      "yieldPerAcre": "අක්කරයට අස්වැන්න (කිග්)",
-      "resistantDiseases": "ප්‍රතිරෝධක රෝග",
-      "recommendedRegions": "නිර්දේශිත ප්‍රදේශ",
-      "description": "විස්තර",
-      "varietyCreated": "වී ප්‍රභේදය සාර්ථකව නිර්මාණය කරන ලදී!",
-      "varietyUpdated": "වී ප්‍රභේදය සාර්ථකව යාවත්කාලීන කරන ලදී!",
-      "subtitle": "ඔබගේ වගා සැලසුම් සඳහා ලබාගත හැකි වී ප්‍රභේද බලන්න",
-      "searchPlaceholder": "ප්‍රභේද සොයන්න...",
-      "noVarietiesFound": "ප්‍රභේද හමු නොවුණි",
-      "noPaddyVarietiesAvailable": "වී ප්‍රභේද නැත",
-      "noVarietiesMatch": "ඔබගේ සෙවුමේ \"{{term}}\" ට ගැලපෙන ප්‍රභේද නොමැත. වෙනත් යතුරුපද උත්සාහ කරන්න.",
-      "durationLabel": "කාල සීමාව:",
-      "grainColorLabel": "ධාන්‍ය වර්ණය:",
-      "grainSizeLabel": "ධාන්‍ය හැඩය:",
-      "releasedLabel": "ප්‍රකාශිත වසර:",
-      "popularNameLabel": "ජනප්‍රිය නම:",
-      "parentageLabel": "පෙළපත:",
-      "recommendationLabel": "නිර්දේශ:",
-      "characteristicsTitle": "විශේෂාංග:",
-      "yieldLabel": "අස්වැන්න:",
-      "resistanceLabel": "ප්‍රතිරෝධය:",
-      "suitableSeasonsLabel": "සුදුසු කාලගුණ:",
-      "grainTypeLabel": "ධාන්‍ය වර්ගය:",
-      "showingCount": "{{shown}} ක් {{total}} ප්‍රභේද වල සිට පෙන්වයි",
-      "back": "ආපසු",
-      "monthsUnit": "මාස",
-      "daysUnit": "දින"
-    ,
+    }
+  },
+  "paddyVarieties": {
+    "title": "වී ප්‍රභේද",
+    "addNew": "නව ප්‍රභේදයක් එකතු කරන්න",
+    "editVariety": "ප්‍රභේදය සංස්කරණය කරන්න",
+    "varietyName": "ප්‍රභේද නම",
+    "type": "වර්ගය",
+    "duration": "කාල සීමාව",
+    "yieldPerAcre": "අක්කරයට අස්වැන්න (කිග්)",
+    "resistantDiseases": "ප්‍රතිරෝධක රෝග",
+    "recommendedRegions": "නිර්දේශිත ප්‍රදේශ",
+    "description": "විස්තර",
+    "varietyCreated": "වී ප්‍රභේදය සාර්ථකව නිර්මාණය කරන ලදී!",
+    "varietyUpdated": "වී ප්‍රභේදය සාර්ථකව යාවත්කාලීන කරන ලදී!",
+    "subtitle": "ඔබගේ වගා සැලසුම් සඳහා ලබාගත හැකි වී ප්‍රභේද බලන්න",
+    "searchPlaceholder": "ප්‍රභේද සොයන්න...",
+    "noVarietiesFound": "ප්‍රභේද හමු නොවුණි",
+    "noPaddyVarietiesAvailable": "වී ප්‍රභේද නැත",
+    "noVarietiesMatch": "ඔබගේ සෙවුමේ \"{{term}}\" ට ගැලපෙන ප්‍රභේද නොමැත. වෙනත් යතුරුපද උත්සාහ කරන්න.",
+    "durationLabel": "කාල සීමාව:",
+    "grainColorLabel": "ධාන්‍ය වර්ණය:",
+    "grainSizeLabel": "ධාන්‍ය හැඩය:",
+    "releasedLabel": "ප්‍රකාශිත වසර:",
+    "popularNameLabel": "ජනප්‍රිය නම:",
+    "parentageLabel": "පෙළපත:",
+    "recommendationLabel": "නිර්දේශ:",
+    "characteristicsTitle": "විශේෂාංග:",
+    "yieldLabel": "අස්වැන්න:",
+    "resistanceLabel": "ප්‍රතිරෝධය:",
+    "suitableSeasonsLabel": "සුදුසු කාලගුණ:",
+    "grainTypeLabel": "ධාන්‍ය වර්ගය:",
+    "showingCount": "{{shown}} ක් {{total}} ප්‍රභේද වල සිට පෙන්වයි",
+    "back": "ආපසු",
+    "monthsUnit": "මාස",
+    "daysUnit": "දින",
     "colors": {
       "white": "සුදු",
       "red": "රතු"
@@ -739,8 +767,7 @@
       "long_slender": "බාස්මති",
       "short_oblong": "කීරි සම්බා",
       "extra_long_slender": "දිග බාස්මති"
-    }
-    ,
+    },
     "recommendations": {
       "general_cultivation": "සාමාන්‍ය වගාව",
       "mawee_lands": "මහ කන්නයට පමණී",
@@ -775,7 +802,6 @@
       "suitable_for_water_logging": "ජලය තැබීමේ තත්ත්වයන්ට සුදුසු",
       "rainfed_areas": "වර්ෂාජල ප්‍රදේශ"
     },
-
     "characteristics": {
       "resistances": {
         "bph": "දුඹුරු පැල කීඩෑවා",
@@ -807,13 +833,12 @@
         "kaluthara_and_galle_districts": "කළුතර සහ ගාල්ල දිස්ත්‍රික්ක",
         "costal_saline_areas": "වෙරළ_ලුණු_ප්‍රදේශ"
       }
-    }
-    ,
+    },
     "units": {
       "tonPerHectare": "ටොන්/හෙක්"
     }
-    },
-    "landing": {
+  },
+  "landing": {
     "title": "වී ගොවිපල කළමනාකරණ පද්ධතිය",
     "subtitle": "ස්ථාපිත කෘෂිකර්ම පිරිසකට සහ ශ්‍රී ලංකා කෘෂි විශේෂඥත්වයට ගැළපෙන වගා කළමනාකරණය",
     "description": "ඔබේ වී වගා සැලසුම් කරන්න, වර්ධන අදියර අනුගමනය කරන්න, පොහොර යෝජනා නිරීක්ෂණය කරන්න, සහ වාර්තා සකස් කරන්න - සියල්ල මෙහිදී.",

@@ -24,12 +24,18 @@ import { SRI_LANKAN_DISTRICTS, getZoneDescription } from '../../constants/distri
 
 const CreateFarmContent = () => {
   const { t } = useTranslation();
+  // Helper to render labels: remove any trailing '*' from translations
+  // We rely on MUI's `required` prop to render the asterisk, avoiding duplicates.
+  const labelText = (key) => {
+    const txt = t(key);
+    return txt.replace(/\s*\*+$/g, '');
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    farmType: '',
+    farmType: 'crop',
     district: '',
     cultivationZone: '',
     location: {
@@ -83,6 +89,12 @@ const CreateFarmContent = () => {
       }
     }
     setError('');
+  };
+
+  // Slugify a label to form translation keys (e.g. "Colombo" -> "colombo")
+  const slugify = (s) => {
+    if (!s) return '';
+    return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   };
 
   const handleSubmit = async (e) => {
@@ -195,34 +207,34 @@ const CreateFarmContent = () => {
               <Typography variant="h6" gutterBottom>
                 {t('farms.basicInformation')}
               </Typography>
+              <Typography variant="body2" color="error" sx={{ mb: 1, fontWeight: 500 }}>
+                {t('forms.requiredFieldsNote')}
+              </Typography>
             </Grid>
             
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label={`${t('farms.farmName')} *`}
+                label={labelText('farms.farmName')}
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
+                InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>{`${t('farms.farmType')} *`}</InputLabel>
+                <InputLabel>{`${t('farms.farmType')}`}</InputLabel>
                 <Select
                   name="farmType"
                   value={formData.farmType}
                   onChange={handleChange}
-                  label={`${t('farms.farmType')} *`}
-                  required
+                  label={`${t('farms.farmType')}`}
+                  disabled
                 >
                   <MenuItem value="crop">{t('farms.farmTypes.crop')}</MenuItem>
-                  <MenuItem value="livestock">{t('farms.farmTypes.livestock')}</MenuItem>
-                  <MenuItem value="mixed">{t('farms.farmTypes.mixed')}</MenuItem>
-                  <MenuItem value="aquaculture">{t('farms.farmTypes.aquaculture')}</MenuItem>
-                  <MenuItem value="poultry">{t('farms.farmTypes.poultry')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -257,20 +269,26 @@ const CreateFarmContent = () => {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>{`${t('farms.district')} *`}</InputLabel>
+              <FormControl fullWidth required>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>{labelText('farms.district')}</InputLabel>
                 <Select
                   name="district"
                   value={formData.district}
                   onChange={handleChange}
-                  label={`${t('farms.district')} *`}
-                  required
+                  label={labelText('farms.district')}
                 >
-                  {SRI_LANKAN_DISTRICTS.map(district => (
-                    <MenuItem key={district.name} value={district.name}>
-                      {district.name}
-                    </MenuItem>
-                  ))}
+                  {SRI_LANKAN_DISTRICTS
+                    .slice()
+                    .sort((a, b) => {
+                      const la = t(`districts.${slugify(a.name)}`, { defaultValue: a.name });
+                      const lb = t(`districts.${slugify(b.name)}`, { defaultValue: b.name });
+                      return la.localeCompare(lb, undefined, { sensitivity: 'base' });
+                    })
+                    .map(district => (
+                      <MenuItem key={district.name} value={district.name}>
+                        {t(`districts.${slugify(district.name)}`, { defaultValue: district.name })}
+                      </MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -280,9 +298,10 @@ const CreateFarmContent = () => {
                 fullWidth
                 label={t('farms.cultivationZone')}
                 name="cultivationZone"
-                value={getZoneDescription(formData.cultivationZone)}
+                value={formData.cultivationZone ? t(`districts.zones.${formData.cultivationZone}`, { defaultValue: getZoneDescription(formData.cultivationZone) }) : ''}
                 InputProps={{ readOnly: true }}
-                helperText={t('farms.selectDistrictFirst')}
+                disabled
+                helperText={formData.cultivationZone ? '' : t('farms.selectDistrictFirst')}
               />
             </Grid>
 
@@ -332,19 +351,20 @@ const CreateFarmContent = () => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                label={`${t('farms.totalAreaValue')} *`}
+                label={labelText('farms.totalAreaValue')}
                 name="totalArea.value"
                 type="number"
                 value={formData.totalArea.value}
                 onChange={handleChange}
                 required
                 inputProps={{ min: 0, step: 0.01 }}
+                InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
               />
             </Grid>
 
             <Grid item xs={12} md={2}>
               <FormControl fullWidth required>
-                <InputLabel>{t('farms.unit')}</InputLabel>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>{t('farms.unit')}</InputLabel>
                 <Select
                   name="totalArea.unit"
                   value={formData.totalArea.unit}
