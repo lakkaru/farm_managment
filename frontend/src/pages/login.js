@@ -379,6 +379,9 @@ const LoginPage = () => {
           {/* Registration Form */}
           {tabValue === 1 && (
             <Box component="form" onSubmit={handleRegisterSubmit}>
+              <Typography variant="body2" color="error" sx={{ mb: 1, fontWeight: 500 }}>
+                {t('forms.requiredFieldsNote')}
+              </Typography>
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
                   fullWidth
@@ -388,6 +391,7 @@ const LoginPage = () => {
                   onChange={handleRegisterChange}
                   variant="outlined"
                   required
+                  InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -404,6 +408,7 @@ const LoginPage = () => {
                   onChange={handleRegisterChange}
                   variant="outlined"
                   required
+                  InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
                 />
               </Box>
               
@@ -416,7 +421,7 @@ const LoginPage = () => {
                 onChange={handleRegisterChange}
                 variant="outlined"
                 margin="normal"
-                helperText={t('auth.emailOptional')}
+                // helperText={t('auth.emailOptional')}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -435,6 +440,7 @@ const LoginPage = () => {
                 variant="outlined"
                 margin="normal"
                 required
+                InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
                 helperText={t('auth.phoneFormat')}
                 inputProps={{ maxLength: 10 }}
                 InputProps={{
@@ -447,7 +453,7 @@ const LoginPage = () => {
               />
 
               <FormControl fullWidth margin="normal">
-                <InputLabel>{t('auth.role')}</InputLabel>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>{t('auth.role')}</InputLabel>
                 <Select
                   name="role"
                   value={registerData.profile.role}
@@ -471,6 +477,7 @@ const LoginPage = () => {
                 variant="outlined"
                 margin="normal"
                 required
+                InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -501,6 +508,7 @@ const LoginPage = () => {
                 variant="outlined"
                 margin="normal"
                 required
+                InputLabelProps={{ sx: { '& .MuiFormLabel-asterisk': { color: 'error.main' } } }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">

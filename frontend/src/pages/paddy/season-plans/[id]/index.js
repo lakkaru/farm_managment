@@ -217,7 +217,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteFertilizerIndex, setDeleteFertilizerIndex] = useState(null);
   const [deleteFertilizerDialogOpen, setDeleteFertilizerDialogOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({ growingStages: true, fertilizerSchedule: false, dailyRemarks: false });
+  const [expandedSections, setExpandedSections] = useState({ growingStages: false, fertilizerSchedule: false, dailyRemarks: false });
   const [leafColorEnabled, setLeafColorEnabled] = useState(false);
 
   // Basic categories used in expense UI (minimal defaults)
@@ -226,8 +226,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   ]);
 
   // Accordion section toggle handler
+  // Accordion section toggle handler - keep only one section expanded at a time
   const handleAccordionChange = (section) => (event, isExpanded) => {
-    setExpandedSections((prev) => ({ ...prev, [section]: isExpanded }));
+    setExpandedSections((prev) => {
+      // Build a new state where all known sections are collapsed
+      const newState = Object.keys(prev || {}).reduce((acc, key) => {
+        acc[key] = false;
+        return acc;
+      }, {});
+
+      // If the requested section is being expanded, set it to true
+      if (isExpanded) {
+        newState[section] = true;
+      }
+
+      return newState;
+    });
   };
 
   // Remark categories derived from constants (fallback)
@@ -321,6 +335,41 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     }
   };
 
+  // Helper: slugify string for i18n keys
+  const slugify = (s) => {
+    if (!s) return '';
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  };
+
+  // Helper: compute duration months (rounded to 0.5) and days from a variety object
+  const getVarietyDurationDisplay = (variety) => {
+    if (!variety) return '';
+
+    // Prefer virtuals if present
+    const months = variety.durationMonths || undefined;
+    const daysFromVirtual = variety.durationDays || undefined;
+
+    if (months || daysFromVirtual) {
+      const m = months !== undefined ? months : Math.round((daysFromVirtual / 30) * 2) / 2;
+      const d = daysFromVirtual !== undefined ? Math.round(daysFromVirtual) : Math.round(m * 30);
+      return `${m} ${t('paddyVarieties.monthsUnit')} (${d} ${t('paddyVarieties.daysUnit')})`;
+    }
+
+    // Fallback: parse duration string like "90-95 days" or "105 days"
+    const dur = variety.duration || '';
+    const match = String(dur).match(/(\d+)(?:-(\d+))?/);
+    if (match) {
+      const minD = parseInt(match[1], 10);
+      const maxD = match[2] ? parseInt(match[2], 10) : minD;
+      const avgDays = Math.round((minD + maxD) / 2);
+      const monthsRounded = Math.round((avgDays / 30) * 2) / 2;
+      return `${monthsRounded} ${t('paddyVarieties.monthsUnit')} (${avgDays} ${t('paddyVarieties.daysUnit')})`;
+    }
+
+    // Last fallback: show raw duration string
+    return dur || '';
+  };
+
   const getCompletedStages = () => {
     if (!plan?.growingStages) return 0;
     return plan.growingStages.filter((stage) => stage.completed).length;
@@ -331,6 +380,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     const completedStages = getCompletedStages();
     return (completedStages / totalStages) * 100;
   };
+
+  // Harvest button gating: disable record harvest until growing stages are completed
+  const totalGrowingStages = plan?.growingStages?.length || 0;
+  const isHarvestBlocked = !plan?.actualHarvest?.date && totalGrowingStages > 0 && getCompletedStages() < totalGrowingStages;
 
   // Leaf Color Chart calculation with all 6 color indices
   const leafColorChart = {
@@ -1160,6 +1213,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           alignItems: "center",
           justifyContent: "space-between",
           mb: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 },
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -1177,12 +1232,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             </Box>
           </Box>
         </Box>
-        <Box>
+        <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
           <Button
             startIcon={<EditIcon />}
             variant="outlined"
             onClick={() => navigate(`/paddy/season-plans/${id}/edit`)}
-            sx={{ mr: 1, minWidth:'97px', mb: { xs: 1, sm: 0 } }}
+            sx={{ minWidth:'97px', width: { xs: '100%', sm: 'auto' } }}
           >
             {t('seasonPlans.viewPage.editPlan')}
           </Button>
@@ -1191,6 +1246,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             variant="outlined"
             color="error"
             onClick={() => setDeleteDialog(true)}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             {t('seasonPlans.viewPage.deletePlan')}
           </Button>
@@ -1233,22 +1289,25 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     secondary={plan.irrigationMethod}
                   />
                 </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <SpaIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={t('seasonPlans.viewPage.soilCondition')}
-                    secondary={plan.soilCondition}
-                  />
-                </ListItem>
+                {/* Soil condition removed — not used for fertilizer recommendations */}
                 <ListItem>
                   <ListItemIcon>
                     <GrassIcon />
                   </ListItemIcon>
                   <ListItemText
                     primary={t('seasonPlans.viewPage.paddyVariety')}
-                    secondary={`${plan.paddyVariety?.name || t('common.notSpecified')} (${plan.paddyVariety?.duration || 0} ${t('seasonPlans.days')})`}
+                    secondary={(() => {
+                      const v = plan.paddyVariety;
+                      if (!v) return t('common.notSpecified');
+                      const name = v.name || t('common.notSpecified');
+                      const durationDisplay = getVarietyDurationDisplay(v);
+                      // Get grain color and shape from characteristics (support nested grainQuality)
+                      const pericarp = v.characteristics?.grainQuality?.pericarpColour || v.characteristics?.pericarpColour;
+                      const grainShape = v.characteristics?.grainQuality?.grainShape || v.characteristics?.grainShape;
+                      const colorLabel = pericarp ? ` • ${t('paddyVarieties.grainColorLabel')} ${t(`paddyVarieties.colors.${slugify(pericarp)}`, { defaultValue: pericarp })}` : '';
+                      const shapeLabel = grainShape ? ` • ${t('paddyVarieties.grainSizeLabel')} ${t(`paddyVarieties.grainSizes.${slugify(grainShape)}`, { defaultValue: grainShape })}` : '';
+                      return `${name}${durationDisplay ? ` — ${durationDisplay}` : ''}${colorLabel}${shapeLabel}`;
+                    })()}
                   />
                 </ListItem>
                 <ListItem>
@@ -1299,7 +1358,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       <CheckCircleIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary={t('seasonPlans.viewPage.actualHarvest')}
+                      primary={t('seasonPlans.viewPage.actualHarvest.label')}
                       secondary={formatShortDate(plan.actualHarvest.date)}
                     />
                   </ListItem>
@@ -1340,34 +1399,60 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Divider sx={{ my: 2 }} />
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                   mb: 2,
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 1, sm: 0 },
                 }}
               >
                 <Typography variant="subtitle1">
                   🌾   {t('seasonPlans.viewPage.harvestInformation')}
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleHarvest}
-                  sx={{
-                    background: plan.actualHarvest?.date
-                      ? "linear-gradient(45deg, #228B22, #32CD32)"
-                      : "linear-gradient(45deg, #DAA520, #FFD700)",
-                    "&:hover": {
-                      background: plan.actualHarvest?.date
-                        ? "linear-gradient(45deg, #006400, #228B22)"
-                        : "linear-gradient(45deg, #B8860B, #DAA520)",
-                    },
-                  }}
-                >
-                  {plan.actualHarvest?.date
-                    ? t('seasonPlans.viewPage.updateHarvest')
-                    : t('seasonPlans.viewPage.recordHarvest')}
-                </Button>
+                <Box sx={{ width: { xs: '100%', sm: 'auto' }, display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                  {isHarvestBlocked && !plan.actualHarvest?.date ? (
+                    <Tooltip title={t('seasonPlans.viewPage.harvestBlockedTooltip') || 'Complete all growing stages first'}>
+                      <span>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={handleHarvest}
+                          disabled
+                          fullWidth
+                          sx={{
+                            background: "linear-gradient(45deg, #DAA520, #FFD700)",
+                            opacity: 0.6,
+                          }}
+                        >
+                          {t('seasonPlans.viewPage.recordHarvest')}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleHarvest}
+                      disabled={saving}
+                      fullWidth={{ xs: true, sm: false }}
+                      sx={{
+                        background: plan.actualHarvest?.date
+                          ? "linear-gradient(45deg, #228B22, #32CD32)"
+                          : "linear-gradient(45deg, #DAA520, #FFD700)",
+                        "&:hover": {
+                          background: plan.actualHarvest?.date
+                            ? "linear-gradient(45deg, #006400, #228B22)"
+                            : "linear-gradient(45deg, #B8860B, #DAA520)",
+                        },
+                      }}
+                    >
+                      {plan.actualHarvest?.date
+                        ? t('seasonPlans.viewPage.updateHarvest')
+                        : t('seasonPlans.viewPage.recordHarvest')}
+                    </Button>
+                  )}
+                </Box>
               </Box>
 
               {plan.actualHarvest?.date && (
@@ -1451,6 +1536,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           getCompletedStages={getCompletedStages}
           t={t}
           formatDate={formatDate}
+          locale={i18n?.language}
         />
 
         {/* Fertilizer Schedule */}

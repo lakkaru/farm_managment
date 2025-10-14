@@ -482,8 +482,6 @@
       "completed": "Completed on {{date}}",
   "harvestCompleted": "Harvest completed",
       "growingStages": "Growing Stages",
-  "watchVideo": "Watch video",
-  "markCompleteInDialog": "Mark completion from the notes dialog",
       "growingStageNames": {
         "first_plowing": "First Plowing",
         "second_plowing_field_leveling": "Second Plowing & Field Leveling",

@@ -43,7 +43,6 @@ const CreateSeasonPlanContent = () => {
     farmId: '',
     season: '',
     irrigationMethod: '',
-    soilCondition: '',
     paddyVariety: '',
     cultivatingArea: '',
     cultivationDate: null, // Change to null for DatePicker
@@ -61,6 +60,14 @@ const CreateSeasonPlanContent = () => {
     areaUnit: '',
   });
 
+  const isFarmSelected = Boolean(formData.farmId);
+
+  // Helper to slugify labels for i18n lookup (e.g. "Keeri Samba" -> "keeri_samba")
+  const slugify = (s) => {
+    if (!s) return '';
+    return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setDataLoading(true);
@@ -73,14 +80,8 @@ const CreateSeasonPlanContent = () => {
   useEffect(() => {
     if (selectedFarm) {
       const farmArea = selectedFarm.totalArea?.value || '';
-      // Round to 2 decimal places to avoid floating point precision issues
       const roundedArea = farmArea ? Math.round(parseFloat(farmArea) * 100) / 100 : '';
-      
-      setFormData(prev => ({
-        ...prev,
-        farmId: selectedFarm._id,
-        cultivatingArea: roundedArea, // Pre-populate with farm area
-      }));
+      // Only populate selectedFarmInfo for display — do not auto-fill form fields
       setSelectedFarmInfo({
         district: selectedFarm.district || '',
         cultivationZone: selectedFarm.cultivationZone || '',
@@ -141,25 +142,18 @@ const CreateSeasonPlanContent = () => {
       [name]: value,
     }));
 
-    // Auto-populate farm info when farm changes
+    // When farm is selected, update displayed farm info but do NOT auto-fill form fields
     if (name === 'farmId') {
       const selectedFarmData = farms.find(farm => farm._id === value);
       if (selectedFarmData) {
         const farmArea = selectedFarmData.totalArea?.value || '';
-        // Round to 2 decimal places to avoid floating point precision issues
         const roundedArea = farmArea ? Math.round(parseFloat(farmArea) * 100) / 100 : '';
-        
         setSelectedFarmInfo({
           district: selectedFarmData.district || '',
           cultivationZone: selectedFarmData.cultivationZone || '',
           totalArea: roundedArea,
           areaUnit: selectedFarmData.totalArea?.unit || 'acres',
         });
-        // Pre-populate cultivating area with farm area
-        setFormData(prev => ({
-          ...prev,
-          cultivatingArea: roundedArea,
-        }));
       }
     }
 
@@ -293,7 +287,7 @@ const CreateSeasonPlanContent = () => {
 
     try {
       // Validate required fields
-      const requiredFields = ['farmId', 'season', 'irrigationMethod', 'soilCondition', 'paddyVariety', 'cultivatingArea'];
+  const requiredFields = ['farmId', 'season', 'irrigationMethod', 'paddyVariety', 'cultivatingArea'];
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
@@ -406,7 +400,18 @@ const CreateSeasonPlanContent = () => {
             </Alert>
           )}
 
-          <Grid container spacing={3}>
+          {/* Required fields note and asterisk styling: use MUI required prop and color the asterisk via a local selector */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1">{t('seasonPlans.basicInformation')}</Typography>
+            <Alert severity="info" sx={{ mt: 1, py: 0.5 }}>
+              <Typography variant="caption" sx={{ m: 0 }}>
+                {t('forms.requiredFieldsNote')}
+              </Typography>
+            </Alert>
+          </Box>
+
+          <Box sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>
+            <Grid container spacing={3}>
             {/* Farm Selection */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
@@ -434,6 +439,7 @@ const CreateSeasonPlanContent = () => {
                   name="season"
                   value={formData.season}
                   onChange={handleChange}
+                  disabled={!isFarmSelected}
                   label={t('seasonPlans.createForm.seasonRequired')}
                 >
                   <MenuItem value="maha">{t('seasonPlans.maha')}</MenuItem>
@@ -450,6 +456,7 @@ const CreateSeasonPlanContent = () => {
                   label={t('seasonPlans.createForm.district')}
                   value={selectedFarmInfo.district}
                   InputProps={{ readOnly: true }}
+                  disabled
                   helperText={t('seasonPlans.createForm.fromSelectedFarm')}
                 />
               </Grid>
@@ -463,6 +470,7 @@ const CreateSeasonPlanContent = () => {
                   label={t('seasonPlans.createForm.climateZone')}
                   value={selectedFarmInfo.cultivationZone}
                   InputProps={{ readOnly: true }}
+                  disabled
                   helperText={t('seasonPlans.createForm.fromSelectedFarm')}
                 />
               </Grid>
@@ -476,33 +484,17 @@ const CreateSeasonPlanContent = () => {
                   name="irrigationMethod"
                   value={formData.irrigationMethod}
                   onChange={handleChange}
+                  disabled={!isFarmSelected}
                   label={t('seasonPlans.createForm.irrigationMethodRequired')}
                 >
-                  <MenuItem value="Rain fed">{t('seasonPlans.createForm.irrigationMethods.rainfed')}</MenuItem>
-                  <MenuItem value="Under irrigation">{t('seasonPlans.createForm.irrigationMethods.irrigated')}</MenuItem>
+                  <MenuItem value="Rain fed">{t('seasonPlans.irrigationMethods.rainfed')}</MenuItem>
+                  <MenuItem value="Under irrigation">{t('seasonPlans.irrigationMethods.irrigated')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
             {/* Soil Condition */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>{t('seasonPlans.createForm.soilConditionRequired')}</InputLabel>
-                <Select
-                  name="soilCondition"
-                  value={formData.soilCondition}
-                  onChange={handleChange}
-                  label={t('seasonPlans.createForm.soilConditionRequired')}
-                >
-                  <MenuItem value="Sandy">{t('seasonPlans.createForm.soilOptions.sandy')}</MenuItem>
-                  <MenuItem value="Clay">{t('seasonPlans.createForm.soilOptions.clay')}</MenuItem>
-                  <MenuItem value="Loam">{t('seasonPlans.createForm.soilOptions.loam')}</MenuItem>
-                  <MenuItem value="Sandy Loam">{t('seasonPlans.createForm.soilOptions.sandyLoam')}</MenuItem>
-                  <MenuItem value="Clay Loam">{t('seasonPlans.createForm.soilOptions.clayLoam')}</MenuItem>
-                  <MenuItem value="Silt Loam">{t('seasonPlans.createForm.soilOptions.siltLoam')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            {/* Soil condition removed — not used for fertilizer recommendations */}
 
             {/* Paddy Variety */}
             <Grid item xs={12} md={6}>
@@ -513,7 +505,7 @@ const CreateSeasonPlanContent = () => {
                   value={formData.paddyVariety}
                   onChange={handleChange}
                   label={t('seasonPlans.createForm.paddyVarietyRequired')}
-                  disabled={dataLoading}
+                  disabled={!isFarmSelected || dataLoading}
                 >
                   {paddyVarieties.length === 0 && !dataLoading ? (
                     <MenuItem disabled>
@@ -521,8 +513,16 @@ const CreateSeasonPlanContent = () => {
                     </MenuItem>
                   ) : (
                     paddyVarieties.map(variety => (
-                      <MenuItem key={variety._id} value={variety._id}>
-                        {variety.name} ({variety.type} - {variety.duration})
+                      <MenuItem key={variety._id} value={variety._id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                          {t(`paddyVarieties.names.${slugify(variety.name)}`, { defaultValue: variety.name })}
+                          {variety.popularName ? ` (${t(`paddyVarieties.descriptions.${slugify(variety.popularName)}`, { defaultValue: variety.popularName })})` : ''}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {variety.durationMonths ? `${variety.durationMonths} ${t('paddyVarieties.monthsUnit')} (${Math.round(variety.durationDays)} ${t('paddyVarieties.daysUnit')})` : (variety.duration || '')}
+                          {((variety.characteristics?.grainQuality?.pericarpColour) || (variety.characteristics?.pericarpColour)) ? ` • ${t('paddyVarieties.grainColorLabel')} ${t(`paddyVarieties.colors.${slugify(variety.characteristics?.grainQuality?.pericarpColour || variety.characteristics?.pericarpColour)}`, { defaultValue: variety.characteristics?.grainQuality?.pericarpColour || variety.characteristics?.pericarpColour })}` : ''}
+                          {((variety.characteristics?.grainQuality?.grainShape) || (variety.characteristics?.grainShape)) ? ` • ${t('paddyVarieties.grainSizeLabel')} ${t(`paddyVarieties.grainSizes.${slugify(variety.characteristics?.grainQuality?.grainShape || variety.characteristics?.grainShape)}`, { defaultValue: variety.characteristics?.grainQuality?.grainShape || variety.characteristics?.grainShape })}` : ''}
+                        </Typography>
                       </MenuItem>
                     ))
                   )}
@@ -551,6 +551,7 @@ const CreateSeasonPlanContent = () => {
                   label={t('seasonPlans.createForm.totalFarmArea')}
                   value={`${selectedFarmInfo.totalArea} ${selectedFarmInfo.areaUnit}`}
                   InputProps={{ readOnly: true }}
+                  disabled
                   helperText={t('seasonPlans.createForm.totalAreaHelperText')}
                 />
               </Grid>
@@ -565,6 +566,7 @@ const CreateSeasonPlanContent = () => {
                 type="number"
                 value={formData.cultivatingArea}
                 onChange={handleChange}
+                disabled={!isFarmSelected}
                 required
                 inputProps={{ 
                   min: 0.01, 
@@ -599,6 +601,7 @@ const CreateSeasonPlanContent = () => {
                   value={calculationMode}
                   exclusive
                   onChange={handleCalculationModeChange}
+                  disabled={!isFarmSelected}
                   aria-label="date calculation mode"
                   size="small"
                 >
@@ -628,8 +631,8 @@ const CreateSeasonPlanContent = () => {
                 <DatePicker
                   label={t('seasonPlans.createForm.cultivationDateRequired')}
                   value={formData.cultivationDate}
-                  onChange={calculationMode === 'from-cultivation' ? handleCultivationDateChange : handleDateChange}
-                  disabled={calculationMode === 'from-harvest' && !formData.paddyVariety}
+                  onChange={calculationMode === 'from-cultivation' ? handleCultivationDateChange : () => {}}
+                  disabled={calculationMode === 'from-harvest' || !isFarmSelected}
                   slotProps={{
                     textField: {
                       fullWidth: true,
@@ -661,7 +664,7 @@ const CreateSeasonPlanContent = () => {
                   label={t('seasonPlans.createForm.expectedHarvestDateRequired')}
                   value={formData.expectedHarvestDate}
                   onChange={calculationMode === 'from-harvest' ? handleHarvestDateChange : () => {}}
-                  disabled={calculationMode === 'from-cultivation' && !formData.paddyVariety}
+                  disabled={calculationMode === 'from-cultivation' || !isFarmSelected}
                   slotProps={{
                     textField: {
                       fullWidth: true,
@@ -791,6 +794,7 @@ const CreateSeasonPlanContent = () => {
               </Grid>
             )}
           </Grid>
+          </Box>
 
           {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
@@ -804,7 +808,7 @@ const CreateSeasonPlanContent = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={loading}
+              disabled={!isFarmSelected || loading}
               startIcon={loading && <CircularProgress size={20} />}
             >
               {loading ? t('seasonPlans.createForm.creating') : t('seasonPlans.createForm.createSeasonPlan')}

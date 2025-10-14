@@ -39,6 +39,11 @@ const FarmDetailContent = ({ farmId }) => {
     }
   }, [farmId, t]);
 
+  const slugify = (s) => {
+    if (!s) return '';
+    return String(s).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  };
+
   useEffect(() => {
     if (farmId) {
       loadFarm();
@@ -158,7 +163,7 @@ const FarmDetailContent = ({ farmId }) => {
                     {t('farms.farmType')}
                   </Typography>
                   <Chip
-                    label={farm.farmType}
+                    label={t(`farms.farmTypes.${farm.farmType}`, farm.farmType)}
                     color={getFarmTypeColor(farm.farmType)}
                     sx={{ mt: 0.5 }}
                   />
@@ -227,7 +232,7 @@ const FarmDetailContent = ({ farmId }) => {
                     {t('farms.district')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.district || t('farms.notSpecified')}
+                    {farm.district ? t(`districts.${slugify(farm.district)}`, farm.district) : t('farms.notSpecified')}
                   </Typography>
                 </Grid>
 
@@ -236,7 +241,7 @@ const FarmDetailContent = ({ farmId }) => {
                     {t('farms.cultivationZone')}
                   </Typography>
                   <Typography variant="body1">
-                    {farm.cultivationZone || t('farms.notSpecified')}
+                    {farm.cultivationZone ? t(`districts.zones.${farm.cultivationZone}`, farm.cultivationZone) : t('farms.notSpecified')}
                   </Typography>
                 </Grid>
 

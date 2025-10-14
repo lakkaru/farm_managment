@@ -16,20 +16,14 @@ const seasonPlanSchema = new mongoose.Schema({
     required: [true, 'Season is required'],
     enum: ['maha', 'yala'],
   },
-  // Remove district requirement as it will come from farm
+  // climateZone will be derived from the farm on create; not required on updates
   climateZone: {
     type: String,
-    required: [true, 'Climate zone is required'],
   },
   irrigationMethod: {
     type: String,
     required: [true, 'Irrigation method is required'],
     enum: ['Rain fed', 'Under irrigation'],
-  },
-  soilCondition: {
-    type: String,
-    required: [true, 'Soil condition is required'],
-    enum: ['Sandy', 'Clay', 'Loam', 'Sandy Loam', 'Clay Loam', 'Silt Loam'],
   },
   paddyVariety: {
     type: mongoose.Schema.Types.ObjectId,

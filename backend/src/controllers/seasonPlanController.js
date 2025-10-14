@@ -207,9 +207,14 @@ const updateSeasonPlan = async (req, res) => {
       });
     }
 
+    // Prevent clients from changing derived or immutable fields
+    const disallowed = ['climateZone', 'status', '_id', 'userId'];
+    const safeBody = { ...req.body };
+    disallowed.forEach(f => delete safeBody[f]);
+
     const updatedPlan = await SeasonPlan.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      safeBody,
       { new: true, runValidators: true }
     ).populate('farmId', 'name location district cultivationZone totalArea')
      .populate('paddyVariety', 'name duration type characteristics');

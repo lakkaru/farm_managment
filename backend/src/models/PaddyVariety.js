@@ -111,6 +111,15 @@ paddyVarietySchema.virtual('durationDays').get(function() {
   return null;
 });
 
+// Virtual for duration in months (rounded to nearest 0.5)
+paddyVarietySchema.virtual('durationMonths').get(function() {
+  const days = this.durationDays;
+  if (!days) return null;
+  const months = days / 30;
+  // Round to nearest 0.5
+  return Math.round(months * 2) / 2;
+});
+
 // Virtual for display name with popular name
 paddyVarietySchema.virtual('displayName').get(function() {
   if (this.popularName) {

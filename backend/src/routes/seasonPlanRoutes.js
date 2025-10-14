@@ -110,9 +110,6 @@ const seasonPlanValidation = [
   body('irrigationMethod')
     .isIn(['Rain fed', 'Under irrigation'])
     .withMessage('Invalid irrigation method'),
-  body('soilCondition')
-    .isIn(['Sandy', 'Clay', 'Loam', 'Sandy Loam', 'Clay Loam', 'Silt Loam'])
-    .withMessage('Invalid soil condition'),
   body('paddyVariety')
     .isMongoId()
     .withMessage('Valid paddy variety ID is required'),

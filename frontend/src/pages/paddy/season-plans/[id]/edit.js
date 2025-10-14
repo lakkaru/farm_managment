@@ -22,6 +22,7 @@ import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
 import AppProviders from '../../../../providers/AppProviders';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../../services/api';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 
 const EditSeasonPlanContent = ({ id }) => {
@@ -35,13 +36,10 @@ const EditSeasonPlanContent = ({ id }) => {
   const [formData, setFormData] = useState({
     farmId: '',
     season: '',
-    climateZone: '',
     irrigationMethod: '',
-    soilCondition: '',
     paddyVariety: '',
     cultivatingArea: '',
     cultivationDate: null, // Change to null for DatePicker
-    status: '',
   });
 
   const loadSeasonPlan = async () => {
@@ -56,13 +54,10 @@ const EditSeasonPlanContent = ({ id }) => {
       setFormData({
         farmId: planData.farmId._id,
         season: planData.season,
-        climateZone: planData.climateZone,
         irrigationMethod: planData.irrigationMethod,
-        soilCondition: planData.soilCondition,
         paddyVariety: planData.paddyVariety._id,
         cultivatingArea: planData.cultivatingArea.toString(),
         cultivationDate: cultivationDate,
-        status: planData.status,
       });
     } catch (error) {
       console.error('Error loading season plan:', error);
@@ -93,6 +88,13 @@ const EditSeasonPlanContent = ({ id }) => {
     }
   };
 
+  const { t, i18n } = useTranslation();
+
+  const slugify = (s) => {
+    if (!s) return '';
+    return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  };
+
   useEffect(() => {
     if (id) {
       loadSeasonPlan();
@@ -108,16 +110,7 @@ const EditSeasonPlanContent = ({ id }) => {
       [name]: value,
     }));
 
-    // Auto-populate climate zone when farm changes
-    if (name === 'farmId') {
-      const selectedFarmData = farms.find(farm => farm._id === value);
-      if (selectedFarmData) {
-        setFormData(prev => ({
-          ...prev,
-          climateZone: selectedFarmData.cultivationZone || '',
-        }));
-      }
-    }
+    // Note: climateZone is derived from farm on create and is not editable here
   };
 
   const handleDateChange = (date) => {
@@ -133,8 +126,8 @@ const EditSeasonPlanContent = ({ id }) => {
     setError('');
 
     try {
-      // Validate required fields
-      const requiredFields = ['farmId', 'season', 'climateZone', 'irrigationMethod', 'soilCondition', 'paddyVariety', 'cultivatingArea'];
+  // Validate required fields (climateZone is derived from farm and not editable here)
+  const requiredFields = ['farmId', 'season', 'irrigationMethod', 'paddyVariety', 'cultivatingArea'];
       const missingFields = requiredFields.filter(field => !formData[field]);
       
       if (missingFields.length > 0) {
@@ -148,13 +141,17 @@ const EditSeasonPlanContent = ({ id }) => {
       }
 
       // Convert cultivatingArea to number and date to ISO string
+      // Build a safe payload that excludes non-editable fields like climateZone and status
       const planData = {
-        ...formData,
+        farmId: formData.farmId,
+        season: formData.season,
+        irrigationMethod: formData.irrigationMethod,
+        paddyVariety: formData.paddyVariety,
         cultivatingArea: parseFloat(formData.cultivatingArea),
         cultivationDate: formData.cultivationDate ? dayjs(formData.cultivationDate).toISOString() : null,
       };
 
-      console.log('Updating season plan data:', planData);
+      console.log('Updating season plan data (safe payload):', planData);
 
       await seasonPlanAPI.updateSeasonPlan(id, planData);
       toast.success('Season plan updated successfully!');
@@ -207,10 +204,10 @@ const EditSeasonPlanContent = ({ id }) => {
         </BackButton>
         <Box>
           <Typography variant="h4" gutterBottom>
-            Edit Season Plan
+            {t('seasonPlans.editSeasonPlan')}
           </Typography>
           <Typography variant="body1" color="textSecondary">
-            Update your paddy cultivation season plan
+            {t('seasonPlans.manageSeasonPlans')}
           </Typography>
         </Box>
       </Box>
@@ -227,12 +224,12 @@ const EditSeasonPlanContent = ({ id }) => {
             {/* Farm Selection */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Farm *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.farmRequired')}</InputLabel>
                 <Select
                   name="farmId"
                   value={formData.farmId}
                   onChange={handleChange}
-                  label="Farm *"
+                  label={t('seasonPlans.createForm.farmRequired')}
                 >
                   {farms.map(farm => (
                     <MenuItem key={farm._id} value={farm._id}>
@@ -246,99 +243,62 @@ const EditSeasonPlanContent = ({ id }) => {
             {/* Season */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Season *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.seasonRequired')}</InputLabel>
                 <Select
                   name="season"
                   value={formData.season}
                   onChange={handleChange}
-                  label="Season *"
+                  label={t('seasonPlans.createForm.seasonRequired')}
                 >
-                  <MenuItem value="maha">Maha (October - March)</MenuItem>
-                  <MenuItem value="yala">Yala (April - September)</MenuItem>
+                  <MenuItem value="maha">{t('seasonPlans.maha')}</MenuItem>
+                  <MenuItem value="yala">{t('seasonPlans.yala')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
-            {/* Status */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Status *</InputLabel>
-                <Select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  label="Status *"
-                >
-                  <MenuItem value="planned">Planned</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            {/* status removed from edit form - status changes handled elsewhere */}
 
-            {/* Climate Zone */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Climate Zone *"
-                name="climateZone"
-                value={formData.climateZone}
-                onChange={handleChange}
-                required
-                helperText="Auto-populated from selected farm"
-              />
-            </Grid>
+            {/* climateZone removed from edit form (derived from farm on create) */}
 
             {/* Irrigation Method */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Irrigation Method *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.irrigationMethodRequired')}</InputLabel>
                 <Select
                   name="irrigationMethod"
                   value={formData.irrigationMethod}
                   onChange={handleChange}
-                  label="Irrigation Method *"
+                  label={t('seasonPlans.createForm.irrigationMethodRequired')}
                 >
-                  <MenuItem value="Rain fed">Rain fed</MenuItem>
-                  <MenuItem value="Under irrigation">Under irrigation</MenuItem>
+                  <MenuItem value="Rain fed">{t('seasonPlans.irrigationMethods.rainfed')}</MenuItem>
+                  <MenuItem value="Under irrigation">{t('seasonPlans.irrigationMethods.irrigated')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
-            {/* Soil Condition */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Soil Condition *</InputLabel>
-                <Select
-                  name="soilCondition"
-                  value={formData.soilCondition}
-                  onChange={handleChange}
-                  label="Soil Condition *"
-                >
-                  <MenuItem value="Sandy">Sandy</MenuItem>
-                  <MenuItem value="Clay">Clay</MenuItem>
-                  <MenuItem value="Loam">Loam</MenuItem>
-                  <MenuItem value="Sandy Loam">Sandy Loam</MenuItem>
-                  <MenuItem value="Clay Loam">Clay Loam</MenuItem>
-                  <MenuItem value="Silt Loam">Silt Loam</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            {/* Soil Condition removed per product decision */}
 
             {/* Paddy Variety */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Paddy Variety *</InputLabel>
+                <InputLabel>{t('seasonPlans.createForm.paddyVarietyRequired')}</InputLabel>
                 <Select
                   name="paddyVariety"
                   value={formData.paddyVariety}
                   onChange={handleChange}
-                  label="Paddy Variety *"
+                  label={t('seasonPlans.createForm.paddyVarietyRequired')}
                 >
                   {paddyVarieties.map(variety => (
-                    <MenuItem key={variety._id} value={variety._id}>
-                      {variety.name} ({variety.type} - {variety.duration})
+                    <MenuItem key={variety._id} value={variety._id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                        {t(`paddyVarieties.names.${slugify(variety.name)}`, { defaultValue: variety.name })}
+                        {variety.popularName ? ` (${t(`paddyVarieties.descriptions.${slugify(variety.popularName)}`, { defaultValue: variety.popularName })})` : ''}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {variety.durationMonths ? `${variety.durationMonths} ${t('paddyVarieties.monthsUnit')} (${Math.round(variety.durationDays)} ${t('paddyVarieties.daysUnit')})` : (variety.duration || '')}
+                        {((variety.characteristics?.grainQuality?.pericarpColour) || (variety.characteristics?.pericarpColour)) ? ` • ${t('paddyVarieties.grainColorLabel')} ${t(`paddyVarieties.colors.${slugify(variety.characteristics?.grainQuality?.pericarpColour || variety.characteristics?.pericarpColour)}`, { defaultValue: variety.characteristics?.grainQuality?.pericarpColour || variety.characteristics?.pericarpColour })}` : ''}
+                        {((variety.characteristics?.grainQuality?.grainShape) || (variety.characteristics?.grainShape)) ? ` • ${t('paddyVarieties.grainSizeLabel')} ${t(`paddyVarieties.grainSizes.${slugify(variety.characteristics?.grainQuality?.grainShape || variety.characteristics?.grainShape)}`, { defaultValue: variety.characteristics?.grainQuality?.grainShape || variety.characteristics?.grainShape })}` : ''}
+                      </Typography>
                     </MenuItem>
                   ))}
                 </Select>
@@ -349,14 +309,14 @@ const EditSeasonPlanContent = ({ id }) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Cultivating Area (acres) *"
+                label={t('seasonPlans.createForm.cultivatingAreaRequired', { unit: 'acres' })}
                 name="cultivatingArea"
                 type="number"
                 value={formData.cultivatingArea}
                 onChange={handleChange}
                 required
                 inputProps={{ min: 0.1, step: 0.1 }}
-                helperText="Minimum 0.1 acres"
+                helperText={t('seasonPlans.createForm.cultivatingAreaMinimum', { unit: 'acres' })}
               />
             </Grid>
 
@@ -364,14 +324,14 @@ const EditSeasonPlanContent = ({ id }) => {
             <Grid item xs={12} md={6}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="Cultivation Date *"
+                  label={t('seasonPlans.createForm.cultivationDateRequired')}
                   value={formData.cultivationDate}
                   onChange={handleDateChange}
                   slotProps={{
                     textField: {
                       fullWidth: true,
                       required: true,
-                      helperText: "Select cultivation date"
+                      helperText: t('seasonPlans.createForm.cultivationDateHelper')
                     }
                   }}
                 />
@@ -386,7 +346,7 @@ const EditSeasonPlanContent = ({ id }) => {
               onClick={() => navigate(`/paddy/season-plans/${id}`)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -394,7 +354,7 @@ const EditSeasonPlanContent = ({ id }) => {
               disabled={loading}
               startIcon={loading && <CircularProgress size={20} />}
             >
-              {loading ? 'Updating...' : 'Update Season Plan'}
+              {loading ? t('seasonPlans.createForm.creating') : t('seasonPlans.updateSeasonPlan')}
             </Button>
           </Box>
         </Box>

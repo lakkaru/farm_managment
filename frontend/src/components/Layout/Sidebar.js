@@ -32,6 +32,7 @@ import {
   ExpandMore,
   Add as AddIcon,
   Visibility as ViewIcon,
+  EventNote as SeasonPlanIcon,
   Business as FarmIcon,
   BugReport as DiseaseIcon,
 } from '@mui/icons-material';
@@ -53,18 +54,22 @@ const Sidebar = () => {
       matches: false,
       addListener: () => {},
       removeListener: () => {},
-    })
+    }),
   });
+
+  // Auth and farm context
   const { user } = useAuth();
-  const { farms, selectedFarm, setSelectedFarm, setFarms } = useFarm();
+  const { selectedFarm, setSelectedFarm } = useFarm();
+
+  // Local UI state
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [farms, setFarms] = useState([]);
+  const [currentPath, setCurrentPath] = useState('');
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [paddyMenuOpen, setPaddyMenuOpen] = useState(false);
   const [farmsMenuOpen, setFarmsMenuOpen] = useState(false);
-  const [cropsMenuOpen, setCropsMenuOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const [currentPath, setCurrentPath] = useState('/dashboard');
 
-  // Load farms when component mounts
+  // Load farms list when user is available
   useEffect(() => {
     const loadFarms = async () => {
       try {
@@ -79,7 +84,7 @@ const Sidebar = () => {
     if (user) {
       loadFarms();
     }
-  }, [user]); // Removed setFarms from dependencies to prevent infinite loop
+  }, [user]);
 
   // Update current path for navigation highlighting
   useEffect(() => {
@@ -99,28 +104,12 @@ const Sidebar = () => {
       submenu: [
         { path: '/farms', icon: ViewIcon, label: t('navigation.viewAllFarms') },
         { path: '/farms/create', icon: AddIcon, label: t('navigation.createFarm') },
+        // Paddy links flattened into Farms submenu
+  { path: '/paddy/varieties', icon: PaddyIcon, label: t('navigation.paddyVarieties') },
+  { path: '/paddy/season-plans', icon: SeasonPlanIcon, label: t('navigation.seasonPlans') },
       ]
     },
-    { 
-      id: 'crops',
-      path: '/crops', 
-      icon: AgricultureIcon, 
-      label: t('navigation.crops'),
-      hasSubmenu: true,
-      submenu: [
-        { 
-          id: 'paddy',
-          label: t('navigation.paddy'), 
-          icon: PaddyIcon, 
-          isSubmenuGroup: true,
-          submenu: [
-            { path: '/paddy/varieties', icon: PaddyIcon, label: t('navigation.paddyVarieties') },
-            { path: '/paddy/season-plans', icon: ViewIcon, label: t('navigation.seasonPlans') },
-            { path: '/paddy/disease-detection', icon: DiseaseIcon, label: t('navigation.diseaseDetection') },
-          ]
-        },
-      ]
-    },
+    // Paddy-specific links are grouped under Farms for paddy-focused workflow
     // Admin Section - Only visible to admin and expert users
     ...(user && ['admin', 'expert'].includes(user.role) ? [
       { 
@@ -155,8 +144,6 @@ const Sidebar = () => {
       setPaddyMenuOpen(!paddyMenuOpen);
     } else if (menuType === 'farms') {
       setFarmsMenuOpen(!farmsMenuOpen);
-    } else if (menuType === 'crops') {
-      setCropsMenuOpen(!cropsMenuOpen);
     } else if (menuType === 'admin') {
       setAdminMenuOpen(!adminMenuOpen);
     }
@@ -165,7 +152,6 @@ const Sidebar = () => {
   const getMenuState = (item) => {
     if (item.id === 'paddy') return paddyMenuOpen;
     if (item.id === 'farms') return farmsMenuOpen;
-    if (item.id === 'crops') return cropsMenuOpen;
     if (item.id === 'admin') return adminMenuOpen;
     return false;
   };
@@ -173,7 +159,6 @@ const Sidebar = () => {
   const getMenuType = (item) => {
     if (item.id === 'paddy') return 'paddy';
     if (item.id === 'farms') return 'farms';
-    if (item.id === 'crops') return 'crops';
     if (item.id === 'admin') return 'admin';
     return item.id || null;
   };

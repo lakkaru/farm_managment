@@ -214,7 +214,7 @@ const FarmsPageContent = () => {
 
                   <Box component="div" sx={{ mb: 2 }}>
                     <Chip
-                      label={farm.farmType}
+                      label={t(`farms.farmTypes.${farm.farmType}`, farm.farmType)}
                       color={getFarmTypeColor(farm.farmType)}
                       size="small"
                     />
