@@ -1255,9 +1255,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
       <Grid container spacing={3}>
         {/* Basic Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+        <Grid item xs={12} md={6} sx={{ display: "flex" }}>
+          <Card
+            sx={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}
+          >
+            <CardContent sx={{ flex: 1 }}>
               <Typography variant="h6" gutterBottom>
                 {t('seasonPlans.viewPage.basicInfo')}
               </Typography>
@@ -1325,9 +1327,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         </Grid>
 
         {/* Dates and Progress */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
+        <Grid item xs={12} md={6} sx={{ display: "flex" }}>
+          <Card
+            sx={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}
+          >
+            <CardContent sx={{ flex: 1 }}>
               <Typography variant="h6" gutterBottom>
                 {t('seasonPlans.viewPage.timeline')}
               </Typography>
