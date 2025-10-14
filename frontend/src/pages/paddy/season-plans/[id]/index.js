@@ -1553,6 +1553,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           setLeafColorDialog={setLeafColorDialog}
           saving={saving}
           t={t}
+          locale={i18n?.language}
         />
 
              {/* Daily Remarks */}

@@ -21,11 +21,155 @@ import {
   Check as CheckIcon,
   PlayArrow as PlayArrowIcon,
   Notes as NotesIcon,
+  OndemandVideo as OndemandVideoIcon,
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
   ToggleOn as ToggleOnIcon,
   ToggleOff as ToggleOffIcon,
 } from "@mui/icons-material";
+
+const buildYouTubeSearchUrl = (query) =>
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+
+const getFertilizerStageSlug = (stage) => {
+  if (!stage) return "";
+  return String(stage)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+};
+
+const FERTILIZER_STAGE_VIDEO_PREFERENCES = {
+  basic_application: {
+    query: "paddy basal fertilizer application Sri Lanka",
+    queryByLocale: {
+      si: "වී වගාවේ මුලික පොහොර භාවිතය ",
+    },
+  },
+  "2_weeks": {
+    query: "paddy top dressing fertilizer 2 weeks after transplanting",
+    queryByLocale: {
+      si: "වී වගාවේ පොහොර යෙදිය යුතු අවස්ථාව ",
+    },
+  },
+  "4_weeks": {
+    query: "paddy fertilizer application 4 weeks stage",
+    queryByLocale: {
+      si: "මාසයක වී ගොයමට පොහොර ",
+    },
+  },
+  "6_weeks": {
+    query: "paddy fertilizer application 6 weeks stage",
+    queryByLocale: {
+      si: "වී පැල සිටුවීමෙන් සති 6කින් පොහොර යෙදීම",
+    },
+  },
+  "7_weeks": {
+    query: "paddy fertilizer application 7 weeks stage",
+    queryByLocale: {
+      si: "බන්ඩි ගොයමට පොහොර",
+    },
+  },
+  "8_weeks": {
+    query: "paddy fertilizer application 8 weeks stage",
+    queryByLocale: {
+      si: "වී පැල සිටුවීමෙන් සති 8කින් පොහොර යෙදීම",
+    },
+  },
+  "9_weeks": {
+    query: "paddy fertilizer application 9 weeks stage",
+    queryByLocale: {
+      si: "වී පැල සිටුවීමෙන් සති 9කින් පොහොර යෙදීම",
+    },
+  },
+  lcc_application: {
+    query: "paddy leaf color chart urea recommendation",
+    queryByLocale: {
+      si: "පත්‍ර වර්ණ දර්ශකය අනුව පොහොර යෙදීම ",
+    },
+  },
+};
+
+const FERTILIZER_NAME_TOKENS = {
+  urea: { en: "urea", si: "යූරියා" },
+  tsp: { en: "tsp fertilizer", si: "ටිඑස්පී" },
+  mop: { en: "mop potash", si: "එම්ඕපී" },
+  zincSulphate: { en: "zinc sulphate", si: "සින්ක් සල්ෆේට්" },
+};
+
+const getFertilizerTokens = (fertilizers, locale) => {
+  if (!fertilizers) return [];
+  const normalized = (locale || "en").toLowerCase();
+  const base = normalized.split("-")[0];
+
+  return Object.entries(fertilizers)
+    .filter(([, value]) => Number(value) > 0)
+    .map(([key]) => {
+      const token = FERTILIZER_NAME_TOKENS[key];
+      if (!token) return key;
+      return token[base] || token.en;
+    });
+};
+
+const pickQueryForLocale = (locale, preference) => {
+  if (!preference) return "";
+  const normalized = (locale || "").toLowerCase();
+  const base = normalized.split("-")[0];
+
+  return (
+    preference?.queryByLocale?.[normalized] ||
+    preference?.queryByLocale?.[base] ||
+    preference?.query ||
+    ""
+  );
+};
+
+const getFertilizerVideoQuery = (application, locale) => {
+  if (!application) return "";
+
+  const normalized = (locale || "en").toLowerCase();
+  const baseLocale = normalized.split("-")[0];
+
+  const stageSlug = getFertilizerStageSlug(application.stage);
+  const generalizedSlug = stageSlug.replace(/_week_\d+$/, "_week");
+  const preferenceBase =
+    FERTILIZER_STAGE_VIDEO_PREFERENCES[stageSlug] ||
+    FERTILIZER_STAGE_VIDEO_PREFERENCES[generalizedSlug];
+  const preference =
+    preferenceBase ||
+    (stageSlug.startsWith("lcc_application")
+      ? FERTILIZER_STAGE_VIDEO_PREFERENCES.lcc_application
+      : undefined);
+
+  let query = pickQueryForLocale(locale, preference);
+
+  if (!query) {
+    query =
+      baseLocale === "si"
+        ? `වී පොහොර යෙදීම ${String(application.stage || "").trim()}`
+        : `paddy fertilizer application ${String(application.stage || "").toLowerCase()}`;
+  }
+
+  const fertilizerTokens = getFertilizerTokens(application.fertilizers, locale);
+  if (fertilizerTokens.length > 0) {
+    query += ` ${fertilizerTokens.join(" ")}`;
+  }
+
+  if (typeof application.week === "number") {
+    query +=
+      baseLocale === "si"
+        ? ` සති ${application.week}`
+        : ` ${application.week} weeks`;
+  }
+
+  return query.trim();
+};
+
+const getFertilizerVideoUrl = (application, locale) => {
+  const query = getFertilizerVideoQuery(application, locale);
+  if (!query) return null;
+  return buildYouTubeSearchUrl(query);
+};
 
 const FertilizerSchedule = ({
   plan,
@@ -40,6 +184,7 @@ const FertilizerSchedule = ({
   setLeafColorDialog,
   saving,
   t,
+  locale,
 }) => {
   // Guard for SSR: avoid reading properties on `plan` when it's undefined during Gatsby's build
   if (!plan) return null;
@@ -220,7 +365,18 @@ const FertilizerSchedule = ({
         </AccordionSummary>
         <AccordionDetails>
           <Grid container spacing={2}>
-            {plan.fertilizerSchedule?.map((app, index) => (
+            {plan.fertilizerSchedule?.map((app, index) => {
+              const videoUrl = getFertilizerVideoUrl(app, locale);
+              const hasVideo = Boolean(videoUrl);
+              const handlePrimaryAction = () => {
+                if (hasVideo && typeof window !== "undefined") {
+                  window.open(videoUrl, "_blank", "noopener,noreferrer");
+                } else {
+                  handleFertilizerImplementation(index);
+                }
+              };
+
+              return (
               <Grid item xs={12} sm={6} lg={4} key={index}>
                 <Card
                   variant="outlined"
@@ -241,7 +397,14 @@ const FertilizerSchedule = ({
                     },
                   }}
                 >
-                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <CardContent
+                    sx={{
+                      p: { xs: 2, sm: 3 },
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                    }}
+                  >
                     <Box
                       sx={{
                         display: "flex",
@@ -437,31 +600,62 @@ const FertilizerSchedule = ({
                         </Typography>
                       </Box>
                     )}
-                    <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
+                    <Box
+                      sx={{
+                        mt: "auto",
+                        pt: 2,
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                      }}
+                    >
                       <Tooltip
                         title={
-                          app.applied
-                            ? t('seasonPlans.viewPage.markNotApplied')
-                            : t('seasonPlans.viewPage.markApplied')
+                          hasVideo
+                            ? t('seasonPlans.viewPage.watchVideo', { defaultValue: 'Watch video' })
+                            : app.applied
+                              ? t('seasonPlans.viewPage.markNotApplied')
+                              : t('seasonPlans.viewPage.markApplied')
                         }
                       >
                         <IconButton
                           size="small"
-                          color={app.applied ? "success" : "primary"}
-                          onClick={() =>
-                            handleFertilizerImplementation(index)
+                          color={
+                            hasVideo
+                              ? "secondary"
+                              : app.applied
+                                ? "success"
+                                : "primary"
+                          }
+                          onClick={handlePrimaryAction}
+                          aria-label={
+                            hasVideo
+                              ? "watch-video"
+                              : app.applied
+                                ? "mark-not-applied"
+                                : "mark-applied"
                           }
                         >
-                          {app.applied ? <CheckIcon /> : <PlayArrowIcon />}
+                          {hasVideo ? (
+                            <OndemandVideoIcon />
+                          ) : app.applied ? (
+                            <CheckIcon />
+                          ) : (
+                            <PlayArrowIcon />
+                          )}
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={t('seasonPlans.viewPage.addNotes')}>
+                      <Tooltip
+                        title={`${t('seasonPlans.viewPage.notes')} — ${t('seasonPlans.viewPage.markAppliedInDialog', { defaultValue: 'mark application in dialog' })}`}
+                      >
                         <IconButton
                           size="small"
                           color="info"
                           onClick={() =>
                             handleFertilizerImplementation(index)
                           }
+                          aria-label="open-notes"
                         >
                           <NotesIcon />
                         </IconButton>
@@ -489,7 +683,8 @@ const FertilizerSchedule = ({
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+            );
+            })}
           </Grid>
         </AccordionDetails>
       </Accordion>
