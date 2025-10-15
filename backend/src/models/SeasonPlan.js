@@ -101,7 +101,7 @@ const seasonPlanSchema = new mongoose.Schema({
     },
     title: {
       type: String,
-      required: true,
+      required: false,
       maxlength: 100,
     },
     description: {

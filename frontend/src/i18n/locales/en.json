@@ -18,7 +18,8 @@
     "success": "Success",
     "error": "Error",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "indicatesRequired": "Indicates required field"
   },
   
   "navigation": {
@@ -448,7 +449,58 @@
       "progress": "Progress Tracking",
       "activities": "Activities & Tasks",
       "expenses": "Expense Management",
-      "dailyRemarks": "Daily Remarks",
+      "dailyRemarks": {
+        "title": "Daily Remarks",
+        "remarksCount": "{{count}} remark",
+        "remarksCount_plural": "{{count}} remarks",
+        "imageCount": "{{count}} image",
+        "imageCount_plural": "{{count}} images",
+        "imageTooltip": "Image: {{name}}",
+        "emptyTitle": "No daily remarks yet",
+        "emptySubtitle": "Start documenting your daily observations and notes about this season",
+        "dialogAddTitle": "Add Daily Remark",
+        "dialogEditTitle": "Edit Daily Remark",
+        "dateLabel": "Date",
+        "categoryLabel": "Category",
+  "titleLabel": "Title",
+        "titlePlaceholder": "Brief title for your observation (category provides context)",
+  "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Detailed description of your observation or note",
+        "attachImages": "Attach Images ({{optional}})",
+        "uploadImages": "Upload Images",
+        "uploading": "Uploading...",
+        "uploadSupport": "Supports JPG, PNG, GIF, WebP, HEIC, HEIF up to 10MB each",
+        "uploadHint": "💡 HEIC files (iPhone photos) are automatically converted to JPEG",
+        "selectedImages": "Selected Images:",
+        "existingImages": "Existing Images ({{count}}):",
+        "heicUploadTooltip": "HEIC image: {{name}} ({{size}}MB) - Will be converted to JPEG on upload",
+        "noPreviewTooltip": "Image: {{name}} ({{size}}MB) - Preview not available",
+        "toastAdded": "📝 Daily remark added successfully",
+        "toastUpdated": "📝 Daily remark updated successfully",
+        "toastDeleted": "🗑️ Daily remark deleted successfully",
+        "toastDeleteError": "Failed to delete daily remark",
+        "toastError": "Failed to save daily remark",
+        "toastTimeout": "Upload timeout - image file might be too large for mobile connection",
+        "toastNetwork": "Network error - please check your connection and try again",
+        "toastTooLarge": "Image files are too large for upload. Please use smaller images or contact support.",
+        "toastServer": "Server error - please try again later",
+        "categories": {
+          "general": "General",
+          "weather": "Weather",
+          "field_preparation": "Field Preparation",
+          "pest": "Pest Management",
+          "disease": "Disease Management",
+          "fertilizer": "Fertilizer Application",
+          "irrigation": "Irrigation",
+          "growth": "Growth Monitoring",
+          "plowing": "Plowing",
+          "seeds_preparation": "Seeds Preparation",
+          "seeding_sowing": "Seeding/Sowing",
+          "transplanting": "Transplanting",
+          "harvesting": "Harvesting",
+          "other": "Other"
+        }
+      },
       "reports": "Reports & Analysis",
       "actualHarvest": {
          "label": "Actual Harvest Date",
@@ -583,6 +635,7 @@
       "lccBased": "LCC-based",
       "markApplied": "Mark as Applied",
       "markNotApplied": "Mark as Not Applied",
+      "markAppliedInDialog": "Mark application from the notes dialog",
       "addNotes": "Add Notes",
       "deleteFertilizerApp": "Delete {{type}} fertilizer application",
   "deleteFertilizerTitle": "Delete Fertilizer Application",
@@ -743,8 +796,6 @@
       "pest": "Pest Management",
       "disease": "Disease Management",
       "fertilizer": "Fertilizer Application",
-  "deleteConfirm": "Are you sure you want to delete this season plan? This action cannot be undone.",
-  "updateFertilizerApplication": "Update Fertilizer Application",
       "irrigation": "Irrigation",
       "growth": "Growth Monitoring",
       "plowing": "Plowing",
@@ -753,7 +804,9 @@
       "transplanting": "Transplanting",
       "harvesting": "Harvesting",
       "other": "Other"
-    }
+    },
+    "deleteConfirm": "Are you sure you want to delete this season plan? This action cannot be undone.",
+    "updateFertilizerApplication": "Update Fertilizer Application"
   },
   
   "paddyVarieties": {

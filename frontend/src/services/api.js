@@ -7,6 +7,12 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// Prevent browser caching from returning 304 responses with empty payloads
+api.defaults.headers.get = api.defaults.headers.get || {};
+api.defaults.headers.get['Cache-Control'] = 'no-cache';
+api.defaults.headers.get['Pragma'] = 'no-cache';
+api.defaults.headers.get['If-Modified-Since'] = '0';
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {

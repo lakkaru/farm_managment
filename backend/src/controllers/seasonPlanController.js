@@ -1076,7 +1076,7 @@ const addDailyRemark = async (req, res) => {
     const newRemark = {
       date: new Date(date),
       category: category || 'general',
-      title: title.trim(),
+      title: title ? title.trim() : '',
       description: description.trim(),
       images: imageObjects,
     };
