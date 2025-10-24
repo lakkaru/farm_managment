@@ -37,9 +37,13 @@ const EditSeasonPlanContent = ({ id }) => {
     farmId: '',
     season: '',
     irrigationMethod: '',
+    plantingMethod: 'direct_seeding',
     paddyVariety: '',
     cultivatingArea: '',
+    areaUnit: 'acres', // Default to acres
     cultivationDate: null, // Change to null for DatePicker
+    transplantingDate: null,
+    soilP: '',
   });
 
   const loadSeasonPlan = async () => {
@@ -49,15 +53,20 @@ const EditSeasonPlanContent = ({ id }) => {
       setPlan(planData);
       
       // Convert date to dayjs object for DatePicker
-      const cultivationDate = dayjs(planData.cultivationDate);
-      
+      const cultivationDate = planData.cultivationDate ? dayjs(planData.cultivationDate) : null;
+      const transplantingDate = planData.transplantingDate ? dayjs(planData.transplantingDate) : null;
+
       setFormData({
         farmId: planData.farmId._id,
         season: planData.season,
         irrigationMethod: planData.irrigationMethod,
+        plantingMethod: planData.plantingMethod || 'direct_seeding',
         paddyVariety: planData.paddyVariety._id,
         cultivatingArea: planData.cultivatingArea.toString(),
+        areaUnit: planData.areaUnit || 'acres', // Store the area unit
         cultivationDate: cultivationDate,
+        transplantingDate: transplantingDate,
+        soilP: planData.soilP !== undefined ? String(planData.soilP) : '',
       });
     } catch (error) {
       console.error('Error loading season plan:', error);
@@ -90,9 +99,31 @@ const EditSeasonPlanContent = ({ id }) => {
 
   const { t, i18n } = useTranslation();
 
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('i18n language (edit):', i18n?.language || window.i18next?.language || 'unknown');
+      // eslint-disable-next-line no-console
+      console.debug('transplantingDate translation (edit):', t('seasonPlans.createForm.transplantingDate'));
+    } catch (e) {
+      // ignore
+    }
+  }
+
   const slugify = (s) => {
     if (!s) return '';
     return s.toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  };
+
+  // Helper function to get unit translation key
+  const getUnitTranslationKey = (unit) => {
+    const unitMap = {
+      'acres': 'acres',
+      'hectares': 'hectares',
+      'sq meters': 'sqMeters',
+      'sq feet': 'sqFeet'
+    };
+    return unitMap[unit] || 'acres';
   };
 
   useEffect(() => {
@@ -108,6 +139,7 @@ const EditSeasonPlanContent = ({ id }) => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
+      ...(name === 'plantingMethod' && value !== 'transplanting' ? { transplantingDate: null } : {}),
     }));
 
     // Note: climateZone is derived from farm on create and is not editable here
@@ -146,9 +178,12 @@ const EditSeasonPlanContent = ({ id }) => {
         farmId: formData.farmId,
         season: formData.season,
         irrigationMethod: formData.irrigationMethod,
+        plantingMethod: formData.plantingMethod,
         paddyVariety: formData.paddyVariety,
         cultivatingArea: parseFloat(formData.cultivatingArea),
         cultivationDate: formData.cultivationDate ? dayjs(formData.cultivationDate).toISOString() : null,
+        transplantingDate: formData.transplantingDate ? dayjs(formData.transplantingDate).toISOString() : undefined,
+        soilP: formData.soilP !== '' ? Number(formData.soilP) : undefined,
       };
 
       console.log('Updating season plan data (safe payload):', planData);
@@ -276,6 +311,22 @@ const EditSeasonPlanContent = ({ id }) => {
               </FormControl>
             </Grid>
 
+            {/* Planting Method */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required>
+                <InputLabel>{t('seasonPlans.createForm.plantingMethod')}</InputLabel>
+                <Select
+                  name="plantingMethod"
+                  value={formData.plantingMethod}
+                  onChange={handleChange}
+                  label={t('seasonPlans.createForm.plantingMethod')}
+                >
+                  <MenuItem value="direct_seeding">{t('seasonPlans.createForm.plantingMethods.direct_seeding')}</MenuItem>
+                  <MenuItem value="transplanting">{t('seasonPlans.createForm.plantingMethods.transplanting')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
             {/* Soil Condition removed per product decision */}
 
             {/* Paddy Variety */}
@@ -309,14 +360,18 @@ const EditSeasonPlanContent = ({ id }) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label={t('seasonPlans.createForm.cultivatingAreaRequired', { unit: 'acres' })}
+                label={t('seasonPlans.createForm.cultivatingAreaRequired', { 
+                  unit: t(`seasonPlans.units.${getUnitTranslationKey(formData.areaUnit)}`) 
+                })}
                 name="cultivatingArea"
                 type="number"
                 value={formData.cultivatingArea}
                 onChange={handleChange}
                 required
                 inputProps={{ min: 0.1, step: 0.1 }}
-                helperText={t('seasonPlans.createForm.cultivatingAreaMinimum', { unit: 'acres' })}
+                helperText={t('seasonPlans.createForm.cultivatingAreaMinimum', { 
+                  unit: t(`seasonPlans.units.${getUnitTranslationKey(formData.areaUnit)}`) 
+                })}
               />
             </Grid>
 
@@ -337,6 +392,22 @@ const EditSeasonPlanContent = ({ id }) => {
                 />
               </LocalizationProvider>
             </Grid>
+
+            {/* Transplanting Date - only show when plantingMethod is transplanting */}
+            {formData.plantingMethod === 'transplanting' && (
+              <Grid item xs={12} md={6}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label={t('seasonPlans.createForm.transplantingDate')}
+                    value={formData.transplantingDate}
+                    onChange={(d) => setFormData(prev => ({ ...prev, transplantingDate: d }))}
+                    slotProps={{ textField: { fullWidth: true, helperText: t('seasonPlans.createForm.transplantingDateHelper') }}}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            )}
+
+            {/* Soil P (ppm) input hidden temporarily — no sample sheet available */}
           </Grid>
 
           {/* Action Buttons */}

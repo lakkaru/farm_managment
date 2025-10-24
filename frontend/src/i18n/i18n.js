@@ -46,3 +46,18 @@ i18n
   });
 
 export default i18n;
+
+  // Expose i18n instance on window in development for easier debugging
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    // attach non-enumerable to avoid accidental serialization
+    try {
+      Object.defineProperty(window, 'i18next', {
+        configurable: true,
+        writable: true,
+        value: i18n,
+      });
+    } catch (e) {
+      // fallback
+      window.i18next = i18n;
+    }
+  }

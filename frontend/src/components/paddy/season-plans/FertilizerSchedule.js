@@ -193,6 +193,18 @@ const FertilizerSchedule = ({
     return dayjs(date).format("DD MMM YYYY");
   };
 
+  // Determine which date was used as the anchor for scheduling
+  const getAnchorDateUsed = () => {
+    try {
+      if (plan.plantingMethod === 'transplanting' && plan.transplantingDate) {
+        return plan.transplantingDate;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return plan.cultivationDate;
+  };
+
   const translateFertilizerStage = (stage) => {
     if (!stage) return "";
     // Create a safe key from the stage name
@@ -321,6 +333,12 @@ const FertilizerSchedule = ({
                 alignItems: "center", 
                 gap: { xs: 1, sm: 2 }
               }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+                  <Typography variant="caption" color="textSecondary" sx={{ mr: 1 }}>
+                    {t('seasonPlans.viewPage.anchorDate')}:
+                  </Typography>
+                  <Typography variant="caption">{formatShortDate(getAnchorDateUsed())}</Typography>
+                </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography variant="body2">{t('seasonPlans.viewPage.leafColorChart')}:</Typography>
                   <IconButton
@@ -538,41 +556,61 @@ const FertilizerSchedule = ({
                         gap: 0.25,
                       }}
                     >
-                      {app.fertilizers?.urea > 0 && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ wordBreak: "break-word" }}
-                        >
-                          {translateFertilizerType("Urea")}: {app.fertilizers.urea} {t('seasonPlans.units.kg')}
-                        </Typography>
-                      )}
-                      {app.fertilizers?.tsp > 0 && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ wordBreak: "break-word" }}
-                        >
-                          {translateFertilizerType("TSP")}: {app.fertilizers.tsp} {t('seasonPlans.units.kg')}
-                        </Typography>
-                      )}
-                      {app.fertilizers?.mop > 0 && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ wordBreak: "break-word" }}
-                        >
-                          {translateFertilizerType("MOP")}: {app.fertilizers.mop} {t('seasonPlans.units.kg')}
-                        </Typography>
-                      )}
-                      {app.fertilizers?.zincSulphate > 0 && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ wordBreak: "break-word" }}
-                        >
-                          {translateFertilizerType("Zinc Sulphate")}: {app.fertilizers.zincSulphate} {t('seasonPlans.units.kg')}
-                        </Typography>
+                      {/* Show only the total amount for the field (perFieldKg) */}
+                      {app.fertilizers?.perFieldKg ? (
+                        Object.entries(app.fertilizers.perFieldKg).map(([key, amount]) => {
+                          if (!amount || amount <= 0) return null;
+                          return (
+                            <Typography
+                              key={`field-${key}`}
+                              variant="caption"
+                              display="block"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              {translateFertilizerType(key)}: {amount} {t('seasonPlans.units.kg')}
+                            </Typography>
+                          );
+                        })
+                      ) : (
+                        // Fallback to old shape - show simple amounts
+                        <>
+                          {app.fertilizers?.urea > 0 && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              {translateFertilizerType("Urea")}: {app.fertilizers.urea} {t('seasonPlans.units.kg')}
+                            </Typography>
+                          )}
+                          {app.fertilizers?.tsp > 0 && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              {translateFertilizerType("TSP")}: {app.fertilizers.tsp} {t('seasonPlans.units.kg')}
+                            </Typography>
+                          )}
+                          {app.fertilizers?.mop > 0 && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              {translateFertilizerType("MOP")}: {app.fertilizers.mop} {t('seasonPlans.units.kg')}
+                            </Typography>
+                          )}
+                          {app.fertilizers?.zincSulphate > 0 && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              sx={{ wordBreak: "break-word" }}
+                            >
+                              {translateFertilizerType("Zinc Sulphate")}: {app.fertilizers.zincSulphate} {t('seasonPlans.units.kg')}
+                            </Typography>
+                          )}
+                        </>
                       )}
                     </Box>
                     {app.notes && (

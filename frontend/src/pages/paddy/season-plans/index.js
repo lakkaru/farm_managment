@@ -98,6 +98,24 @@ const SeasonPlansContent = () => {
     });
   };
 
+  const getUnitTranslationKey = (unit) => {
+    const unitMap = {
+      'acres': 'acres',
+      'hectares': 'hectares',
+      'sq meters': 'sqMeters',
+      'sq feet': 'sqFeet'
+    };
+    return unitMap[unit] || 'acres';
+  };
+
+  const getIrrigationTranslationKey = (irrigationMethod) => {
+    const irrigationMap = {
+      'Rain fed': 'rainfed',
+      'Under irrigation': 'irrigated'
+    };
+    return irrigationMap[irrigationMethod] || 'rainfed';
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -239,7 +257,7 @@ const SeasonPlansContent = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <WaterIcon sx={{ fontSize: 16, mr: 1, color: 'grey.600' }} />
                       <Typography variant="body2" color="textSecondary">
-                        {t(`seasonPlans.irrigationMethods.${plan.irrigationMethod}`, { defaultValue: plan.irrigationMethod || t('common.notSpecified') })}
+                        {t(`seasonPlans.irrigationMethods.${getIrrigationTranslationKey(plan.irrigationMethod)}`, { defaultValue: plan.irrigationMethod || t('common.notSpecified') })}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -252,7 +270,7 @@ const SeasonPlansContent = () => {
 
                   {/* Area and Variety */}
                   <Typography variant="body2" gutterBottom>
-                    <strong>{t('seasonPlans.area')}:</strong> {plan.cultivatingArea} {t('seasonPlans.units.acres')}
+                    <strong>{t('seasonPlans.area')}:</strong> {plan.cultivatingArea} {t(`seasonPlans.units.${getUnitTranslationKey(plan.areaUnit)}`)}
                   </Typography>
                   <Typography variant="body2" gutterBottom>
                     <strong>{t('seasonPlans.paddyVariety')}:</strong> {plan.paddyVariety?.name || t('common.notSpecified')}

@@ -31,7 +31,19 @@ import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
 
 const CreateSeasonPlanContent = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Dev-only: log current language and sample translations to help debug missing translations
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    try {
+      // eslint-disable-next-line no-console
+      console.debug('i18n language (create):', i18n?.language || window.i18next?.language || 'unknown');
+      // eslint-disable-next-line no-console
+      console.debug('transplantingDate translation (create):', t('seasonPlans.createForm.transplantingDate'));
+    } catch (e) {
+      // ignore
+    }
+  }
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [paddyVarieties, setPaddyVarieties] = useState([]);
@@ -43,10 +55,13 @@ const CreateSeasonPlanContent = () => {
     farmId: '',
     season: '',
     irrigationMethod: '',
+    plantingMethod: 'direct_seeding',
     paddyVariety: '',
     cultivatingArea: '',
     cultivationDate: null, // Change to null for DatePicker
+    transplantingDate: null,
     expectedHarvestDate: null, // Add for bidirectional calculation
+    soilP: '',
   });
 
   // Add state for calculation mode
@@ -61,6 +76,20 @@ const CreateSeasonPlanContent = () => {
   });
 
   const isFarmSelected = Boolean(formData.farmId);
+
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    const requiredFields = [
+      formData.farmId,
+      formData.season,
+      formData.irrigationMethod,
+      formData.paddyVariety,
+      formData.cultivatingArea,
+      formData.cultivationDate,
+      formData.expectedHarvestDate
+    ];
+    return requiredFields.every(field => field !== '' && field !== null && field !== undefined);
+  };
 
   // Helper to slugify labels for i18n lookup (e.g. "Keeri Samba" -> "keeri_samba")
   const slugify = (s) => {
@@ -140,6 +169,8 @@ const CreateSeasonPlanContent = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
+      // If plantingMethod changes away from transplanting, clear transplantingDate
+      ...(name === 'plantingMethod' && value !== 'transplanting' ? { transplantingDate: null } : {}),
     }));
 
     // When farm is selected, update displayed farm info but do NOT auto-fill form fields
@@ -339,6 +370,9 @@ const CreateSeasonPlanContent = () => {
         ...formData,
         cultivatingArea: parseFloat(formData.cultivatingArea),
         cultivationDate: formData.cultivationDate ? dayjs(formData.cultivationDate).toISOString() : null,
+        transplantingDate: formData.transplantingDate ? dayjs(formData.transplantingDate).toISOString() : undefined,
+        plantingMethod: formData.plantingMethod,
+        soilP: formData.soilP !== '' ? Number(formData.soilP) : undefined,
         expectedHarvest: {
           date: formData.expectedHarvestDate ? dayjs(formData.expectedHarvestDate).toISOString() : null,
         },
@@ -382,6 +416,20 @@ const CreateSeasonPlanContent = () => {
           {t('seasonPlans.createForm.title')}
         </Typography>
       </Box>
+      {/* Development-only visible i18n debug: helps verify runtime language and specific translation strings */}
+      {process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            {`i18n.language (runtime): ${window.i18next?.language || 'unknown'}`}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            {`transplantingDateHelper => ${t('seasonPlans.createForm.transplantingDateHelper')}`}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            {`soilPHelper => ${t('seasonPlans.createForm.soilPHelper')}`}
+          </Typography>
+        </Alert>
+      )}
       {/* <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
         {t('seasonPlans.createForm.subtitle')}
       </Typography> */}
@@ -489,6 +537,23 @@ const CreateSeasonPlanContent = () => {
                 >
                   <MenuItem value="Rain fed">{t('seasonPlans.irrigationMethods.rainfed')}</MenuItem>
                   <MenuItem value="Under irrigation">{t('seasonPlans.irrigationMethods.irrigated')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Planting Method */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required>
+                <InputLabel>{t('seasonPlans.createForm.plantingMethod')}</InputLabel>
+                <Select
+                  name="plantingMethod"
+                  value={formData.plantingMethod}
+                  onChange={handleChange}
+                  disabled={!isFarmSelected}
+                  label={t('seasonPlans.createForm.plantingMethod')}
+                >
+                  <MenuItem value="direct_seeding">{t('seasonPlans.createForm.plantingMethods.direct_seeding')}</MenuItem>
+                  <MenuItem value="transplanting">{t('seasonPlans.createForm.plantingMethods.transplanting')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -657,6 +722,28 @@ const CreateSeasonPlanContent = () => {
               )}
             </Grid>
 
+            {/* Transplanting Date (optional) - only show when plantingMethod is transplanting */}
+            {formData.plantingMethod === 'transplanting' && (
+              <Grid item xs={12} md={6}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label={t('seasonPlans.createForm.transplantingDate')}
+                    value={formData.transplantingDate}
+                    onChange={(d) => setFormData(prev => ({ ...prev, transplantingDate: d }))}
+                    disabled={!isFarmSelected}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        helperText: t('seasonPlans.createForm.transplantingDateHelper')
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            )}
+
+            {/* Soil test result input hidden temporarily (no sample sheet available) */}
+
             {/* Expected Harvest Date */}
             <Grid item xs={12} md={6}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -720,18 +807,19 @@ const CreateSeasonPlanContent = () => {
                               borderRadius: 1,
                               border: '1px solid',
                               borderColor: 'warning.main',
-                              height: 85, // Fixed height for consistency
+                              height: 'auto', // Auto height
+                              minHeight: 85, // Minimum height
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between'
                             }}>
-                              <Typography variant="caption" color="warning.dark" sx={{ fontWeight: 'bold' }}>
+                              <Typography variant="caption" color="warning.dark" sx={{ fontWeight: 'bold', wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.firstPlowing')}
                               </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5, wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {getFirstPlowingDate()}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" sx={{ wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.startEarly')}
                               </Typography>
                             </Box>
@@ -745,18 +833,19 @@ const CreateSeasonPlanContent = () => {
                               borderRadius: 1,
                               border: '1px solid',
                               borderColor: 'success.main',
-                              height: 85, // Fixed height for consistency
+                              height: 'auto', // Auto height
+                              minHeight: 85, // Minimum height
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between'
                             }}>
-                              <Typography variant="caption" color="success.dark" sx={{ fontWeight: 'bold' }}>
+                              <Typography variant="caption" color="success.dark" sx={{ fontWeight: 'bold', wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.cultivationDate')}
                               </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5, wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {dayjs(formData.cultivationDate).format('MMM DD, YYYY')}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" sx={{ wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.plantingDay')}
                               </Typography>
                             </Box>
@@ -770,18 +859,19 @@ const CreateSeasonPlanContent = () => {
                               borderRadius: 1,
                               border: '1px solid',
                               borderColor: 'primary.main',
-                              height: 85, // Fixed height for consistency
+                              height: 'auto', // Auto height
+                              minHeight: 85, // Minimum height
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between'
                             }}>
-                              <Typography variant="caption" color="primary.dark" sx={{ fontWeight: 'bold' }}>
+                              <Typography variant="caption" color="primary.dark" sx={{ fontWeight: 'bold', wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.harvestDate')}
                               </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', my: 0.5, wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {dayjs(formData.expectedHarvestDate).format('MMM DD, YYYY')}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" color="text.secondary" sx={{ wordWrap: 'break-word', overflow: 'hidden' }}>
                                 {t('seasonPlans.createForm.daysTotal', { days: Math.round(dayjs(formData.expectedHarvestDate).diff(dayjs(formData.cultivationDate), 'day')) })}
                               </Typography>
                             </Box>
@@ -808,7 +898,7 @@ const CreateSeasonPlanContent = () => {
             <Button
               type="submit"
               variant="contained"
-              disabled={!isFarmSelected || loading}
+              disabled={!isFormValid() || loading}
               startIcon={loading && <CircularProgress size={20} />}
             >
               {loading ? t('seasonPlans.createForm.creating') : t('seasonPlans.createForm.createSeasonPlan')}

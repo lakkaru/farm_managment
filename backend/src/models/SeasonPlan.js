@@ -25,6 +25,11 @@ const seasonPlanSchema = new mongoose.Schema({
     required: [true, 'Irrigation method is required'],
     enum: ['Rain fed', 'Under irrigation'],
   },
+  plantingMethod: {
+    type: String,
+    enum: ['direct_seeding', 'transplanting'],
+    default: 'direct_seeding'
+  },
   paddyVariety: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'PaddyVariety',
@@ -33,11 +38,25 @@ const seasonPlanSchema = new mongoose.Schema({
   cultivatingArea: {
     type: Number,
     required: [true, 'Cultivating area is required'],
-    min: [0.1, 'Cultivating area must be at least 0.1 acres'],
+    min: [0.01, 'Cultivating area must be at least 0.01'],
+  },
+  areaUnit: {
+    type: String,
+    enum: ['acres', 'hectares', 'sq meters', 'sq feet'],
+    default: 'acres',
+    required: true
   },
   cultivationDate: {
     type: Date,
     required: [true, 'Cultivation date is required'],
+  },
+  transplantingDate: {
+    type: Date,
+  },
+  soilP: {
+    type: Number,
+    min: [0, 'Soil P value must be positive'],
+    max: [100, 'Soil P value seems too high']
   },
   growingStages: [{
     stage: String,
@@ -57,10 +76,24 @@ const seasonPlanSchema = new mongoose.Schema({
     stage: String,
     date: Date,
     fertilizers: {
+      // Legacy simple structure (still supported for backward compatibility)
       urea: Number,
       tsp: Number,
       mop: Number,
       zincSulphate: Number,
+      // New detailed structure with per-ha and per-field amounts
+      recommendedPerHa: {
+        urea: { type: Number, default: 0 },
+        tsp: { type: Number, default: 0 },
+        mop: { type: Number, default: 0 },
+        zincSulphate: { type: Number, default: 0 }
+      },
+      perFieldKg: {
+        urea: { type: Number, default: 0 },
+        tsp: { type: Number, default: 0 },
+        mop: { type: Number, default: 0 },
+        zincSulphate: { type: Number, default: 0 }
+      }
     },
     description: String,
     applied: {
@@ -70,6 +103,36 @@ const seasonPlanSchema = new mongoose.Schema({
     applicationDate: Date, // Planned date
     implementedDate: Date, // Actual date when applied
     notes: String,
+    // Additional fields for tracking
+    recommendations: {
+      zone: String,
+      condition: String,
+      ageGroup: String,
+      totalRecommended: {
+        urea: Number,
+        tsp: Number,
+        mop: Number,
+        zinc: Number
+      }
+    },
+    // LCC-based fertilizer application data
+    lccData: {
+      plantAge: Number,
+      leafColorIndex: Number,
+      recommendedPerAcre: Number,
+      totalArea: Number
+    },
+    isLCCBased: {
+      type: Boolean,
+      default: false
+    },
+    // Actual fertilizers used (for implementation tracking)
+    actualFertilizers: {
+      urea: Number,
+      tsp: Number,
+      mop: Number,
+      zincSulphate: Number
+    }
   }],
   status: {
     type: String,
@@ -239,7 +302,20 @@ seasonPlanSchema.virtual('expensesByCategory').get(function() {
 seasonPlanSchema.virtual('costPerAcre').get(function() {
   const total = this.totalExpenses;
   if (total === 0 || !this.cultivatingArea) return 0;
-  return total / this.cultivatingArea;
+  
+  // Convert area to acres for consistent calculation
+  const conversionFactors = {
+    'acres': 1,
+    'hectares': 2.47105,
+    'sq meters': 0.000247105,
+    'sq feet': 0.0000229568
+  };
+  
+  const areaUnit = this.areaUnit || 'acres';
+  const factor = conversionFactors[areaUnit] || 1;
+  const areaInAcres = this.cultivatingArea * factor;
+  
+  return total / areaInAcres;
 });
 
 // Virtual for getting farm district

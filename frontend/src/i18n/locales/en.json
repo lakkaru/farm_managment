@@ -183,10 +183,11 @@
       "poultry": "Poultry Farm"
     },
     "units": {
-      "acres": "Acres",
-      "hectares": "Hectares",
-      "sqMeters": "Sq Meters",
-      "sqFeet": "Sq Feet",
+      "acres": "acres",
+      "hectares": "hectares",
+      "ha": "ha",
+      "sqMeters": "sq meters",
+      "sqFeet": "sq feet",
       "tons": "tons",
       "kg": "kg"
     },
@@ -272,6 +273,10 @@
     "paddyVariety": "Paddy Variety",
     "cultivatingArea": "Cultivating Area (acres)",
     "cultivationDate": "Cultivation Date",
+    "plantingMethods": {
+      "direct_seeding": "Direct seeding",
+      "transplanting": "Transplanting"
+    },
     "expectedHarvestDate": "Expected Harvest Date",
     "status": "Status",
     "planned": "Planned",
@@ -385,8 +390,17 @@
       "setHarvestDateDesc": "Calculate cultivation date",
   "cultivationDateRequired": "Cultivation Date",
       "cultivationDateHelper": "Select cultivation date (past or future dates allowed for records)",
+      "plantingMethod": "Planting Method",
+      "plantingMethods": {
+        "direct_seeding": "Direct seeding",
+        "transplanting": "Transplanting"
+      },
       "cultivationDateAuto": "Auto-calculated from harvest date",
       "selectPaddyVarietyFirst": "Select paddy variety first",
+      "transplantingDate": "Transplanting Date",
+      "transplantingDateHelper": "Optional: provide the transplanting date when using transplanting method",
+      "soilP": "Soil P (ppm)",
+      "soilPHelper": "Optional soil phosphorus (P) in ppm. If soil P > 10 ppm, TSP recommendation may be skipped.",
   "expectedHarvestDateRequired": "Expected Harvest Date",
       "harvestDateHelper": "Select target harvest date (past or future dates allowed for records)",
       "harvestDateAuto": "Auto-calculated from cultivation date",
@@ -474,6 +488,15 @@
       "varietyType": "Type",
       "duration": "Duration",
       "irrigationMethod": "Irrigation Method",
+      "irrigationMethods": {
+        "Rain fed": "Rain fed",
+        "Under irrigation": "Under irrigation"
+      },
+      "plantingMethod": "Planting Method",
+      "plantingMethods": {
+        "direct_seeding": "Direct seeding",
+        "transplanting": "Transplanting"
+      },
       "soilCondition": "Soil Condition",
       "cultivationDate": "Cultivation Date",
   "expectedHarvest": "Expected Harvest",
@@ -578,9 +601,14 @@
       "scheduled": "Scheduled",
       "implemented": "Implemented",
       "recommended": "Recommended",
+      "total": "total",
       "lccLabel": "LCC",
       "lccData": "LCC Data: Age {{age}}w, Color Index {{colorIndex}}",
       "lccBased": "LCC-based",
+      "anchorDate": "Anchor Date",
+      "units": {
+        "ha": "ha"
+      },
       "markApplied": "Mark as Applied",
       "markNotApplied": "Mark as Not Applied",
       "addNotes": "Add Notes",

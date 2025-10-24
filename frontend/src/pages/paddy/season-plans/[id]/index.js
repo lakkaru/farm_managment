@@ -67,8 +67,8 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import BackButton from '../../../../components/BackButton';
-import GrowingStages from "./index/GrowingStages";
-import FertilizerSchedule from "./index/FertilizerSchedule";
+import GrowingStages from "../../../../components/paddy/season-plans/GrowingStages";
+import FertilizerSchedule from "../../../../components/paddy/season-plans/FertilizerSchedule";
 import { navigate } from "gatsby";
 import { useTranslation } from "react-i18next";
 import Layout from "../../../../components/Layout/Layout";
@@ -183,6 +183,17 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   const SeasonPlanViewContent = ({ id }) => {
   const { t, i18n } = useTranslation();
+
+  // Helper to convert area unit from DB format to translation key
+  const getUnitTranslationKey = (unit) => {
+    const unitMap = {
+      'acres': 'acres',
+      'hectares': 'hectares',
+      'sq meters': 'sqMeters',
+      'sq feet': 'sqFeet'
+    };
+    return unitMap[unit] || 'acres';
+  };
 
   // Local component state (restored after refactor)
   const [plan, setPlan] = useState(null);
@@ -1288,7 +1299,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={t('seasonPlans.viewPage.irrigationMethod')}
-                    secondary={plan.irrigationMethod}
+                    secondary={t(`seasonPlans.viewPage.irrigationMethods.${plan.irrigationMethod}`, { defaultValue: plan.irrigationMethod })}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <SpaIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t('seasonPlans.viewPage.plantingMethod')}
+                    secondary={t(`seasonPlans.viewPage.plantingMethods.${plan.plantingMethod || 'direct_seeding'}`)}
                   />
                 </ListItem>
                 {/* Soil condition removed — not used for fertilizer recommendations */}
@@ -1318,7 +1338,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={t('seasonPlans.viewPage.cultivatingArea')}
-                    secondary={`${plan.cultivatingArea} ${t('seasonPlans.units.acres')}`}
+                    secondary={`${plan.cultivatingArea} ${t(`seasonPlans.units.${getUnitTranslationKey(plan.areaUnit)}`)}`}
                   />
                 </ListItem>
               </List>

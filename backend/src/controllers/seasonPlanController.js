@@ -108,10 +108,17 @@ const createSeasonPlan = async (req, res) => {
       });
     }
 
+    // Get area unit from farm's totalArea.unit
+    const areaUnit = farm.totalArea?.unit || 'acres';
+    
+    // Convert cultivating area to acres for fertilizer calculations
+    const cultivatingAreaInAcres = convertToAcres(req.body.cultivatingArea, areaUnit);
+
     // Generate season plan data with farm's district and climate zone
     const planData = {
       ...req.body,
       userId: req.user.id,
+      areaUnit: areaUnit, // Store the area unit
       // Use climate zone from farm's cultivationZone, or use a default based on district
       climateZone: farm.cultivationZone || getDefaultClimateZone(farm.district),
     };
@@ -119,13 +126,23 @@ const createSeasonPlan = async (req, res) => {
     // Generate growing stages
     planData.growingStages = generateGrowingStages(req.body.cultivationDate, paddyVariety.duration);
     
-    // Generate fertilizer schedule
+    // Determine anchor date: prefer transplantingDate when plantingMethod === 'transplanting'
+    const plantingMethod = req.body.plantingMethod || 'direct_seeding';
+    const anchorDate = (plantingMethod === 'transplanting' && req.body.transplantingDate) ? req.body.transplantingDate : req.body.cultivationDate;
+
+    // Optional soil test P (ppm) passed in request body as soilP
+    const soilP = req.body.soilP !== undefined ? Number(req.body.soilP) : null;
+
+    // Generate fertilizer schedule (pass season for zinc sulphate application)
     planData.fertilizerSchedule = generateFertilizerSchedule(
-      req.body.cultivationDate, 
-      req.body.cultivatingArea,
+      anchorDate,
+      cultivatingAreaInAcres, // Use converted area in acres
       req.body.irrigationMethod,
       farm.district,
-      paddyVariety.duration
+      paddyVariety.duration,
+      plantingMethod,
+      soilP,
+      req.body.season // Pass season to determine zinc sulphate application
     );
 
     // Set expected harvest date
@@ -150,7 +167,7 @@ const createSeasonPlan = async (req, res) => {
     
     planData.expectedHarvest = {
       date: expectedHarvestDate,
-      estimatedYield: calculateEstimatedYield(req.body.cultivatingArea, paddyVariety.characteristics?.yield || 4),
+      estimatedYield: calculateEstimatedYield(cultivatingAreaInAcres, paddyVariety.characteristics?.yield || 4),
     };
 
     console.log('Creating season plan with data:', JSON.stringify(planData, null, 2));
@@ -218,6 +235,40 @@ const updateSeasonPlan = async (req, res) => {
       { new: true, runValidators: true }
     ).populate('farmId', 'name location district cultivationZone totalArea')
      .populate('paddyVariety', 'name duration type characteristics');
+
+    // If key cultivation parameters changed, regenerate fertilizer schedule
+    const shouldRegenerate = ['cultivationDate', 'transplantingDate', 'cultivatingArea', 'irrigationMethod', 'plantingMethod', 'paddyVariety', 'soilP']
+      .some(f => Object.prototype.hasOwnProperty.call(req.body, f));
+
+    if (shouldRegenerate) {
+      // Re-fetch farm and paddy variety details if needed
+      const Farm = require('../models/Farm');
+      const farm = await Farm.findById(updatedPlan.farmId);
+      const paddyVariety = await PaddyVariety.findById(updatedPlan.paddyVariety);
+
+      const plantingMethod = safeBody.plantingMethod || updatedPlan.plantingMethod || 'direct_seeding';
+      const anchorDate = (plantingMethod === 'transplanting' && (safeBody.transplantingDate || updatedPlan.transplantingDate)) ? (safeBody.transplantingDate || updatedPlan.transplantingDate) : (safeBody.cultivationDate || updatedPlan.cultivationDate);
+      const soilP = safeBody.soilP !== undefined ? Number(safeBody.soilP) : (updatedPlan.soilP !== undefined ? Number(updatedPlan.soilP) : null);
+
+      // Get area unit and convert to acres
+      const areaUnit = updatedPlan.areaUnit || farm.totalArea?.unit || 'acres';
+      const cultivatingArea = safeBody.cultivatingArea !== undefined ? Number(safeBody.cultivatingArea) : updatedPlan.cultivatingArea;
+      const cultivatingAreaInAcres = convertToAcres(cultivatingArea, areaUnit);
+
+      const newSchedule = generateFertilizerSchedule(
+        anchorDate,
+        cultivatingAreaInAcres, // Use converted area
+        safeBody.irrigationMethod || updatedPlan.irrigationMethod,
+        farm.district,
+        paddyVariety.duration,
+        plantingMethod,
+        soilP,
+        safeBody.season || updatedPlan.season // Pass season for zinc sulphate
+      );
+
+      updatedPlan.fertilizerSchedule = newSchedule;
+      await updatedPlan.save();
+    }
 
     res.json({
       success: true,
@@ -311,7 +362,30 @@ const generateGrowingStages = (cultivationDate, durationString) => {
   });
 };
 
-const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMethod, district, durationString) => {
+const { recommendations } = require('../utils/fertilizerRecommendations');
+
+/**
+ * Convert area to acres from various units
+ */
+const convertToAcres = (value, unit) => {
+  const conversionFactors = {
+    'acres': 1,
+    'hectares': 2.47105, // 1 hectare = 2.47105 acres
+    'sq meters': 0.000247105, // 1 sq meter = 0.000247105 acres
+    'sq feet': 0.0000229568 // 1 sq foot = 0.0000229568 acres
+  };
+  
+  const factor = conversionFactors[unit] || 1;
+  return value * factor;
+};
+
+/**
+ * Generate fertilizer schedule using structured recommendations.
+ * Optional soilP (ppm) can be passed to skip TSP if > 10.
+ * Optional season parameter to determine zinc sulphate application (only in Maha season).
+ * plantingMethod: 'direct_seeding' | 'transplanting' (default direct_seeding)
+ */
+const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMethod, district, durationString, plantingMethod = 'direct_seeding', soilP = null, season = 'maha') => {
   // Convert area from acres to hectares (1 acre = 0.404686 hectares)
   const areaHa = areaInAcres * 0.404686;
   
@@ -341,157 +415,54 @@ const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMeth
     ageGroup = '4_month';
   }
 
-  // Fertilizer recommendations (kg/ha)
-  const recommendations = {
-    wet_zone: {
-      rainfed: {
-        '3_month': {
-          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '3_5_month': {
-          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
-            { week: 8, stage: '8 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '4_month': {
-          total: { urea: 100, tsp: 55, mop: 110, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 25, tsp: 0, mop: 35, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 30, tsp: 0, mop: 45, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 25, tsp: 0, mop: 30, zinc: 0 },
-            { week: 9, stage: '9 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        }
-      },
-      irrigated: {
-        '3_month': {
-          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '3_5_month': {
-          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
-            { week: 8, stage: '8 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '4_month': {
-          total: { urea: 140, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 55, tsp: 0, mop: 25, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 45, tsp: 0, mop: 25, zinc: 0 },
-            { week: 9, stage: '9 Weeks', urea: 20, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        }
-      }
-    },
-    intermediate_dry_zone: {
-      rainfed: {
-        '3_month': {
-          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '3_5_month': {
-          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
-            { week: 8, stage: '8 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '4_month': {
-          total: { urea: 175, tsp: 35, mop: 50, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 35, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 65, tsp: 0, mop: 25, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 50, tsp: 0, mop: 25, zinc: 0 },
-            { week: 9, stage: '9 Weeks', urea: 30, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        }
-      },
-      irrigated: {
-        '3_month': {
-          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '3_5_month': {
-          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
-            { week: 6, stage: '6 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
-            { week: 8, stage: '8 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        },
-        '4_month': {
-          total: { urea: 225, tsp: 55, mop: 60, zinc: 5 },
-          schedule: [
-            { week: 0, stage: 'Basic Application', urea: 0, tsp: 55, mop: 0, zinc: 5 },
-            { week: 2, stage: '2 Weeks', urea: 50, tsp: 0, mop: 0, zinc: 0 },
-            { week: 4, stage: '4 Weeks', urea: 75, tsp: 0, mop: 25, zinc: 0 },
-            { week: 7, stage: '7 Weeks', urea: 65, tsp: 0, mop: 35, zinc: 0 },
-            { week: 9, stage: '9 Weeks', urea: 35, tsp: 0, mop: 0, zinc: 0 }
-          ]
-        }
-      }
-    }
-  };
-
-  // Select appropriate recommendation
+  // Select appropriate recommendation from helper
   const zoneType = isWetZone ? 'wet_zone' : 'intermediate_dry_zone';
   const conditionType = isIrrigated ? 'irrigated' : 'rainfed';
-  const selectedRecommendation = recommendations[zoneType][conditionType][ageGroup];
 
-  // Generate schedule
+  const plantingKey = plantingMethod === 'transplanting' ? 'transplanting' : 'direct_seeding';
+
+  const selectedRecommendation = (((recommendations || {})[zoneType] || {})[conditionType] || {})[plantingKey]?.[ageGroup];
+
+  if (!selectedRecommendation) {
+    // fallback to previous static behavior if recommendations missing
+    throw new Error('Fertilizer recommendation not found for given parameters');
+  }
+
+  // Determine if zinc sulphate should be applied (only in Maha season)
+  const applyZincSulphate = season === 'maha';
+
+  // Generate schedule entries, apply soilP rule: if soilP > 10, set tsp to 0
   return selectedRecommendation.schedule.map(app => {
     const applicationDate = new Date(cultivationDate);
     applicationDate.setDate(applicationDate.getDate() + (app.week * 7)); // Convert weeks to days
 
+    const computePerField = (kgPerHa) => Math.round(kgPerHa * areaHa * 100) / 100;
+
+    const tspKgPerHa = (soilP !== null && soilP > 10) ? 0 : (app.tsp || 0);
+    
+    // Apply zinc sulphate only in Maha season
+    const zincKgPerHa = applyZincSulphate ? (app.zinc || 0) : 0;
+
     const fertilizers = {
-      urea: Math.round(app.urea * areaHa * 100) / 100, // kg for the area
-      tsp: Math.round(app.tsp * areaHa * 100) / 100,
-      mop: Math.round(app.mop * areaHa * 100) / 100,
-      zincSulphate: Math.round(app.zinc * areaHa * 100) / 100
+      // Legacy simple structure for backward compatibility (per-field amounts)
+      urea: computePerField(app.urea || 0),
+      tsp: computePerField(tspKgPerHa),
+      mop: computePerField(app.mop || 0),
+      zincSulphate: computePerField(zincKgPerHa),
+      // Keep recommended per-ha values for traceability
+      recommendedPerHa: {
+        urea: app.urea || 0,
+        tsp: tspKgPerHa,
+        mop: app.mop || 0,
+        zincSulphate: zincKgPerHa
+      },
+      // Computed per-field amounts based on area
+      perFieldKg: {
+        urea: computePerField(app.urea || 0),
+        tsp: computePerField(tspKgPerHa),
+        mop: computePerField(app.mop || 0),
+        zincSulphate: computePerField(zincKgPerHa)
+      }
     };
 
     return {
@@ -787,8 +758,12 @@ const addLCCFertilizerApplication = async (req, res) => {
       isUsingProvidedDate: !!applicationDate 
     });
 
+    // Convert cultivating area to acres for LCC calculations
+    const areaUnit = plan.areaUnit || 'acres';
+    const cultivatingAreaInAcres = convertToAcres(plan.cultivatingArea, areaUnit);
+
     // Calculate urea amount for the cultivating area (convert from per acre to total amount)
-    const totalUreaAmount = recommendedUrea * plan.cultivatingArea;
+    const totalUreaAmount = recommendedUrea * cultivatingAreaInAcres;
 
     // Create new LCC-based fertilizer application
     const lccApplication = {
@@ -808,7 +783,7 @@ const addLCCFertilizerApplication = async (req, res) => {
         plantAge: plantAge,
         leafColorIndex: leafColorIndex,
         recommendedPerAcre: recommendedUrea,
-        totalArea: plan.cultivatingArea
+        totalArea: cultivatingAreaInAcres
       },
       isLCCBased: true
     };
@@ -1725,4 +1700,6 @@ module.exports = {
   updateExpense,
   deleteExpense,
   getExpenseSummary,
+  // exported for unit tests
+  generateFertilizerSchedule,
 };
