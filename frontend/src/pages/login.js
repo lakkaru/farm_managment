@@ -50,9 +50,9 @@ const LoginPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Login form state - now uses firstName instead of email
+  // Login form state - now uses phone + password
   const [loginData, setLoginData] = useState({
-    firstName: '',
+    phone: '',
     password: '',
   });
 
@@ -165,7 +165,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!loginData.firstName || !loginData.password) {
+    if (!loginData.phone || !loginData.password) {
       setError(t('auth.fillAllFields'));
       return;
     }
@@ -345,18 +345,23 @@ const LoginPage = () => {
             <Box component="form" onSubmit={handleLoginSubmit}>
               <TextField
                 fullWidth
-                label={t('auth.firstName')}
-                name="firstName"
+                label={t('auth.phoneNumber')}
+                name="phone"
                 type="text"
-                value={loginData.firstName}
-                onChange={handleLoginChange}
+                value={loginData.phone}
+                onChange={(e) => {
+                  // Normalize to numeric-only for UI convenience
+                  const nums = e.target.value.replace(/\D/g, '');
+                  setLoginData({ ...loginData, phone: nums });
+                  setError('');
+                }}
                 variant="outlined"
                 margin="normal"
                 required
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon color="action" />
+                      <PhoneIcon color="action" />
                     </InputAdornment>
                   ),
                 }}
