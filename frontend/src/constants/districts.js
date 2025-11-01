@@ -27,6 +27,9 @@ export const SRI_LANKAN_DISTRICTS = [
   { name: 'Kegalle', zone: 'WM2' }
 ];
 
+// Simple array of district names for form dropdowns
+export const DISTRICTS = SRI_LANKAN_DISTRICTS.map(d => d.name);
+
 // Zone descriptions for reference
 export const CULTIVATION_ZONES = {
   WL1: 'Wet Zone Low Country (WL1)',

@@ -17,6 +17,10 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  FormLabel,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -29,6 +33,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { authAPI } from '../services/api';
 import { toast } from 'react-toastify';
 
@@ -43,11 +48,12 @@ const validationSchema = Yup.object({
     .required('Last name is required'),
   email: Yup.string()
     .email('Invalid email address')
-    .required('Email is required'),
+    .nullable(),
   bio: Yup.string()
     .max(500, 'Bio cannot exceed 500 characters'),
   phone: Yup.string()
-    .matches(/^[\+]?[1-9][\d]{0,15}$/, 'Invalid phone number format'),
+    .matches(/^[\+]?[0-9]{9,15}$/, 'Invalid phone number format')
+    .required('Phone number is required'),
   street: Yup.string()
     .max(100, 'Street address cannot exceed 100 characters'),
   city: Yup.string()
@@ -61,9 +67,9 @@ const validationSchema = Yup.object({
   currentPassword: Yup.string()
     .when('email', {
       is: (email, schema) => {
-        // Require current password if email is being changed
+        // Require current password if email is being changed and both old and new email exist
         const originalEmail = schema.parent.originalEmail;
-        return email !== originalEmail;
+        return originalEmail && email && email !== originalEmail;
       },
       then: () => Yup.string().required('Current password is required to change email'),
       otherwise: () => Yup.string(),
@@ -71,8 +77,21 @@ const validationSchema = Yup.object({
 });
 
 const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState([]);
+
+  useEffect(() => {
+    // Initialize selected roles from user data
+    if (user) {
+      if (user.roles && Array.isArray(user.roles)) {
+        setSelectedRoles(user.roles);
+      } else if (user.role) {
+        setSelectedRoles([user.role]);
+      }
+    }
+  }, [user]);
 
   const formik = useFormik({
     initialValues: {
@@ -101,16 +120,18 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
         const updateData = {
           firstName: values.firstName,
           lastName: values.lastName,
-          email: values.email,
+          email: values.email || null,
+          roles: selectedRoles, // Add roles to update data
           profile: {
             firstName: values.firstName,
             lastName: values.lastName,
             bio: values.bio,
             dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null,
             gender: values.gender || null,
+            role: selectedRoles.length > 0 ? selectedRoles[0] : 'farm_owner', // Set primary role
           },
           contact: {
-            phone: values.phone || null,
+            phone: values.phone,
             address: {
               street: values.street || null,
               city: values.city || null,
@@ -121,8 +142,8 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
           },
         };
 
-        // Add current password if email is being changed
-        if (values.email !== values.originalEmail) {
+        // Add current password if email is being changed (both old and new email exist)
+        if (values.originalEmail && values.email && values.email !== values.originalEmail) {
           updateData.currentPassword = values.currentPassword;
         }
 
@@ -145,10 +166,21 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
 
   const handleClose = () => {
     formik.resetForm();
+    setSelectedRoles(user?.roles || (user?.role ? [user.role] : []));
     onClose();
   };
 
-  const requiresPassword = formik.values.email !== formik.values.originalEmail;
+  const handleRoleToggle = (role) => {
+    setSelectedRoles(prev => {
+      if (prev.includes(role)) {
+        return prev.filter(r => r !== role);
+      } else {
+        return [...prev, role];
+      }
+    });
+  };
+
+  const requiresPassword = formik.values.originalEmail && formik.values.email && formik.values.email !== formik.values.originalEmail;
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -163,7 +195,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Edit Profile</Typography>
+            <Typography variant="h6">{t('profile.editDialog.title')}</Typography>
             <IconButton onClick={handleClose} size="small">
               <CloseIcon />
             </IconButton>
@@ -176,7 +208,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
               {/* Personal Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom>
-                  Personal Information
+                  {t('profile.editDialog.personalInformation')}
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
@@ -185,7 +217,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="firstName"
-                  label="First Name"
+                  label={t('profile.editDialog.firstName')}
                   value={formik.values.firstName}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -199,7 +231,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="lastName"
-                  label="Last Name"
+                  label={t('profile.editDialog.lastName')}
                   value={formik.values.lastName}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -213,20 +245,19 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="email"
-                  label="Email Address"
+                  label={t('profile.editDialog.emailAddress')}
                   type="email"
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.email && Boolean(formik.errors.email)}
                   helperText={formik.touched.email && formik.errors.email}
-                  required
                 />
               </Grid>
 
               <Grid item xs={12} sm={6}>
                 <DatePicker
-                  label="Date of Birth"
+                  label={t('profile.dateOfBirth')}
                   value={formik.values.dateOfBirth}
                   onChange={(newValue) => formik.setFieldValue('dateOfBirth', newValue)}
                   maxDate={dayjs().subtract(13, 'year')} // Minimum age 13
@@ -243,18 +274,18 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
 
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel>Gender</InputLabel>
+                  <InputLabel>{t('profile.gender')}</InputLabel>
                   <Select
                     name="gender"
                     value={formik.values.gender}
                     onChange={formik.handleChange}
-                    label="Gender"
+                    label={t('profile.gender')}
                   >
-                    <MenuItem value="">Not specified</MenuItem>
-                    <MenuItem value="male">Male</MenuItem>
-                    <MenuItem value="female">Female</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                    <MenuItem value="prefer_not_to_say">Prefer not to say</MenuItem>
+                    <MenuItem value="">{t('profile.notSpecified')}</MenuItem>
+                    <MenuItem value="male">{t('profile.genderOptions.male')}</MenuItem>
+                    <MenuItem value="female">{t('profile.genderOptions.female')}</MenuItem>
+                    <MenuItem value="other">{t('profile.genderOptions.other')}</MenuItem>
+                    <MenuItem value="prefer_not_to_say">{t('profile.genderOptions.prefer_not_to_say')}</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -263,7 +294,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="bio"
-                  label="Bio"
+                  label={t('profile.editDialog.bio')}
                   multiline
                   rows={3}
                   value={formik.values.bio}
@@ -271,14 +302,80 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                   onBlur={formik.handleBlur}
                   error={formik.touched.bio && Boolean(formik.errors.bio)}
                   helperText={formik.touched.bio && formik.errors.bio}
-                  placeholder="Tell us about yourself..."
+                  placeholder={t('profile.editDialog.bioPlaceholder')}
                 />
+              </Grid>
+
+              {/* Roles Section */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                  {t('profile.editDialog.yourRoles')}
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Grid>
+
+              <Grid item xs={12}>
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel component="legend" sx={{ mb: 1, color: 'text.primary' }}>
+                    {t('profile.editDialog.selectYourRoles')}
+                  </FormLabel>
+                  <FormHelperText sx={{ mt: 0, mb: 1 }}>
+                    {t('profile.editDialog.multipleRolesHelper')}
+                  </FormHelperText>
+                  <FormGroup>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={selectedRoles.includes('farm_owner')}
+                          onChange={() => handleRoleToggle('farm_owner')}
+                          color="primary"
+                        />
+                      }
+                      label={t('auth.farmOwner')}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={selectedRoles.includes('farm_manager')}
+                          onChange={() => handleRoleToggle('farm_manager')}
+                          color="primary"
+                        />
+                      }
+                      label={t('auth.farmManager')}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={selectedRoles.includes('machinery_operator')}
+                          onChange={() => handleRoleToggle('machinery_operator')}
+                          color="primary"
+                        />
+                      }
+                      label={t('auth.machineryOperator')}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={selectedRoles.includes('worker')}
+                          onChange={() => handleRoleToggle('worker')}
+                          color="primary"
+                        />
+                      }
+                      label={t('auth.worker')}
+                    />
+                  </FormGroup>
+                  {selectedRoles.length === 0 && (
+                    <FormHelperText error>
+                      {t('profile.editDialog.selectAtLeastOneRole')}
+                    </FormHelperText>
+                  )}
+                </FormControl>
               </Grid>
 
               {/* Contact Information */}
               <Grid item xs={12}>
                 <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                  Contact Information
+                  {t('profile.editDialog.contactInformation')}
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
               </Grid>
@@ -287,13 +384,14 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="phone"
-                  label="Phone Number"
+                  label={t('profile.editDialog.phoneNumber')}
                   value={formik.values.phone}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.phone && Boolean(formik.errors.phone)}
                   helperText={formik.touched.phone && formik.errors.phone}
-                  placeholder="+1234567890"
+                  placeholder={t('profile.editDialog.phonePlaceholder')}
+                  required
                 />
               </Grid>
 
@@ -301,7 +399,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="street"
-                  label="Street Address"
+                  label={t('profile.editDialog.streetAddress')}
                   value={formik.values.street}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -314,7 +412,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="city"
-                  label="City"
+                  label={t('profile.editDialog.city')}
                   value={formik.values.city}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -327,7 +425,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="state"
-                  label="State/Province"
+                  label={t('profile.editDialog.stateProvince')}
                   value={formik.values.state}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -340,7 +438,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="country"
-                  label="Country"
+                  label={t('profile.editDialog.country')}
                   value={formik.values.country}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -353,7 +451,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <TextField
                   fullWidth
                   name="zipCode"
-                  label="ZIP/Postal Code"
+                  label={t('profile.editDialog.zipPostalCode')}
                   value={formik.values.zipCode}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -367,11 +465,11 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                 <>
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                      Security Verification
+                      {t('profile.editDialog.securityVerification')}
                     </Typography>
                     <Divider sx={{ mb: 2 }} />
                     <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                      Please enter your current password to confirm the email change.
+                      {t('profile.editDialog.currentPasswordRequired')}
                     </Typography>
                   </Grid>
 
@@ -379,7 +477,7 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
                     <TextField
                       fullWidth
                       name="currentPassword"
-                      label="Current Password"
+                      label={t('profile.editDialog.currentPassword')}
                       type={showPassword ? 'text' : 'password'}
                       value={formik.values.currentPassword}
                       onChange={formik.handleChange}
@@ -408,14 +506,14 @@ const ProfileEditDialog = ({ open, onClose, user, onUpdate }) => {
 
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={handleClose} disabled={loading}>
-              Cancel
+              {t('profile.editDialog.cancel')}
             </Button>
             <Button
               type="submit"
               variant="contained"
-              disabled={loading || !formik.isValid}
+              disabled={loading || !formik.isValid || selectedRoles.length === 0}
             >
-              {loading ? 'Updating...' : 'Update Profile'}
+              {loading ? t('profile.editDialog.updating') : t('profile.editDialog.updateProfile')}
             </Button>
           </DialogActions>
         </form>

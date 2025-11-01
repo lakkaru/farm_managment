@@ -18,6 +18,8 @@ const farmSchema = Joi.object({
   
   // Root level district and zone fields (new structure)
   district: Joi.string().required().valid(...validDistricts).trim(),
+  divisionalSecretariat: Joi.string().required().trim(),
+  gramaNiladhariDivision: Joi.string().required().trim(),
   cultivationZone: Joi.string().valid(
     'WL1', 'WL2', 'WL3', 'WM1', 'WM2', 'WM3', 'WU1',
     'DL1', 'DL2', 'DL3', 'IL1', 'IM1'
@@ -35,12 +37,12 @@ const farmSchema = Joi.object({
   
   totalArea: Joi.object({
     value: Joi.number().required().min(0),
-    unit: Joi.string().valid('acres', 'hectares', 'sq meters', 'sq feet').default('acres')
+    unit: Joi.string().valid('hectares', 'acres', 'perches').default('acres')
   }).required(),
   
   cultivatedArea: Joi.object({
     value: Joi.number().min(0),
-    unit: Joi.string().valid('acres', 'hectares', 'sq meters', 'sq feet').default('acres')
+    unit: Joi.string().valid('hectares', 'acres', 'perches').default('acres')
   }),
   
   establishedDate: Joi.date(),

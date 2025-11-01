@@ -50,6 +50,16 @@ const farmSchema = new mongoose.Schema({
       message: 'Invalid district name. Please select a valid Sri Lankan district.'
     }
   },
+  divisionalSecretariat: {
+    type: String,
+    required: [true, 'Divisional Secretariat is required'],
+    trim: true
+  },
+  gramaNiladhariDivision: {
+    type: String,
+    required: [true, 'Grama Niladhari Division is required'],
+    trim: true
+  },
   cultivationZone: {
     type: String,
     required: false,
@@ -71,7 +81,7 @@ const farmSchema = new mongoose.Schema({
     unit: {
       type: String,
       required: [true, 'Area unit is required'],
-      enum: ['acres', 'hectares', 'sq meters', 'sq feet'],
+      enum: ['hectares', 'acres', 'perches'],
       default: 'acres'
     }
   },
@@ -82,7 +92,7 @@ const farmSchema = new mongoose.Schema({
     },
     unit: {
       type: String,
-      enum: ['acres', 'hectares', 'sq meters', 'sq feet'],
+      enum: ['hectares', 'acres', 'perches'],
       default: 'acres'
     }
   },

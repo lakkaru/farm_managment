@@ -62,6 +62,22 @@ const Header = () => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
+  const getUserRoleDisplay = () => {
+    if (!user) return '';
+    
+    // Handle multi-role system
+    if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+      // If user has multiple roles, show the first one with a "+" indicator
+      const primaryRole = user.roles[0];
+      const additionalCount = user.roles.length - 1;
+      const roleText = t(`roles.${primaryRole}`, primaryRole?.replace('_', ' '));
+      return additionalCount > 0 ? `${roleText} +${additionalCount}` : roleText;
+    }
+    
+    // Fallback to single role (backward compatibility)
+    return t(`roles.${user.role}`, user.role?.replace('_', ' '));
+  };
+
   return (
     <AppBar 
       position="static" 
@@ -129,7 +145,7 @@ const Header = () => {
                   {user?.profile?.firstName} {user?.profile?.lastName}
                 </Typography>
                 <Typography variant="caption" color="textSecondary" sx={{ textTransform: 'capitalize' }}>
-                  {t(`roles.${user.role}`, user.role?.replace('_', ' '))}
+                  {getUserRoleDisplay()}
                 </Typography>
               </Box>
             )}

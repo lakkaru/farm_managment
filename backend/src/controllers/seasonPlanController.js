@@ -3,6 +3,7 @@ const PaddyVariety = require('../models/PaddyVariety');
 const { validationResult } = require('express-validator');
 const r2Service = require('../services/r2Service');
 const imageProcessingService = require('../services/imageProcessingService');
+const { isAdmin } = require('../middleware/auth');
 
 // @desc    Get all season plans for user
 // @route   GET /api/season-plans
@@ -54,7 +55,7 @@ const getSeasonPlan = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this season plan',
@@ -126,9 +127,11 @@ const createSeasonPlan = async (req, res) => {
     // Generate growing stages
     planData.growingStages = generateGrowingStages(req.body.cultivationDate, paddyVariety.duration);
     
-    // Determine anchor date: prefer transplantingDate when plantingMethod === 'transplanting'
-    const plantingMethod = req.body.plantingMethod || 'direct_seeding';
-    const anchorDate = (plantingMethod === 'transplanting' && req.body.transplantingDate) ? req.body.transplantingDate : req.body.cultivationDate;
+  // Determine anchor date: always use cultivationDate as the start date.
+  // NOTE: even for transplanting, the cultivation date (sowing/nursery start) is the reference
+  // for duration and fertilizer schedules. Transplanting date remains a separate event.
+  const plantingMethod = req.body.plantingMethod || 'direct_seeding';
+  const anchorDate = req.body.cultivationDate;
 
     // Optional soil test P (ppm) passed in request body as soilP
     const soilP = req.body.soilP !== undefined ? Number(req.body.soilP) : null;
@@ -217,7 +220,7 @@ const updateSeasonPlan = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this season plan',
@@ -246,8 +249,10 @@ const updateSeasonPlan = async (req, res) => {
       const farm = await Farm.findById(updatedPlan.farmId);
       const paddyVariety = await PaddyVariety.findById(updatedPlan.paddyVariety);
 
-      const plantingMethod = safeBody.plantingMethod || updatedPlan.plantingMethod || 'direct_seeding';
-      const anchorDate = (plantingMethod === 'transplanting' && (safeBody.transplantingDate || updatedPlan.transplantingDate)) ? (safeBody.transplantingDate || updatedPlan.transplantingDate) : (safeBody.cultivationDate || updatedPlan.cultivationDate);
+  const plantingMethod = safeBody.plantingMethod || updatedPlan.plantingMethod || 'direct_seeding';
+  // Always use cultivationDate as the schedule anchor. If cultivationDate is being
+  // updated use that, otherwise fall back to the stored cultivationDate.
+  const anchorDate = safeBody.cultivationDate || updatedPlan.cultivationDate;
       const soilP = safeBody.soilP !== undefined ? Number(safeBody.soilP) : (updatedPlan.soilP !== undefined ? Number(updatedPlan.soilP) : null);
 
       // Get area unit and convert to acres
@@ -300,7 +305,7 @@ const deleteSeasonPlan = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this season plan',
@@ -369,10 +374,9 @@ const { recommendations } = require('../utils/fertilizerRecommendations');
  */
 const convertToAcres = (value, unit) => {
   const conversionFactors = {
-    'acres': 1,
     'hectares': 2.47105, // 1 hectare = 2.47105 acres
-    'sq meters': 0.000247105, // 1 sq meter = 0.000247105 acres
-    'sq feet': 0.0000229568 // 1 sq foot = 0.0000229568 acres
+    'acres': 1,
+    'perches': 0.00625 // 1 perch = 0.00625 acres (160 perches = 1 acre)
   };
   
   const factor = conversionFactors[unit] || 1;
@@ -535,7 +539,7 @@ const updateFertilizerImplementation = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this season plan',
@@ -602,7 +606,7 @@ const updateStageImplementation = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this season plan',
@@ -674,7 +678,7 @@ const updateHarvest = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this season plan',
@@ -736,7 +740,7 @@ const addLCCFertilizerApplication = async (req, res) => {
     }
 
     // Check ownership
-    if (plan.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (plan.userId.toString() !== req.user.id && !isAdmin(req.user)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this season plan',

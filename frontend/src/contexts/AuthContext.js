@@ -5,12 +5,29 @@ import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
-const initialState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
+// Helper to get initial state from localStorage if available
+const getInitialState = () => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // If we have a token, start as authenticated (will verify via loadUser)
+      // This prevents redirect loops when navigating between pages
+      return {
+        user: null,
+        token: token,
+        isAuthenticated: true, // Optimistically set to true
+        isLoading: true, // Still loading user data
+        error: null,
+      };
+    }
+  }
+  return {
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    isLoading: false, // Not loading if no token
+    error: null,
+  };
 };
 
 const authReducer = (state, action) => {
@@ -78,27 +95,37 @@ const authReducer = (state, action) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [state, dispatch] = useReducer(authReducer, getInitialState());
+  const [isLoadingUser, setIsLoadingUser] = React.useState(false);
 
-  // Load user on app start
+  // Load user on app start if we have a token
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !isLoadingUser && !state.user) {
       loadUser();
-    } else {
+    } else if (!token && state.isAuthenticated) {
+      // Token was removed but state thinks we're authenticated - clear it
       dispatch({ type: 'AUTH_ERROR', payload: 'No token found' });
     }
-  }, []);
+  }, []); // Run once on mount
 
   // Load user profile
   const loadUser = async () => {
+    if (isLoadingUser) {
+      console.log('Already loading user, skipping...');
+      return;
+    }
+    
     try {
+      setIsLoadingUser(true);
       const response = await authAPI.getProfile();
       dispatch({ type: 'LOAD_USER', payload: response.data.data });
     } catch (error) {
       console.error('AuthContext: Failed to load user:', error);
       dispatch({ type: 'AUTH_ERROR', payload: error.response?.data?.message || 'Failed to load user' });
       localStorage.removeItem('token');
+    } finally {
+      setIsLoadingUser(false);
     }
   };
 
