@@ -12,6 +12,7 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
+  FormHelperText,
 } from '@mui/material';
 import BackButton from '../../components/BackButton';
 import { navigate } from 'gatsby';
@@ -37,6 +38,8 @@ const CreateFarmContent = () => {
     description: '',
     farmType: 'crop',
     district: '',
+    divisionalSecretariat: '',
+    gramaNiladhariDivision: '',
     cultivationZone: '',
     location: {
       address: '',
@@ -56,6 +59,11 @@ const CreateFarmContent = () => {
       unit: 'acres'
     }
   });
+
+  // Location dropdown states
+  const [divisionalSecretariats, setDivisionalSecretariats] = useState([]);
+  const [gnDivisions, setGnDivisions] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -86,9 +94,60 @@ const CreateFarmContent = () => {
             cultivationZone: selectedDistrict.zone
           }));
         }
+        // Load divisional secretariats for the selected district
+        handleDistrictChange(value);
       }
     }
     setError('');
+  };
+
+  // Handle district change - load divisional secretariats
+  const handleDistrictChange = async (district) => {
+    if (!district) {
+      setDivisionalSecretariats([]);
+      setGnDivisions([]);
+      return;
+    }
+
+    try {
+      setLoadingLocations(true);
+      const locationAPI = await import('../../services/locationAPI');
+      const response = await locationAPI.getDivisionalSecretariats(district);
+      setDivisionalSecretariats(response.data || []);
+      setGnDivisions([]);
+    } catch (error) {
+      console.error('Error loading divisional secretariats:', error);
+      toast.error('Failed to load divisional secretariats');
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  // Handle divisional secretariat change - load GN divisions
+  const handleDSChange = async (e) => {
+    const ds = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      divisionalSecretariat: ds,
+      gramaNiladhariDivision: '',
+    }));
+
+    if (!ds || !formData.district) {
+      setGnDivisions([]);
+      return;
+    }
+
+    try {
+      setLoadingLocations(true);
+      const locationAPI = await import('../../services/locationAPI');
+      const response = await locationAPI.getGNDivisions(formData.district, ds);
+      setGnDivisions(response.data || []);
+    } catch (error) {
+      console.error('Error loading GN divisions:', error);
+      toast.error('Failed to load GN divisions');
+    } finally {
+      setLoadingLocations(false);
+    }
   };
 
   // Slugify a label to form translation keys (e.g. "Colombo" -> "colombo")
@@ -104,8 +163,10 @@ const CreateFarmContent = () => {
 
     try {
       // Validate required fields
-      if (!formData.name || !formData.farmType || !formData.district || !formData.totalArea.value) {
-        setError('Please fill in all required fields');
+      if (!formData.name || !formData.farmType || !formData.district || 
+          !formData.divisionalSecretariat || !formData.gramaNiladhariDivision ||
+          !formData.totalArea.value) {
+        setError('Please fill in all required fields including location details');
         return;
       }
 
@@ -115,6 +176,8 @@ const CreateFarmContent = () => {
         description: formData.description,
         farmType: formData.farmType,
         district: formData.district,
+        divisionalSecretariat: formData.divisionalSecretariat,
+        gramaNiladhariDivision: formData.gramaNiladhariDivision,
         cultivationZone: formData.cultivationZone,
         location: {
           address: formData.location.address || formData.district, // Use district as address if address is empty
@@ -179,6 +242,19 @@ const CreateFarmContent = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Determine whether the form is valid for submission
+  const isFormValid = () => {
+    // Required: name, farmType, district, divisionalSecretariat, gramaNiladhariDivision, totalArea.value (>0)
+    if (!formData.name || !String(formData.name).trim()) return false;
+    if (!formData.farmType) return false;
+    if (!formData.district) return false;
+    if (!formData.divisionalSecretariat) return false;
+    if (!formData.gramaNiladhariDivision) return false;
+    const totalAreaVal = Number(formData.totalArea?.value);
+    if (!totalAreaVal || Number.isNaN(totalAreaVal) || totalAreaVal <= 0) return false;
+    return true;
   };
 
   return (
@@ -248,6 +324,7 @@ const CreateFarmContent = () => {
                 onChange={handleChange}
                 multiline
                 rows={3}
+                helperText={t('farms.descriptionHelper')}
               />
             </Grid>
 
@@ -256,16 +333,6 @@ const CreateFarmContent = () => {
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 {t('farms.locationInformation')}
               </Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label={t('farms.address')}
-                name="location.address"
-                value={formData.location.address}
-                onChange={handleChange}
-              />
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -302,6 +369,78 @@ const CreateFarmContent = () => {
                 InputProps={{ readOnly: true }}
                 disabled
                 helperText={formData.cultivationZone ? '' : t('farms.selectDistrictFirst')}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required disabled={!formData.district}>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>
+                  {t('auth.divisionalSecretariat')} 
+                </InputLabel>
+                <Select
+                  name="divisionalSecretariat"
+                  value={formData.divisionalSecretariat}
+                  onChange={handleDSChange}
+                  label={`${t('auth.divisionalSecretariat')} `}
+                  disabled={loadingLocations || !formData.district}
+                >
+                  <MenuItem value="">
+                    <em>{t('auth.selectDivisionalSecretariat')}</em>
+                  </MenuItem>
+                  {divisionalSecretariats.map((ds) => (
+                    <MenuItem key={ds} value={ds}>
+                      {t(
+                        `divisionalSecretariats.${slugify(formData.district)}.${slugify(ds)}`,
+                        { defaultValue: ds }
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {!formData.district ? t('farms.selectDistrictFirst') : ''}
+                </FormHelperText>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth required disabled={!formData.divisionalSecretariat}>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>
+                  {t('auth.gramaNiladhariDivision')} 
+                </InputLabel>
+                <Select
+                  name="gramaNiladhariDivision"
+                  value={formData.gramaNiladhariDivision}
+                  onChange={handleChange}
+                  label={`${t('auth.gramaNiladhariDivision')} `}
+                  disabled={loadingLocations || !formData.divisionalSecretariat}
+                >
+                  <MenuItem value="">
+                    <em>{t('auth.selectGNDivision')}</em>
+                  </MenuItem>
+                  {gnDivisions.map((gn) => (
+                    <MenuItem key={gn} value={gn}>
+                      {t(
+                        `gnDivisions.${slugify(formData.district)}.${slugify(formData.divisionalSecretariat)}.${slugify(gn)}`,
+                        { defaultValue: gn }
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {!formData.divisionalSecretariat ? t('farms.selectDivisionalSecretariatFirst') : ''}
+                </FormHelperText>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label={t('farms.address')}
+                name="location.address"
+                value={formData.location.address}
+                onChange={handleChange}
+                placeholder={t('farms.addressPlaceholder')}
+                helperText={t('farms.addressHelper')}
               />
             </Grid>
 
@@ -371,10 +510,9 @@ const CreateFarmContent = () => {
                   onChange={handleChange}
                   label={t('farms.unit')}
                 >
-                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
                   <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
-                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
-                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="perches">{t('farms.units.perches')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -400,10 +538,9 @@ const CreateFarmContent = () => {
                   onChange={handleChange}
                   label={t('farms.unit')}
                 >
-                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
                   <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
-                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
-                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="perches">{t('farms.units.perches')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -424,7 +561,7 @@ const CreateFarmContent = () => {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={loading}
+                  disabled={loading || !isFormValid()}
                   startIcon={loading && <CircularProgress size={20} />}
                   sx={{ minWidth: { sm: 120 } }}
                   fullWidth={{ xs: true, sm: false }}

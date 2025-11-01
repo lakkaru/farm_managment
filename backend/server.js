@@ -17,6 +17,8 @@ const paddyVarietyRoutes = require('./src/routes/paddyVarietyRoutes');
 const seasonPlanRoutes = require('./src/routes/seasonPlanRoutes');
 const diseaseDetectionRoutes = require('./src/routes/diseaseDetectionRoutes');
 const adminDiseaseRoutes = require('./src/routes/adminDiseaseRoutes');
+const machineryRoutes = require('./src/routes/machineryRoutes');
+const locationRoutes = require('./src/routes/locationRoutes');
 
 // Import middleware
 const { errorHandler } = require('./src/middleware/errorHandler');
@@ -110,6 +112,8 @@ app.use('/api/paddy-varieties', paddyVarietyRoutes);
 app.use('/api/season-plans', seasonPlanRoutes);
 app.use('/api/disease-detection', diseaseDetectionRoutes);
 app.use('/api/admin/diseases', adminDiseaseRoutes);
+app.use('/api/machinery', machineryRoutes);
+app.use('/api/locations', locationRoutes);
 
 // Error handling middleware
 app.use(notFound);

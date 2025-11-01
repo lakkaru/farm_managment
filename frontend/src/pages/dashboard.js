@@ -22,6 +22,9 @@ import {
   TrendingUp as TrendingUpIcon,
   Add as AddIcon,
   BugReport as DiseaseIcon,
+  Build as MachineryIcon,
+  CheckCircle as CompletedIcon,
+  Pending as PendingIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +33,7 @@ import PrivateRoute from '../components/PrivateRoute';
 import PhaseNotification from '../components/PhaseNotification';
 import AppProviders from '../providers/AppProviders';
 import { useAuth } from '../contexts/AuthContext';
-import { farmAPI, seasonPlanAPI, paddyVarietyAPI } from '../services/api';
+import { farmAPI, seasonPlanAPI, paddyVarietyAPI, machineryAPI } from '../services/api';
 
 const DashboardContent = () => {
   const theme = useTheme();
@@ -46,21 +49,53 @@ const DashboardContent = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
+  // Helper function to check if user has a specific role
+  const hasRole = (role) => {
+    if (!user) return false;
+    // Check in roles array (new multi-role system)
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.includes(role);
+    }
+    // Fallback to single role (backward compatibility)
+    return user.role === role;
+  };
+
+  // Check if user has farm-related roles
+  const isFarmer = hasRole('farm_owner') || hasRole('farm_manager') || hasRole('worker');
+  // Check if user has machinery role
+  const isMachineryOperator = hasRole('machinery_operator');
+
   const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Fetch paddy-focused data from APIs
-      const [farmsRes, seasonPlansRes, paddyVarietiesRes] = await Promise.allSettled([
+      // Build API calls based on user roles
+      const apiCalls = [
         farmAPI.getFarms(),
         seasonPlanAPI.getSeasonPlans(),
         paddyVarietyAPI.getPaddyVarieties(),
-      ]);
+      ];
+
+      // Only fetch machinery data if user is a machinery operator
+      if (isMachineryOperator) {
+        apiCalls.push(machineryAPI.getMyMachinery());
+        apiCalls.push(machineryAPI.getMyRequests ? machineryAPI.getMyRequests() : Promise.resolve({ data: { data: [] } }));
+      }
+
+      const results = await Promise.allSettled(apiCalls);
 
       // Extract successful results
-      const farms = farmsRes.status === 'fulfilled' ? farmsRes.value.data.data || [] : [];
-      const seasonPlans = seasonPlansRes.status === 'fulfilled' ? seasonPlansRes.value.data.data || [] : [];
-      const paddyVarieties = paddyVarietiesRes.status === 'fulfilled' ? paddyVarietiesRes.value.data.data || [] : [];
+      const farms = results[0]?.status === 'fulfilled' ? results[0].value.data.data || [] : [];
+      const seasonPlans = results[1]?.status === 'fulfilled' ? results[1].value.data.data || [] : [];
+      const paddyVarieties = results[2]?.status === 'fulfilled' ? results[2].value.data.data || [] : [];
+      
+      // Extract machinery data only if user is a machinery operator
+      let machinery = [];
+      let requests = [];
+      if (isMachineryOperator) {
+        machinery = results[3]?.status === 'fulfilled' ? results[3].value.data.data || [] : [];
+        requests = results[4]?.status === 'fulfilled' ? results[4].value.data.data || [] : [];
+      }
 
       // Count active seasons (current or future seasons)
       const now = new Date();
@@ -68,16 +103,28 @@ const DashboardContent = () => {
         new Date(plan.expectedHarvest?.date || plan.cultivationDate) >= now
       );
 
+      // Count request statuses
+      const pendingRequests = requests.filter(r => r.status === 'Pending').length;
+      const completedServices = requests.filter(r => r.status === 'Completed').length;
+      const activeRequests = requests.filter(r => ['Accepted', 'In Progress'].includes(r.status)).length;
+
+      // Set combined stats
       setStats({
         farms: farms.length,
         seasonPlans: seasonPlans.length,
         paddyVarieties: paddyVarieties.length,
         activeSeasons: activeSeasons.length,
+        machinery: machinery.length,
+        totalRequests: requests.length,
+        pendingRequests,
+        completedServices,
+        activeRequests,
       });
 
-      // Generate recent activity focused on paddy cultivation
+      // Generate recent activity combining both farms and machinery
       const activities = [];
       
+      // Farm activities
       if (farms.length > 0) {
         activities.push({
           icon: <AgricultureIcon color="success" />,
@@ -94,23 +141,24 @@ const DashboardContent = () => {
         });
       }
 
-      if (seasonPlans.length > 0) {
+      // Machinery activities
+      if (machinery.length > 0) {
         activities.push({
-          icon: <PlanSeasonIcon color="info" />,
-          text: t('dashboard.seasonPlansActivity', { count: seasonPlans.length, plural: seasonPlans.length !== 1 ? 's' : '' }),
-          time: 'Historical',
+          icon: <MachineryIcon color="primary" />,
+          text: `${machinery.length} machinery ${machinery.length !== 1 ? 'items' : 'item'} listed`,
+          time: 'Available',
         });
       }
 
-      if (paddyVarieties.length > 0) {
+      if (pendingRequests > 0) {
         activities.push({
-          icon: <TrendingUpIcon color="secondary" />,
-          text: t('dashboard.varietiesActivity', { count: paddyVarieties.length, plural: paddyVarieties.length !== 1 ? 's' : '' }),
-          time: 'Database',
+          icon: <PendingIcon color="warning" />,
+          text: `${pendingRequests} pending service request${pendingRequests !== 1 ? 's' : ''}`,
+          time: 'Needs attention',
         });
       }
 
-      // Add welcome message if no data
+      // Add welcome message if no data at all
       if (activities.length === 0) {
         activities.push(
           {
@@ -120,13 +168,14 @@ const DashboardContent = () => {
           },
           {
             icon: <AddIcon color="action" />,
-            text: t('dashboard.createFirstFarmMessage'),
-            time: t('dashboard.nextStepLabel', 'Next step'),
+            text: 'Start by creating a farm or listing your machinery',
+            time: 'Get Started',
           }
         );
       }
 
       setRecentActivity(activities);
+      
       setError(null);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -144,7 +193,7 @@ const DashboardContent = () => {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, isMachineryOperator]);
 
   useEffect(() => {
     loadDashboardData();
@@ -172,45 +221,109 @@ const DashboardContent = () => {
       case 'paddyVarieties':
         navigate('/paddy/varieties');
         break;
+      case 'machinery':
+        navigate('/machinery/my-machinery');
+        break;
+      case 'pendingRequests':
+      case 'activeRequests':
+      case 'completedServices':
+        navigate('/machinery/my-requests');
+        break;
       default:
         break;
     }
   };
 
-  const statCards = [
-    {
-      title: t('dashboard.totalFarms'),
-      value: stats.farms,
-      color: theme.palette.success.main,
-      icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
-      type: 'farms',
-      // subtitle: stats.farms === 0 ? t('dashboard.createYourFirstFarm') : `${stats.farms} ${t('dashboard.farmsRegistered')}`,
-    },
-    {
-      title: t('dashboard.activeSeasonPlans'),
-      value: stats.seasonPlans,
-      color: theme.palette.primary.main,
-      icon: <PlanSeasonIcon sx={{ fontSize: 40 }} />,
-      type: 'seasonPlans',
-      // subtitle: stats.seasonPlans === 0 ? t('dashboard.planYourFirstSeason') : `${stats.seasonPlans} ${t('dashboard.plansCreated')}`,
-    },
-    {
-      title: t('dashboard.activeSeasons'),
-      value: stats.activeSeasons,
-      color: theme.palette.warning.main,
-      icon: <PaddyIcon sx={{ fontSize: 40 }} />,
-      type: 'activeSeasons',
-      // subtitle: stats.activeSeasons === 0 ? t('dashboard.noActiveSeasons') : `${stats.activeSeasons} ${t('dashboard.seasonsOngoing')}`,
-    },
-    {
-      title: t('dashboard.paddyVarieties'),
-      value: stats.paddyVarieties,
-      color: theme.palette.secondary.main,
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-      type: 'paddyVarieties',
-      // subtitle: stats.paddyVarieties === 0 ? t('dashboard.noVarietiesAvailable') : `${stats.paddyVarieties} ${t('dashboard.varietiesAvailable')}`,
-    }
-  ];
+  // Build stat cards dynamically based on user's selected roles
+  const statCards = [];
+  
+  // Show farm cards if user is a farmer (has farm-related role)
+  if (isFarmer) {
+    statCards.push(
+      {
+        title: t('dashboard.totalFarms'),
+        value: stats.farms,
+        color: theme.palette.success.main,
+        icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
+        type: 'farms',
+      },
+      {
+        title: t('dashboard.activeSeasons'),
+        value: stats.activeSeasons,
+        color: theme.palette.warning.main,
+        icon: <PaddyIcon sx={{ fontSize: 40 }} />,
+        type: 'activeSeasons',
+      },
+      {
+        title: t('dashboard.activeSeasonPlans'),
+        value: stats.seasonPlans,
+        color: theme.palette.primary.main,
+        icon: <PlanSeasonIcon sx={{ fontSize: 40 }} />,
+        type: 'seasonPlans',
+      },
+      {
+        title: t('dashboard.paddyVarieties'),
+        value: stats.paddyVarieties,
+        color: theme.palette.secondary.main,
+        icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
+        type: 'paddyVarieties',
+      }
+    );
+  }
+  
+  // Show machinery cards if user is a machinery operator (has machinery role)
+  if (isMachineryOperator) {
+    statCards.push(
+      {
+        title: 'My Machinery',
+        value: stats.machinery || 0,
+        color: theme.palette.primary.main,
+        icon: <MachineryIcon sx={{ fontSize: 40 }} />,
+        type: 'machinery',
+      },
+      {
+        title: 'Pending Requests',
+        value: stats.pendingRequests || 0,
+        color: theme.palette.warning.main,
+        icon: <PendingIcon sx={{ fontSize: 40 }} />,
+        type: 'pendingRequests',
+      },
+      {
+        title: 'Active Services',
+        value: stats.activeRequests || 0,
+        color: theme.palette.info.main,
+        icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
+        type: 'activeRequests',
+      },
+      {
+        title: 'Completed Services',
+        value: stats.completedServices || 0,
+        color: theme.palette.success.main,
+        icon: <CompletedIcon sx={{ fontSize: 40 }} />,
+        type: 'completedServices',
+      }
+    );
+  }
+  
+  // If user has no roles selected, show welcome message cards
+  if (statCards.length === 0) {
+    statCards.push(
+      {
+        title: t('dashboard.totalFarms'),
+        value: 0,
+        color: theme.palette.success.main,
+        icon: <AgricultureIcon sx={{ fontSize: 40 }} />,
+        type: 'farms',
+      },
+      {
+        title: 'My Machinery',
+        value: 0,
+        color: theme.palette.primary.main,
+        icon: <MachineryIcon sx={{ fontSize: 40 }} />,
+        type: 'machinery',
+      }
+    );
+  }
 
   if (loading) {
     return (
@@ -336,48 +449,56 @@ const DashboardContent = () => {
               {t('dashboard.quickActions')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button
-                variant="contained"
-                startIcon={<AgricultureIcon />}
-                onClick={handleCreateFarm}
-                fullWidth
-              >
-                {t('dashboard.createFarm')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<TrendingUpIcon />}
-                onClick={() => navigate('/paddy/season-plans')}
-                fullWidth
-              >
-                {t('dashboard.viewSeasonPlans')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<PlanSeasonIcon />}
-                onClick={handlePlanSeason}
-                fullWidth
-              >
-                {t('dashboard.planPaddySeason')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<PaddyIcon />}
-                onClick={() => navigate('/paddy/varieties')}
-                fullWidth
-              >
-                {t('dashboard.viewPaddyVarieties')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<DiseaseIcon />}
-                onClick={() => navigate('/paddy/disease-detection')}
-                fullWidth
-                color="warning"
-              >
-                {t('dashboard.plantDiseaseDetection')}
-              </Button>
+              {/* Farm Management Actions - Show if user is a farmer */}
+              {isFarmer && (
+                <>
+                  <Button
+                    variant="contained"
+                    startIcon={<AgricultureIcon />}
+                    onClick={handleCreateFarm}
+                    fullWidth
+                  >
+                    {t('dashboard.createFarm')}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<TrendingUpIcon />}
+                    onClick={handlePlanSeason}
+                    fullWidth
+                  >
+                    {t('dashboard.planPaddySeason')}
+                  </Button>
+                </>
+              )}
               
+              {/* Machinery Actions - Show if user is a machinery operator */}
+              {isMachineryOperator && (
+                <>
+                  <Button
+                    variant={isFarmer ? "outlined" : "contained"}
+                    startIcon={<MachineryIcon />}
+                    onClick={() => navigate('/machinery/my-machinery')}
+                    fullWidth
+                  >
+                    Manage Machinery
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<PendingIcon />}
+                    onClick={() => navigate('/machinery/my-requests')}
+                    fullWidth
+                  >
+                    View Service Requests
+                  </Button>
+                </>
+              )}
+              
+              {/* If user has no roles, show getting started message */}
+              {!isFarmer && !isMachineryOperator && (
+                <Alert severity="info">
+                  Welcome! Start by creating a farm or listing your machinery.
+                </Alert>
+              )}
             </Box>
           </Paper>
         </Grid>

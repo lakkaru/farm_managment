@@ -98,30 +98,33 @@ const ProfileContent = () => {
   };
 
   const formatDate = (date) => {
-    if (!date) return 'Not specified';
+    if (!date) return t('profile.notSpecified');
     return dayjs(date).format('MMMM D, YYYY');
   };
 
   const getRoleDisplay = (role) => {
-    const roleLabels = {
-      admin: 'Administrator',
-      expert: 'Agricultural Expert',
-      farm_owner: 'Farm Owner',
-      farm_manager: 'Farm Manager',
-      worker: 'Farm Worker',
-      viewer: 'Viewer',
-    };
-    return roleLabels[role] || role;
+    return t(`roles.${role}`, role);
+  };
+
+  const getUserRolesDisplay = () => {
+    if (!user) return t('profile.notSpecified');
+    
+    // Handle multi-role system
+    if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+      return user.roles.map(role => getRoleDisplay(role)).join(', ');
+    }
+    
+    // Fallback to single role
+    if (user.role) {
+      return getRoleDisplay(user.role);
+    }
+    
+    return t('profile.notSpecified');
   };
 
   const getGenderDisplay = (gender) => {
-    const genderLabels = {
-      male: 'Male',
-      female: 'Female',
-      other: 'Other',
-      prefer_not_to_say: 'Prefer not to say',
-    };
-    return genderLabels[gender] || 'Not specified';
+    if (!gender) return t('profile.notSpecified');
+    return t(`profile.genderOptions.${gender}`, gender);
   };
 
   if (!user) {
@@ -198,21 +201,33 @@ const ProfileContent = () => {
                 {user.profile.firstName} {user.profile.lastName}
               </Typography>
               
-              <Chip
-                label={getRoleDisplay(user.role)}
-                color="primary"
-                size="small"
-                sx={{ mb: 2 }}
-              />
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap', mb: 2 }}>
+                {user.roles && Array.isArray(user.roles) && user.roles.length > 0 ? (
+                  user.roles.map((role, index) => (
+                    <Chip
+                      key={index}
+                      label={getRoleDisplay(role)}
+                      color="primary"
+                      size="small"
+                    />
+                  ))
+                ) : (
+                  <Chip
+                    label={getRoleDisplay(user.role)}
+                    color="primary"
+                    size="small"
+                  />
+                )}
+              </Box>
 
               <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Member since {formatDate(user.createdAt)}
+                {t('profile.memberSince')} {formatDate(user.createdAt)}
               </Typography>
 
               {user.isEmailVerified ? (
-                <Chip label="Email Verified" color="success" size="small" />
+                <Chip label={t('profile.emailVerified')} color="success" size="small" />
               ) : (
-                <Chip label="Email Not Verified" color="warning" size="small" />
+                <Chip label={t('profile.emailNotVerified')} color="warning" size="small" />
               )}
             </CardContent>
           </Card>
@@ -228,7 +243,7 @@ const ProfileContent = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
                       <PersonIcon sx={{ mr: 1 }} />
-                      Contact Information
+                      {t('profile.contactInformation')}
                     </Typography>
                     <Button
                       variant="outlined"
@@ -236,7 +251,7 @@ const ProfileContent = () => {
                       startIcon={<EditIcon />}
                       onClick={() => setEditDialogOpen(true)}
                     >
-                      Edit Profile
+                      {t('profile.editProfile')}
                     </Button>
                   </Box>
 
@@ -246,7 +261,7 @@ const ProfileContent = () => {
                         <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
                         <Box>
                           <Typography variant="body2" color="textSecondary">
-                            Email
+                            {t('profile.email')}
                           </Typography>
                           <Typography variant="body1">
                             {user.email}
@@ -260,10 +275,10 @@ const ProfileContent = () => {
                         <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
                         <Box>
                           <Typography variant="body2" color="textSecondary">
-                            Phone
+                            {t('profile.phone')}
                           </Typography>
                           <Typography variant="body1">
-                            {user.contact?.phone || 'Not provided'}
+                            {user.contact?.phone || t('profile.notProvided')}
                           </Typography>
                         </Box>
                       </Box>
@@ -274,7 +289,7 @@ const ProfileContent = () => {
                         <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
                         <Box>
                           <Typography variant="body2" color="textSecondary">
-                            Date of Birth
+                            {t('profile.dateOfBirth')}
                           </Typography>
                           <Typography variant="body1">
                             {formatDate(user.profile?.dateOfBirth)}
@@ -288,7 +303,7 @@ const ProfileContent = () => {
                         <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
                         <Box>
                           <Typography variant="body2" color="textSecondary">
-                            Gender
+                            {t('profile.gender')}
                           </Typography>
                           <Typography variant="body1">
                             {getGenderDisplay(user.profile?.gender)}
@@ -303,7 +318,7 @@ const ProfileContent = () => {
                           <LocationIcon sx={{ mr: 1, color: 'text.secondary', mt: 0.5 }} />
                           <Box>
                             <Typography variant="body2" color="textSecondary">
-                              Address
+                              {t('profile.address')}
                             </Typography>
                             <Typography variant="body1">
                               {[
@@ -312,7 +327,7 @@ const ProfileContent = () => {
                                 user.contact.address.state,
                                 user.contact.address.country,
                                 user.contact.address.zipCode,
-                              ].filter(Boolean).join(', ') || 'Not provided'}
+                              ].filter(Boolean).join(', ') || t('profile.notProvided')}
                             </Typography>
                           </Box>
                         </Box>
@@ -329,7 +344,7 @@ const ProfileContent = () => {
                 <CardContent>
                   <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <SecurityIcon sx={{ mr: 1 }} />
-                    Security
+                    {t('profile.security')}
                   </Typography>
                   
                   <Button
@@ -339,12 +354,12 @@ const ProfileContent = () => {
                     onClick={() => setPasswordDialogOpen(true)}
                     sx={{ mb: 1 }}
                   >
-                    Change Password
+                    {t('profile.changePassword')}
                   </Button>
 
                   {user.lastLogin && (
                     <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                      Last login: {formatDate(user.lastLogin)}
+                      {t('profile.lastLogin')}: {formatDate(user.lastLogin)}
                     </Typography>
                   )}
                 </CardContent>
@@ -366,7 +381,7 @@ const ProfileContent = () => {
                     startIcon={<SettingsIcon />}
                     onClick={() => setNotificationSettingsOpen(true)}
                   >
-                    Manage Notifications
+                    {t('profile.manageNotifications')}
                   </Button>
 
                   {user.preferences?.notifications && (
@@ -392,15 +407,12 @@ const ProfileContent = () => {
                 <CardContent>
                   <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <LanguageIcon sx={{ mr: 1 }} />
-                    {t('common.language')} Preferences
+                    {t('profile.languagePreferences')}
                   </Typography>
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="textSecondary" gutterBottom>
-                      Choose your preferred language for the interface
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      අතුරු මුහුණත සඳහා ඔබේ කැමති භාෂාව තෝරන්න
+                      {t('profile.choosePreferredLanguage')}
                     </Typography>
                   </Box>
                   
@@ -408,9 +420,9 @@ const ProfileContent = () => {
                   
                   <Box sx={{ mt: 2, p: 2, backgroundColor: 'info.light', borderRadius: 1 }}>
                     <Typography variant="caption" sx={{ color: 'info.contrastText' }}>
-                      💡 Current: {i18n.language === 'si' ? 'සිංහල (Sinhala)' : 'English'}
+                      💡 {t('profile.currentLanguage')}: {i18n.language === 'si' ? 'සිංහල (Sinhala)' : 'English'}
                       <br />
-                      Changes apply immediately
+                      {t('profile.changesApplyImmediately')}
                     </Typography>
                   </Box>
                 </CardContent>

@@ -35,6 +35,9 @@ import {
   EventNote as SeasonPlanIcon,
   Business as FarmIcon,
   BugReport as DiseaseIcon,
+  Build as MachineryIcon,
+  Search as SearchIcon,
+  ListAlt as RequestsIcon,
 } from '@mui/icons-material';
 import { navigate } from 'gatsby';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +71,7 @@ const Sidebar = () => {
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [paddyMenuOpen, setPaddyMenuOpen] = useState(false);
   const [farmsMenuOpen, setFarmsMenuOpen] = useState(false);
+  const [machineryMenuOpen, setMachineryMenuOpen] = useState(false);
 
   // Load farms list when user is available
   useEffect(() => {
@@ -93,8 +97,18 @@ const Sidebar = () => {
     }
   }, []);
 
+  // Helper to check if user has a specific role
+  const hasRole = (role) => {
+    if (!user) return false;
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.includes(role);
+    }
+    return user.role === role;
+  };
+
   const navigationItems = [
     { id: 'dashboard', path: '/dashboard', icon: HomeIcon, label: t('navigation.dashboard') },
+    // Farms menu - Available to all users
     { 
       id: 'farms',
       path: '/farms', 
@@ -104,12 +118,56 @@ const Sidebar = () => {
       submenu: [
         { path: '/farms', icon: ViewIcon, label: t('navigation.viewAllFarms') },
         { path: '/farms/create', icon: AddIcon, label: t('navigation.createFarm') },
-        // Paddy links flattened into Farms submenu
-  { path: '/paddy/varieties', icon: PaddyIcon, label: t('navigation.paddyVarieties') },
-  { path: '/paddy/season-plans', icon: SeasonPlanIcon, label: t('navigation.seasonPlans') },
+        // Paddy links - Only visible to machinery operators
+        ...(hasRole('machinery_operator') ? [
+          { path: '/paddy/varieties', icon: PaddyIcon, label: t('navigation.paddyVarieties') },
+          { path: '/paddy/season-plans', icon: SeasonPlanIcon, label: t('navigation.seasonPlans') },
+        ] : []),
       ]
     },
-    // Paddy-specific links are grouped under Farms for paddy-focused workflow
+    // Machinery Section - Dynamic submenu based on user roles
+    { 
+      id: 'machinery',
+      path: '/machinery', 
+      icon: MachineryIcon, 
+      label: t('navigation.machinery'),
+      hasSubmenu: true,
+      submenu: (() => {
+        const isFarmer = hasRole('farm_owner') || hasRole('farm_manager') || hasRole('worker');
+        const isMachineryOperator = hasRole('machinery_operator');
+
+        // If user has both roles, show all menu items
+        if (isFarmer && isMachineryOperator) {
+          return [
+            { path: '/machinery/search', icon: SearchIcon, label: t('navigation.searchMachinery') },
+            { path: '/machinery/my-machinery', icon: MachineryIcon, label: t('navigation.myMachinery') },
+            { path: '/machinery/my-requests', icon: RequestsIcon, label: t('navigation.myRequests') },
+          ];
+        }
+        // Pure farmer - only search and their requests
+        else if (isFarmer && !isMachineryOperator) {
+          return [
+            { path: '/machinery/search', icon: SearchIcon, label: t('navigation.searchMachinery') },
+            { path: '/machinery/my-requests', icon: RequestsIcon, label: t('navigation.myRequests') },
+          ];
+        }
+        // Pure machinery operator - their machinery and service requests
+        else if (isMachineryOperator && !isFarmer) {
+          return [
+            { path: '/machinery/my-machinery', icon: MachineryIcon, label: t('navigation.myMachinery') },
+            { path: '/machinery/my-requests', icon: RequestsIcon, label: t('navigation.serviceRequests') },
+          ];
+        }
+        // Default - show all
+        else {
+          return [
+            { path: '/machinery/search', icon: SearchIcon, label: t('navigation.searchMachinery') },
+            { path: '/machinery/my-machinery', icon: MachineryIcon, label: t('navigation.myMachinery') },
+            { path: '/machinery/my-requests', icon: RequestsIcon, label: t('navigation.myRequests') },
+          ];
+        }
+      })()
+    },
     // Admin Section - Only visible to admin and expert users
     ...(user && ['admin', 'expert'].includes(user.role) ? [
       { 
@@ -146,6 +204,8 @@ const Sidebar = () => {
       setFarmsMenuOpen(!farmsMenuOpen);
     } else if (menuType === 'admin') {
       setAdminMenuOpen(!adminMenuOpen);
+    } else if (menuType === 'machinery') {
+      setMachineryMenuOpen(!machineryMenuOpen);
     }
   };
 
@@ -153,6 +213,7 @@ const Sidebar = () => {
     if (item.id === 'paddy') return paddyMenuOpen;
     if (item.id === 'farms') return farmsMenuOpen;
     if (item.id === 'admin') return adminMenuOpen;
+    if (item.id === 'machinery') return machineryMenuOpen;
     return false;
   };
 
@@ -160,6 +221,7 @@ const Sidebar = () => {
     if (item.id === 'paddy') return 'paddy';
     if (item.id === 'farms') return 'farms';
     if (item.id === 'admin') return 'admin';
+    if (item.id === 'machinery') return 'machinery';
     return item.id || null;
   };
 
@@ -195,6 +257,26 @@ const Sidebar = () => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
+  const getUserRoleDisplay = () => {
+    if (!user) return '';
+    
+    // Handle multi-role system
+    if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+      // If user has multiple roles, show all of them
+      if (user.roles.length === 1) {
+        return t(`roles.${user.roles[0]}`, user.roles[0]?.replace('_', ' '));
+      } else {
+        // Show multiple roles on separate lines
+        return user.roles.map(role => 
+          t(`roles.${role}`, role?.replace('_', ' '))
+        ).join(', ');
+      }
+    }
+    
+    // Fallback to single role (backward compatibility)
+    return t(`roles.${user.role}`, user.role?.replace('_', ' '));
+  };
+
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -209,7 +291,7 @@ const Sidebar = () => {
         )}
       </Box>
 
-      {/* Farm Selector */}
+      {/* Farm Selector - Available to all users */}
       <Box sx={{ px: 2, pb: 2 }}>
         <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>
           {t('farms.farmsCount')} ({farms.length})
@@ -409,8 +491,11 @@ const Sidebar = () => {
               <Typography variant="body2" fontWeight="600">
                 {user.profile?.firstName} {user.profile?.lastName}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
-                {t(`roles.${user.role}`, user.role?.replace('_', ' '))}
+              <Typography variant="caption" color="textSecondary" sx={{ 
+                display: 'block',
+                lineHeight: 1.3,
+              }}>
+                {getUserRoleDisplay()}
               </Typography>
             </Box>
           </Box>

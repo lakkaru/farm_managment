@@ -18,6 +18,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  FormLabel,
+  FormHelperText,
 } from '@mui/material';
 import {
   Visibility,
@@ -62,17 +67,22 @@ const LoginPage = () => {
       phone: '',
       role: 'farm_owner',
     },
+    roles: [], // Multiple roles support
   });
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      const redirectPath = localStorage.getItem('redirectAfterLogin');
-      if (redirectPath) {
-        localStorage.removeItem('redirectAfterLogin');
-        navigate(redirectPath);
-      } else {
-        navigate('/dashboard');
+    if (isAuthenticated && typeof window !== 'undefined') {
+      // Only redirect if we're actually on the login page
+      const currentPath = window.location.pathname;
+      if (currentPath === '/login' || currentPath === '/login/') {
+        const redirectPath = localStorage.getItem('redirectAfterLogin');
+        if (redirectPath) {
+          localStorage.removeItem('redirectAfterLogin');
+          navigate(redirectPath);
+        } else {
+          navigate('/dashboard');
+        }
       }
     }
   }, [isAuthenticated]);
@@ -128,6 +138,26 @@ const LoginPage = () => {
         [name]: value,
       });
     }
+    setError('');
+  };
+
+  const handleRoleToggle = (roleValue) => {
+    const currentRoles = registerData.roles || [];
+    const newRoles = currentRoles.includes(roleValue)
+      ? currentRoles.filter(r => r !== roleValue)
+      : [...currentRoles, roleValue];
+    
+    // Set primary role to the first selected role
+    const primaryRole = newRoles.length > 0 ? newRoles[0] : 'farm_owner';
+    
+    setRegisterData({
+      ...registerData,
+      roles: newRoles,
+      profile: {
+        ...registerData.profile,
+        role: primaryRole,
+      },
+    });
     setError('');
   };
 
@@ -187,6 +217,12 @@ const LoginPage = () => {
       return;
     }
 
+    // Validate at least one role is selected
+    if (!registerData.roles || registerData.roles.length === 0) {
+      setError('Please select at least one role');
+      return;
+    }
+
     if (registerData.password !== registerData.confirmPassword) {
       setError(t('auth.passwordsNotMatch'));
       return;
@@ -210,9 +246,14 @@ const LoginPage = () => {
         delete cleanRegisterData.email;
       }
       
+      // Clear any stored redirect path - new users should go to dashboard
+      localStorage.removeItem('redirectAfterLogin');
+      
       await register(cleanRegisterData);
       toast.success(t('auth.registrationSuccessful'));
-      setTabValue(0); // Switch to login tab
+      
+      // Don't navigate here - let the useEffect hook handle it when isAuthenticated changes
+      // This prevents race conditions between manual navigation and the auth state update
     } catch (err) {
       setError(err.message || t('auth.registrationFailed'));
     }
@@ -452,19 +493,55 @@ const LoginPage = () => {
                 }}
               />
 
-              <FormControl fullWidth margin="normal">
-                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>{t('auth.role')}</InputLabel>
-                <Select
-                  name="role"
-                  value={registerData.profile.role}
-                  onChange={handleRegisterChange}
-                  label={t('auth.role')}
-                >
-                  <MenuItem value="farm_owner">{t('auth.farmOwner')}</MenuItem>
-                  <MenuItem value="farm_manager">{t('auth.farmManager')}</MenuItem>
-                  <MenuItem value="worker">{t('auth.worker')}</MenuItem>
-                  <MenuItem value="viewer">{t('auth.viewer')}</MenuItem>
-                </Select>
+              <FormControl component="fieldset" fullWidth margin="normal" required>
+                <FormLabel component="legend" sx={{ mb: 1, color: 'text.primary' }}>
+                  {t('auth.selectYourRoles')} *
+                </FormLabel>
+                <FormHelperText sx={{ mt: 0, mb: 1 }}>
+                  {t('auth.selectMultipleRoles')}
+                </FormHelperText>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={registerData.roles.includes('farm_owner')}
+                        onChange={() => handleRoleToggle('farm_owner')}
+                        color="primary"
+                      />
+                    }
+                    label={t('auth.farmOwner')}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={registerData.roles.includes('farm_manager')}
+                        onChange={() => handleRoleToggle('farm_manager')}
+                        color="primary"
+                      />
+                    }
+                    label={t('auth.farmManager')}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={registerData.roles.includes('machinery_operator')}
+                        onChange={() => handleRoleToggle('machinery_operator')}
+                        color="primary"
+                      />
+                    }
+                    label={t('auth.machineryOperator')}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={registerData.roles.includes('worker')}
+                        onChange={() => handleRoleToggle('worker')}
+                        color="primary"
+                      />
+                    }
+                    label={t('auth.worker')}
+                  />
+                </FormGroup>
               </FormControl>
 
               <TextField

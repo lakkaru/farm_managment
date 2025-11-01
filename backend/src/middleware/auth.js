@@ -47,9 +47,27 @@ const protect = asyncHandler(async (req, res, next) => {
 // Authorize specific roles
 const authorize = (...roles) => {
   return (req, res, next) => {
-    const userRole = req.user.role;
-    if (!roles.includes(userRole)) {
-      throw new AppError(`User role ${userRole} is not authorized to access this route`, 403);
+    // Support multi-role system (user.roles array) and backward compatibility (user.role)
+    let userHasRole = false;
+    let userRoles = [];
+    
+    // Check if user has roles array (new multi-role system)
+    if (req.user.roles && Array.isArray(req.user.roles) && req.user.roles.length > 0) {
+      userRoles = req.user.roles;
+      userHasRole = req.user.roles.some(role => roles.includes(role));
+    } 
+    // Fallback to single role (backward compatibility)
+    else if (req.user.role) {
+      userRoles = [req.user.role];
+      userHasRole = roles.includes(req.user.role);
+    }
+    
+    if (!userHasRole) {
+      const userRoleDisplay = userRoles.length > 0 
+        ? userRoles.join(', ') 
+        : 'no role assigned';
+      const requiredRoles = roles.join(', ');
+      throw new AppError(`User role(s) [${userRoleDisplay}] is not authorized to access this route. Required: [${requiredRoles}]`, 403);
     }
     next();
   };
@@ -64,9 +82,11 @@ const checkFarmPermission = (permission) => {
       throw new AppError('Farm ID is required', 400);
     }
     
-    // Admin can access all farms
-    const userRole = req.user.role;
-    if (userRole === 'admin') {
+    // Admin can access all farms - check both roles array and single role
+    const isAdmin = (req.user.roles && Array.isArray(req.user.roles) && req.user.roles.includes('admin')) 
+      || req.user.role === 'admin';
+    
+    if (isAdmin) {
       return next();
     }
     
@@ -121,10 +141,22 @@ const sendTokenResponse = (user, statusCode, res) => {
     });
 };
 
+// Helper function to check if user is admin (supports multi-role)
+const isAdmin = (user) => {
+  if (!user) return false;
+  // Check roles array first (new multi-role system)
+  if (user.roles && Array.isArray(user.roles)) {
+    return user.roles.includes('admin');
+  }
+  // Fallback to single role (backward compatibility)
+  return user.role === 'admin';
+};
+
 module.exports = {
   protect,
   authorize,
   checkFarmPermission,
   generateToken,
-  sendTokenResponse
+  sendTokenResponse,
+  isAdmin
 };

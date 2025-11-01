@@ -187,10 +187,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   // Helper to convert area unit from DB format to translation key
   const getUnitTranslationKey = (unit) => {
     const unitMap = {
-      'acres': 'acres',
       'hectares': 'hectares',
-      'sq meters': 'sqMeters',
-      'sq feet': 'sqFeet'
+      'acres': 'acres',
+      'perches': 'perches'
     };
     return unitMap[unit] || 'acres';
   };

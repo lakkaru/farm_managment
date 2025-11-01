@@ -32,16 +32,20 @@ const EditFarmContent = ({ farmId }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [originalFormData, setOriginalFormData] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     farmType: '',
     district: '',
+    divisionalSecretariat: '',
+    gramaNiladhariDivision: '',
     cultivationZone: '',
     location: {
       address: '',
       country: 'Sri Lanka',
-      zipCode: '',
+      // zipCode intentionally omitted - not collected from users
       coordinates: {
         latitude: '',
         longitude: ''
@@ -57,6 +61,11 @@ const EditFarmContent = ({ farmId }) => {
     }
   });
 
+  // Location dropdown states
+  const [divisionalSecretariats, setDivisionalSecretariats] = useState([]);
+  const [gnDivisions, setGnDivisions] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
   const loadFarm = useCallback(async () => {
     try {
       setLoading(true);
@@ -64,16 +73,18 @@ const EditFarmContent = ({ farmId }) => {
       const response = await farmAPI.getFarm(farmId);
       const farm = response.data.data;
       
-      setFormData({
+      const initialData = {
         name: farm.name || '',
         description: farm.description || '',
-  farmType: farm.farmType || 'crop',
+        farmType: farm.farmType || 'crop',
         district: farm.district || farm.location?.district || '',
-  cultivationZone: farm.cultivationZone || farm.location?.cultivationZone || getDistrictZone(farm.district || farm.location?.district) || '',
+        divisionalSecretariat: farm.divisionalSecretariat || '',
+        gramaNiladhariDivision: farm.gramaNiladhariDivision || '',
+        cultivationZone: farm.cultivationZone || farm.location?.cultivationZone || getDistrictZone(farm.district || farm.location?.district) || '',
         location: {
           address: farm.location?.address || '',
           country: 'Sri Lanka',
-          zipCode: farm.location?.zipCode || '',
+          // zipCode not collected from users
           coordinates: {
             latitude: farm.location?.coordinates?.latitude || '',
             longitude: farm.location?.coordinates?.longitude || ''
@@ -87,7 +98,33 @@ const EditFarmContent = ({ farmId }) => {
           value: farm.cultivatedArea?.value || farm.cultivatedArea || '',
           unit: farm.cultivatedArea?.unit || 'acres'
         }
-      });
+      };
+
+      setFormData(initialData);
+      // Capture the original form state for dirty-tracking
+      try {
+        setOriginalFormData(JSON.parse(JSON.stringify(initialData)));
+      } catch (err) {
+        // Fallback: store the reference (less safe but better than null)
+        setOriginalFormData(initialData);
+      }
+      // Load divisional secretariats and GN divisions for selected district/DS
+      try {
+        if (farm.district) {
+          setLoadingLocations(true);
+          const locationAPI = await import('../../../services/locationAPI');
+          const dsResp = await locationAPI.getDivisionalSecretariats(farm.district);
+          setDivisionalSecretariats(dsResp.data || []);
+          if (farm.divisionalSecretariat) {
+            const gnResp = await locationAPI.getGNDivisions(farm.district, farm.divisionalSecretariat);
+            setGnDivisions(gnResp.data || []);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load location lists for edit form', err);
+      } finally {
+        setLoadingLocations(false);
+      }
     } catch (err) {
       console.error('Error loading farm:', err);
       setError('Failed to load farm details');
@@ -102,16 +139,35 @@ const EditFarmContent = ({ farmId }) => {
     }
   }, [farmId, loadFarm]);
 
+  // Compute dirty state when formData or originalFormData changes
+  useEffect(() => {
+    if (!originalFormData) {
+      setIsDirty(false);
+      return;
+    }
+
+    try {
+      const a = JSON.stringify(originalFormData);
+      const b = JSON.stringify(formData);
+      setIsDirty(a !== b);
+    } catch (err) {
+      // Fallback: mark dirty when can't stringify
+      setIsDirty(true);
+    }
+  }, [formData, originalFormData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Handle nested fields
+
+    // Handle nested fields (e.g., location.address or totalArea.value)
     if (name.includes('.')) {
       const keys = name.split('.');
       setFormData(prev => {
         const newData = { ...prev };
         let current = newData;
         for (let i = 0; i < keys.length - 1; i++) {
+          // ensure nested objects exist
+          if (current[keys[i]] === undefined) current[keys[i]] = {};
           current = current[keys[i]];
         }
         current[keys[keys.length - 1]] = value;
@@ -124,13 +180,59 @@ const EditFarmContent = ({ farmId }) => {
       }));
     }
 
-    // Auto-populate cultivation zone when district changes
+    // Auto-populate cultivation zone when district changes and load DS list
     if (name === 'district') {
       const zoneCode = getDistrictZone(value);
       setFormData(prev => ({
         ...prev,
         cultivationZone: zoneCode || ''
       }));
+
+      (async () => {
+        if (!value) {
+          setDivisionalSecretariats([]);
+          setGnDivisions([]);
+          return;
+        }
+        try {
+          setLoadingLocations(true);
+          const locationAPI = await import('../../../services/locationAPI');
+          const resp = await locationAPI.getDivisionalSecretariats(value);
+          setDivisionalSecretariats(resp.data || []);
+          setGnDivisions([]);
+        } catch (err) {
+          console.error('Error loading divisional secretariats:', err);
+        } finally {
+          setLoadingLocations(false);
+        }
+      })();
+    }
+  };
+
+  // Handle divisional secretariat change - load GN divisions
+  const handleDSChange = async (e) => {
+    const ds = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      divisionalSecretariat: ds,
+      gramaNiladhariDivision: ''
+    }));
+
+    if (!ds || !formData.district) {
+      setGnDivisions([]);
+      return;
+    }
+
+    try {
+      setLoadingLocations(true);
+      const locationAPI = await import('../../../services/locationAPI');
+      const response = await locationAPI.getGNDivisions(formData.district, ds);
+      setGnDivisions(response.data || []);
+    } catch (error) {
+      console.error('Error loading GN divisions:', error);
+      toast.error('Failed to load GN divisions');
+    } finally {
+      setLoadingLocations(false);
     }
   };
 
@@ -158,11 +260,12 @@ const EditFarmContent = ({ farmId }) => {
         description: formData.description,
         farmType: formData.farmType,
         district: formData.district,
+        divisionalSecretariat: formData.divisionalSecretariat,
+        gramaNiladhariDivision: formData.gramaNiladhariDivision,
         cultivationZone: formData.cultivationZone,
         location: {
           address: formData.location.address || formData.district || 'Not specified',
           country: formData.location.country,
-          zipCode: formData.location.zipCode,
           ...(formData.location.coordinates.latitude && formData.location.coordinates.longitude ? {
             coordinates: {
               latitude: Number(formData.location.coordinates.latitude),
@@ -321,6 +424,60 @@ const EditFarmContent = ({ farmId }) => {
               />
             </Grid>
 
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required disabled={!formData.district}>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>
+                  {t('auth.divisionalSecretariat')}
+                </InputLabel>
+                <Select
+                  name="divisionalSecretariat"
+                  value={formData.divisionalSecretariat}
+                  onChange={handleDSChange}
+                  label={`${t('auth.divisionalSecretariat')} `}
+                  disabled={loadingLocations || !formData.district}
+                >
+                  <MenuItem value="">
+                    <em>{t('auth.selectDivisionalSecretariat')}</em>
+                  </MenuItem>
+                  {divisionalSecretariats.map((ds) => (
+                    <MenuItem key={ds} value={ds}>
+                      {t(
+                        `divisionalSecretariats.${slugify(formData.district)}.${slugify(ds)}`,
+                        { defaultValue: ds }
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required disabled={!formData.divisionalSecretariat}>
+                <InputLabel sx={{ '& .MuiFormLabel-asterisk': { color: 'error.main' } }}>
+                  {t('auth.gramaNiladhariDivision')}
+                </InputLabel>
+                <Select
+                  name="gramaNiladhariDivision"
+                  value={formData.gramaNiladhariDivision}
+                  onChange={handleChange}
+                  label={`${t('auth.gramaNiladhariDivision')} `}
+                  disabled={loadingLocations || !formData.divisionalSecretariat}
+                >
+                  <MenuItem value="">
+                    <em>{t('auth.selectGNDivision')}</em>
+                  </MenuItem>
+                  {gnDivisions.map((gn) => (
+                    <MenuItem key={gn} value={gn}>
+                      {t(
+                        `gnDivisions.${slugify(formData.district)}.${slugify(formData.divisionalSecretariat)}.${slugify(gn)}`,
+                        { defaultValue: gn }
+                      )}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -373,10 +530,9 @@ const EditFarmContent = ({ farmId }) => {
                   label={t('farms.unit')}
                   onChange={handleChange}
                 >
-                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
                   <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
-                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
-                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="perches">{t('farms.units.perches')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -402,10 +558,9 @@ const EditFarmContent = ({ farmId }) => {
                   label={t('farms.unit')}
                   onChange={handleChange}
                 >
-                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
                   <MenuItem value="hectares">{t('farms.units.hectares')}</MenuItem>
-                  <MenuItem value="sq meters">{t('farms.units.sqMeters')}</MenuItem>
-                  <MenuItem value="sq feet">{t('farms.units.sqFeet')}</MenuItem>
+                  <MenuItem value="acres">{t('farms.units.acres')}</MenuItem>
+                  <MenuItem value="perches">{t('farms.units.perches')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -456,7 +611,7 @@ const EditFarmContent = ({ farmId }) => {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={saving}
+                  disabled={saving || !isDirty}
                 >
                   {saving ? <CircularProgress size={20} /> : t('farms.updateFarm')}
                 </Button>

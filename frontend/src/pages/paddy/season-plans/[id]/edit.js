@@ -118,10 +118,9 @@ const EditSeasonPlanContent = ({ id }) => {
   // Helper function to get unit translation key
   const getUnitTranslationKey = (unit) => {
     const unitMap = {
-      'acres': 'acres',
       'hectares': 'hectares',
-      'sq meters': 'sqMeters',
-      'sq feet': 'sqFeet'
+      'acres': 'acres',
+      'perches': 'perches'
     };
     return unitMap[unit] || 'acres';
   };

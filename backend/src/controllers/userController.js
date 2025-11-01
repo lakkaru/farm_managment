@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { email, password, profile } = req.body;
+  const { email, password, profile, roles } = req.body;
 
   // Validation - password is still required
   if (!password) {
@@ -62,6 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
       phone: profile.phone,
     },
     role: profile.role || 'farm_owner',
+    roles: roles || [],
   };
 
   // Only add email if provided and not empty
@@ -81,6 +82,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email: user.email,
         profile: user.profile,
         contact: user.contact,
+        roles: user.roles,
         token: generateToken(user._id),
       },
       message: 'User registered successfully',

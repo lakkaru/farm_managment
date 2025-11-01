@@ -277,4 +277,46 @@ export const adminDiseaseAPI = {
   getReferenceImageUrl: (filename) => `${api.defaults.baseURL}/admin/diseases/reference-image/${filename}`,
 };
 
+// Machinery API
+export const machineryAPI = {
+  // Get all machinery with filters
+  searchMachinery: (filters) => api.get('/machinery', { params: filters }),
+  
+  // Get nearby machinery
+  getNearbyMachinery: (params) => api.get('/machinery/nearby', { params }),
+  
+  // Get single machinery
+  getMachinery: (id) => api.get(`/machinery/${id}`),
+  
+  // Create new machinery (operator only)
+  createMachinery: (data) => api.post('/machinery', data),
+  
+  // Update machinery
+  updateMachinery: (id, data) => api.put(`/machinery/${id}`, data),
+  
+  // Delete machinery
+  deleteMachinery: (id) => api.delete(`/machinery/${id}`),
+  
+  // Get my machinery listings
+  getMyMachinery: () => api.get('/machinery/my/listings'),
+  
+  // Search machinery by farm
+  searchByFarm: (farmId) => api.get(`/machinery/search-by-farm/${farmId}`),
+  
+  // Create machinery request (farmer)
+  createRequest: (data) => api.post('/machinery/requests', data),
+  
+  // Get my requests (farmer)
+  getMyRequests: () => api.get('/machinery/requests/my'),
+  
+  // Get requests for machinery (operator)
+  getMachineryRequests: (machineryId) => api.get(`/machinery/${machineryId}/requests`),
+  
+  // Update request status (operator)
+  updateRequestStatus: (requestId, data) => api.put(`/machinery/requests/${requestId}/status`, data),
+  
+  // Rate machinery service (farmer)
+  rateService: (requestId, data) => api.post(`/machinery/requests/${requestId}/rate`, data),
+};
+
 export default api;

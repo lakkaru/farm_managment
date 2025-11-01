@@ -256,13 +256,30 @@ const FarmDetailContent = ({ farmId }) => {
                   </Grid>
                 )}
 
-                {farm.location?.zipCode && (
-                  <Grid item xs={12}>
+                {farm.divisionalSecretariat && (
+                  <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="textSecondary">
-                      {t('farms.zipCode')}
+                      {t('auth.divisionalSecretariat')}
                     </Typography>
                     <Typography variant="body1">
-                      {farm.location.zipCode}
+                      {t(
+                        `divisionalSecretariats.${slugify(farm.district)}.${slugify(farm.divisionalSecretariat)}`,
+                        { defaultValue: farm.divisionalSecretariat }
+                      )}
+                    </Typography>
+                  </Grid>
+                )}
+
+                {farm.gramaNiladhariDivision && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="textSecondary">
+                      {t('auth.gramaNiladhariDivision')}
+                    </Typography>
+                    <Typography variant="body1">
+                      {t(
+                        `gnDivisions.${slugify(farm.district)}.${slugify(farm.divisionalSecretariat)}.${slugify(farm.gramaNiladhariDivision)}`,
+                        { defaultValue: farm.gramaNiladhariDivision }
+                      )}
                     </Typography>
                   </Grid>
                 )}
