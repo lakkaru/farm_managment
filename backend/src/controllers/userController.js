@@ -99,23 +99,47 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/login
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, firstName, password } = req.body;
+  const { phone, email, password } = req.body;
 
   // Validation
-  if ((!email && !firstName) || !password) {
+  if ((!phone && !email) || !password) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide (email or first name) and password',
+      message: 'Please provide phone (or email) and password',
     });
   }
 
+  // Helper to normalize phone input into base digits (no leading 0 or country code)
+  const normalizePhoneBase = (input) => {
+    if (!input) return '';
+    const digits = String(input).replace(/\D/g, '');
+    let base = digits;
+    if (base.startsWith('94')) base = base.slice(2);
+    if (base.startsWith('0')) base = base.slice(1);
+    return base; // e.g. '712345678'
+  };
+
   let user;
-  
-  // Check for user by email or firstName
+
+  // Try email login first if provided (backwards compatibility)
   if (email) {
     user = await User.findOne({ email }).select('+password');
-  } else if (firstName) {
-    user = await User.findOne({ 'profile.firstName': firstName }).select('+password');
+  } else if (phone) {
+    const rawDigits = String(phone).replace(/\D/g, '');
+    const base = normalizePhoneBase(phone);
+
+    // Candidate representations that may be stored in DB
+    const candidates = new Set();
+    if (rawDigits) candidates.add(rawDigits);
+    if (base) candidates.add(base);
+    if (base) candidates.add('0' + base);
+    if (base) candidates.add('94' + base);
+
+    // Query for any matching contact.phone
+    const orQueries = Array.from(candidates).map((p) => ({ 'contact.phone': p }));
+    if (orQueries.length) {
+      user = await User.findOne({ $or: orQueries }).select('+password');
+    }
   }
 
   if (!user) {
