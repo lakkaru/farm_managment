@@ -194,15 +194,14 @@ const FertilizerSchedule = ({
   };
 
   // Determine which date was used as the anchor for scheduling
+  // NOTE: scheduling calculations use the cultivationDate as the anchor
+  // regardless of planting method (transplantingDate is a separate event).
   const getAnchorDateUsed = () => {
     try {
-      if (plan.plantingMethod === 'transplanting' && plan.transplantingDate) {
-        return plan.transplantingDate;
-      }
+      return plan.cultivationDate;
     } catch (e) {
-      // ignore
+      return null;
     }
-    return plan.cultivationDate;
   };
 
   const translateFertilizerStage = (stage) => {
