@@ -64,37 +64,41 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
 
   if (variant === 'compact' || variant === 'login') {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+      >
         <Button
           size="small"
-          onClick={handleClick}
-          startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
+          startIcon={<span style={{ fontSize: '0.95em', lineHeight: 1 }}>{currentLanguage.flag}</span>}
           variant="outlined"
           sx={{
-            minWidth: { xs: 40, sm: '70px' },
-            fontSize: { xs: '0.75rem', sm: '0.9rem' },
+            minWidth: { xs: 34, sm: '52px' },
+            fontSize: { xs: '0.68rem', sm: '0.78rem' },
             textTransform: 'none',
             color: 'primary.main',
             fontWeight: 600,
-            px: { xs: 0.75, sm: 2 },
-            py: { xs: 0.5, sm: 1 },
-            borderRadius: 3,
-            border: '2px solid',
+            px: { xs: 0.3, sm: 0.6 },
+            py: { xs: 0.15, sm: 0.35 },
+            borderRadius: 2,
+            border: '1px solid',
             borderColor: 'primary.main',
             backgroundColor: 'rgba(76, 175, 80, 0.06)',
-            boxShadow: { xs: 'none', sm: '0 2px 8px rgba(76, 175, 80, 0.2)' },
+            boxShadow: { xs: 'none', sm: '0 1px 6px rgba(76, 175, 80, 0.12)' },
             '&:hover': {
               backgroundColor: 'primary.main',
               color: 'white',
               borderColor: 'primary.main',
-              boxShadow: { xs: 'none', sm: '0 4px 12px rgba(76, 175, 80, 0.3)' },
+              boxShadow: { xs: 'none', sm: '0 2px 8px rgba(76, 175, 80, 0.18)' },
               transform: { xs: 'none', sm: 'translateY(-1px)' },
             },
             transition: 'all 0.15s ease-in-out',
           }}
         >
           <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{currentLanguage.code.toUpperCase()}</Box>
-        </Button>
+  </Button>
         
         <Menu
           anchorEl={anchorEl}
@@ -123,7 +127,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
               }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
-                <Box component="span" sx={{ fontSize: '1.2em', mr: 0.5 }}>{language.flag}</Box>
+                <Box component="span" sx={{ fontSize: '1.0em', mr: 0.5 }}>{language.flag}</Box>
                 {i18n.language === language.code && <CheckIcon fontSize="small" color="primary" />}
               </ListItemIcon>
               <ListItemText 
@@ -142,20 +146,29 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+    >
       <Button
-        onClick={handleClick}
-        startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
+          startIcon={<span style={{ fontSize: '1.0em', lineHeight: 1 }}>{currentLanguage.flag}</span>}
         endIcon={<LanguageIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
         variant="outlined"
         size="small"
-        sx={{
+          sx={{
           textTransform: 'none',
           borderColor: 'primary.main',
           color: 'primary.main',
           fontWeight: 500,
-          px: { xs: 0.75, sm: 2 },
+          fontSize: { xs: '0.72rem', sm: '0.86rem' },
+          px: { xs: 0.3, sm: 0.6 },
+          py: { xs: 0.12, sm: 0.3 },
           minWidth: { xs: 'auto', sm: 'initial' },
+          borderRadius: 2,
+          border: '1px solid',
+          boxShadow: { xs: 'none', sm: '0 1px 6px rgba(0,0,0,0.04)' },
           '&:hover': {
             borderColor: 'primary.dark',
             backgroundColor: 'primary.light',
@@ -164,7 +177,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
         }}
       >
         <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{currentLanguage.nativeName}</Box>
-      </Button>
+  </Button>
       
       <Menu
         anchorEl={anchorEl}
@@ -190,16 +203,16 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
             onClick={() => handleLanguageChange(language.code)}
             selected={i18n.language === language.code}
             sx={{
-              fontSize: '0.875rem',
-              py: 1.5,
+              fontSize: '0.85rem',
+              py: { xs: 1, sm: 1.2 },
               '&.Mui-selected': {
                 backgroundColor: 'primary.light',
                 color: 'primary.contrastText',
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <Box component="span" sx={{ fontSize: '1.2em', mr: 0.5 }}>{language.flag}</Box>
+            <ListItemIcon sx={{ minWidth: 32 }}>
+              <Box component="span" sx={{ fontSize: '0.95em', mr: 0.5 }}>{language.flag}</Box>
               {i18n.language === language.code && (
                 <CheckIcon fontSize="small" color="primary" />
               )}
@@ -208,7 +221,7 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
               primary={language.nativeName}
               secondary={language.description}
               secondaryTypographyProps={{
-                fontSize: '0.75rem',
+                fontSize: '0.73rem',
                 color: 'text.secondary'
               }}
             />
