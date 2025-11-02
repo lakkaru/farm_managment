@@ -284,6 +284,8 @@ export const adminAPI = {
 
   // Delete a farmer by id
   deleteFarmer: (id) => api.delete(`/admin/farmers/${id}`),
+  // Update a farmer by id
+  updateFarmer: (id, data) => api.put(`/admin/farmers/${id}`, data),
 };
 
 // Machinery API

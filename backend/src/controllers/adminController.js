@@ -80,7 +80,50 @@ const deleteFarmer = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Farmer account and associated farms deleted successfully' });
 });
 
+// @desc    Update a farmer account (admin)
+// @route   PUT /api/admin/farmers/:id
+// @access  Admin
+const updateFarmer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    throw new AppError('User ID is required', 400);
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  const { email, role, profile, contact, isActive } = req.body;
+
+  // If email is being changed, ensure uniqueness
+  if (email && email !== user.email) {
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ success: false, message: 'Email already in use' });
+    }
+    user.email = email;
+  }
+
+  if (typeof isActive !== 'undefined') user.isActive = isActive;
+  if (role) user.role = role;
+  if (profile && typeof profile === 'object') {
+    user.profile = { ...user.profile, ...profile };
+  }
+  if (contact && typeof contact === 'object') {
+    user.contact = { ...user.contact, ...contact };
+  }
+
+  await user.save();
+
+  const out = user.toObject();
+  delete out.password;
+
+  res.json({ success: true, data: out });
+});
+
 module.exports = {
   getFarmers,
   deleteFarmer,
+  updateFarmer,
 };
