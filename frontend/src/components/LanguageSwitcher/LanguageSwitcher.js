@@ -159,15 +159,17 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
         size="small"
         sx={{
           textTransform: 'none',
-          borderColor: 'primary.main',
-          color: 'primary.main',
+          // Make the header/default language button green and fully clickable
+          borderColor: 'success.dark',
+          color: 'success.dark',
+          backgroundColor: 'rgba(76,175,80,0.08)',
           fontWeight: 500,
           px: { xs: 0.75, sm: 2 },
           minWidth: { xs: 'auto', sm: 'initial' },
           '&:hover': {
-            borderColor: 'primary.dark',
-            backgroundColor: 'primary.light',
-            color: 'primary.contrastText',
+            borderColor: 'success.main',
+            backgroundColor: 'success.main',
+            color: 'success.contrastText',
           },
         }}
       >
