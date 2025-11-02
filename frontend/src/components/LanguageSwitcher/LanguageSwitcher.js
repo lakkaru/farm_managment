@@ -71,23 +71,27 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
           startIcon={<span style={{ fontSize: '1.2em' }}>{currentLanguage.flag}</span>}
           variant="outlined"
           sx={{
-            minWidth: { xs: 40, sm: '70px' },
+            // Make the clickable area visually larger and fully clickable
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: { xs: 40, sm: '70px' },
             fontSize: { xs: '0.75rem', sm: '0.9rem' },
             textTransform: 'none',
-            color: 'primary.main',
+            color: 'success.dark',
             fontWeight: 600,
             px: { xs: 0.75, sm: 2 },
             py: { xs: 0.5, sm: 1 },
             borderRadius: 3,
             border: '2px solid',
-            borderColor: 'primary.main',
-            backgroundColor: 'rgba(76, 175, 80, 0.06)',
-            boxShadow: { xs: 'none', sm: '0 2px 8px rgba(76, 175, 80, 0.2)' },
+            borderColor: 'success.dark',
+            backgroundColor: 'rgba(76, 175, 80, 0.12)',
+            boxShadow: { xs: 'none', sm: '0 2px 8px rgba(76, 175, 80, 0.18)' },
             '&:hover': {
-              backgroundColor: 'primary.main',
-              color: 'white',
-              borderColor: 'primary.main',
-              boxShadow: { xs: 'none', sm: '0 4px 12px rgba(76, 175, 80, 0.3)' },
+              backgroundColor: 'success.main',
+              color: 'success.contrastText',
+              borderColor: 'success.main',
+              boxShadow: { xs: 'none', sm: '0 4px 12px rgba(76, 175, 80, 0.28)' },
               transform: { xs: 'none', sm: 'translateY(-1px)' },
             },
             transition: 'all 0.15s ease-in-out',
@@ -116,10 +120,14 @@ const LanguageSwitcher = ({ variant = 'button' }) => {
               selected={i18n.language === language.code}
               sx={{
                 py: 1.5,
+                // Make selected menu item clearly green and full-width clickable
                 '&.Mui-selected': {
-                  backgroundColor: 'primary.light',
-                  color: 'primary.contrastText',
+                  backgroundColor: 'success.main',
+                  color: 'success.contrastText',
                 },
+                '&:hover': {
+                  backgroundColor: 'rgba(76,175,80,0.08)'
+                }
               }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>
