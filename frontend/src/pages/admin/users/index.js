@@ -40,7 +40,7 @@ import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import BackButton from '../../../components/BackButton/BackButton';
 import AppProviders from '../../../providers/AppProviders';
-import { userAPI } from '../../../services/api';
+import { adminAPI } from '../../../services/api';
 
 const AdminUsersContent = () => {
   const [users, setUsers] = useState([]);
@@ -64,32 +64,11 @@ const AdminUsersContent = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Mock data for now - replace with actual API call
-      const mockUsers = [
-        {
-          _id: '1',
-          email: 'admin@farm-mgt.com',
-          profile: { firstName: 'System', lastName: 'Administrator' },
-          role: 'admin',
-          contact: { phone: '+94701234567' },
-          isActive: true,
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          email: 'expert@farm-mgt.com',
-          profile: { firstName: 'Agricultural', lastName: 'Expert' },
-          role: 'expert',
-          contact: { phone: '+94701234568' },
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ];
-      
-      setUsers(mockUsers);
-      // Uncomment when API is ready:
-      // const response = await userAPI.getUsers();
-      // setUsers(response.data.data);
+      // Fetch farmer users from admin API
+      const response = await adminAPI.getFarmers({ page: 1, limit: 100 });
+      // backend responds with { success, count, total, page, data }
+      const fetched = response?.data?.data || [];
+      setUsers(fetched);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -192,7 +171,8 @@ const AdminUsersContent = () => {
     }
 
     try {
-      console.log('Deleting user:', user._id);
+      // Call admin API to delete farmer
+      await adminAPI.deleteFarmer(user._id);
       toast.success('User deleted successfully');
       loadUsers();
     } catch (error) {

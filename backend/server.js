@@ -19,6 +19,7 @@ const diseaseDetectionRoutes = require('./src/routes/diseaseDetectionRoutes');
 const adminDiseaseRoutes = require('./src/routes/adminDiseaseRoutes');
 const machineryRoutes = require('./src/routes/machineryRoutes');
 const locationRoutes = require('./src/routes/locationRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 // Import middleware
 const { errorHandler } = require('./src/middleware/errorHandler');
@@ -114,6 +115,8 @@ app.use('/api/disease-detection', diseaseDetectionRoutes);
 app.use('/api/admin/diseases', adminDiseaseRoutes);
 app.use('/api/machinery', machineryRoutes);
 app.use('/api/locations', locationRoutes);
+// Admin management routes (list/delete farmers)
+app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use(notFound);

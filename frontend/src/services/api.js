@@ -277,6 +277,15 @@ export const adminDiseaseAPI = {
   getReferenceImageUrl: (filename) => `${api.defaults.baseURL}/admin/diseases/reference-image/${filename}`,
 };
 
+// Admin API (users management)
+export const adminAPI = {
+  // Get farmer users (pagination + search supported)
+  getFarmers: (params) => api.get('/admin/farmers', { params }),
+
+  // Delete a farmer by id
+  deleteFarmer: (id) => api.delete(`/admin/farmers/${id}`),
+};
+
 // Machinery API
 export const machineryAPI = {
   // Get all machinery with filters
