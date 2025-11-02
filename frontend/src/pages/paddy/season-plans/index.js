@@ -45,10 +45,22 @@ const SeasonPlansContent = () => {
   const [loading, setLoading] = useState(true);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, plan: null });
   const { selectedFarm } = useFarm();
+  
+  // Get status filter from URL query parameter
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    // Parse URL query parameter for status filter
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      setStatusFilter(status || '');
+    }
+  }, []);
 
   useEffect(() => {
     loadSeasonPlans();
-  }, [selectedFarm]);
+  }, [selectedFarm, statusFilter]);
 
   const loadSeasonPlans = async () => {
     try {
@@ -57,8 +69,20 @@ const SeasonPlansContent = () => {
       if (selectedFarm) {
         params.farmId = selectedFarm._id;
       }
+      // Don't pass status to API - we'll filter client-side for more reliability
       const response = await seasonPlanAPI.getSeasonPlans(params);
-      setPlans(response.data.data || []);
+      const allPlans = response.data.data || [];
+      
+      // Apply status filter client-side if present
+      const filteredPlans = statusFilter 
+        ? allPlans.filter(plan => plan.status === statusFilter)
+        : allPlans;
+      
+      console.log('Status filter:', statusFilter);
+      console.log('Total plans:', allPlans.length);
+      console.log('Filtered plans:', filteredPlans.length);
+      
+      setPlans(filteredPlans);
     } catch (error) {
       console.error('Error loading season plans:', error);
       toast.error(t('seasonPlans.failedToLoad'));
@@ -151,10 +175,27 @@ const SeasonPlansContent = () => {
         </Box>
       </Box>
 
-      {/* Farm Selection Warning */}
-      {!selectedFarm && (
+      {/* Farm Selection Info */}
+      {!selectedFarm && plans.length > 0 && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          {t('seasonPlans.selectFarmMessage')}
+          {t('seasonPlans.viewingAllFarms', { defaultValue: 'Viewing season plans from all farms.' })}
+        </Alert>
+      )}
+
+      {/* Status Filter Alert */}
+      {statusFilter && (
+        <Alert 
+          severity="info" 
+          sx={{ mb: 3 }}
+          onClose={() => {
+            setStatusFilter('');
+            navigate('/paddy/season-plans');
+          }}
+        >
+          {t('seasonPlans.filteringByStatus', { 
+            status: t(`seasonPlans.${statusFilter}`, { defaultValue: statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1) })
+          })}{' '}
+          {t('seasonPlans.closeToViewAll')}
         </Alert>
       )}
 
@@ -163,14 +204,25 @@ const SeasonPlansContent = () => {
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <AgricultureIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
-            {t('seasonPlans.noSeasonPlansFound')}
+            {statusFilter 
+              ? t('seasonPlans.noPlansWithStatus', { 
+                  status: t(`seasonPlans.${statusFilter}`, { defaultValue: statusFilter }),
+                  defaultValue: `No ${statusFilter} season plans found`
+                })
+              : t('seasonPlans.noSeasonPlansFound')}
           </Typography>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            {selectedFarm
-              ? t('seasonPlans.noSeasonPlansForFarm', { farmName: selectedFarm.name })
-              : t('seasonPlans.selectFarmToView')}
+            {statusFilter ? (
+              <span>
+                {t('seasonPlans.tryDifferentFilter', { defaultValue: 'Try removing the filter to see all plans' })}
+              </span>
+            ) : (
+              selectedFarm
+                ? t('seasonPlans.noSeasonPlansForFarm', { farmName: selectedFarm.name })
+                : t('seasonPlans.selectFarmToView')
+            )}
           </Typography>
-          {selectedFarm && (
+          {selectedFarm && !statusFilter && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}

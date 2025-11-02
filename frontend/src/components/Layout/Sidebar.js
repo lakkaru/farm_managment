@@ -231,6 +231,20 @@ const Sidebar = () => {
 
   const handleFarmChange = (event) => {
     const farmId = event.target.value;
+    
+    // Handle "All Farms" selection (empty string means all farms)
+    if (farmId === '') {
+      setSelectedFarm(null);
+      const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '';
+      // If on season-plans page, stay there to show all farms' plans
+      if (pathname.startsWith('/paddy/season-plans')) {
+        setCurrentPath(pathname);
+      }
+      // close drawer on mobile after selection
+      if (isMobile) handleDrawerToggle();
+      return;
+    }
+    
     const farm = farms.find(f => f._id === farmId);
     setSelectedFarm(farm || null);
     
@@ -304,8 +318,8 @@ const Sidebar = () => {
               displayEmpty
             >
               <MenuItem value="">
-                <Typography variant="body2" color="textSecondary">
-                  {t('farms.selectFarm')}
+                <Typography variant="body2">
+                  {t('farms.allFarms', { defaultValue: 'All Farms' })}
                 </Typography>
               </MenuItem>
               {farms.map(farm => (
