@@ -113,11 +113,13 @@ const Header = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Language Switcher - More Prominent */}
           <Box sx={{ 
-            p: 1, 
+            p: 0, 
             borderRadius: 2, 
             backgroundColor: 'primary.light', 
             border: '1px solid',
             borderColor: 'primary.main',
+            display: 'flex',
+            alignItems: 'center'
           }}>
             <LanguageSwitcher variant="button" />
           </Box>
