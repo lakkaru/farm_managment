@@ -7,29 +7,48 @@ const AppError = require('../utils/AppError');
 // @route   GET /api/admin/farmers
 // @access  Admin
 const getFarmers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 50, search } = req.query;
+  const { page = 1, limit = 50, search, all } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  const roleQuery = {
-    $or: [
-      { role: 'farm_owner' },
-      { role: 'farmer' },
-      { roles: 'farm_owner' },
-      { roles: 'farmer' },
-    ],
-  };
+  // If `all=true` is passed, return all users (subject to optional search).
+  // Default behavior (no all flag) returns only farmer/farm_owner accounts.
+  let filter = {};
 
-  const filter = search
-    ? { 
-        ...roleQuery,
-        $or: [
-          { 'profile.firstName': { $regex: search, $options: 'i' } },
-          { 'profile.lastName': { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { 'contact.phone': { $regex: search, $options: 'i' } }
-        ]
-      }
-    : roleQuery;
+  if (String(all) === 'true' || String(all) === '1') {
+    // Start with optional search filter
+    filter = search
+      ? {
+          $or: [
+            { 'profile.firstName': { $regex: search, $options: 'i' } },
+            { 'profile.lastName': { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { 'contact.phone': { $regex: search, $options: 'i' } },
+          ],
+        }
+      : {};
+  } else {
+    // Only farmer/farm_owner
+    const roleQuery = {
+      $or: [
+        { role: 'farm_owner' },
+        { role: 'farmer' },
+        { roles: 'farm_owner' },
+        { roles: 'farmer' },
+      ],
+    };
+
+    filter = search
+      ? {
+          ...roleQuery,
+          $or: [
+            { 'profile.firstName': { $regex: search, $options: 'i' } },
+            { 'profile.lastName': { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { 'contact.phone': { $regex: search, $options: 'i' } },
+          ],
+        }
+      : roleQuery;
+  }
 
   const total = await User.countDocuments(filter);
   const users = await User.find(filter)

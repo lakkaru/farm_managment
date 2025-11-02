@@ -66,9 +66,30 @@ const AdminUsersContent = () => {
     try {
       setLoading(true);
       // Fetch farmer users from admin API
-      const response = await adminAPI.getFarmers({ page: 1, limit: 100 });
+  const response = await adminAPI.getFarmers({ page: 1, limit: 100, all: true });
       // backend responds with { success, count, total, page, data }
-      const fetched = response?.data?.data || [];
+      let fetched = response?.data?.data || [];
+
+      // Sort users so admins, experts and managers appear at the top.
+      const rolePriority = {
+        admin: 0,
+        expert: 1,
+        farm_manager: 2,
+        farm_owner: 3,
+        worker: 4,
+        viewer: 5,
+      };
+
+      fetched.sort((a, b) => {
+        const pa = rolePriority[a.role] ?? 99;
+        const pb = rolePriority[b.role] ?? 99;
+        if (pa !== pb) return pa - pb;
+        // If same priority, show newest users first
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+
       setUsers(fetched);
     } catch (error) {
       console.error('Error loading users:', error);
