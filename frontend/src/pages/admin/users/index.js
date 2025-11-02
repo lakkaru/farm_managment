@@ -40,7 +40,7 @@ import { navigate } from 'gatsby';
 import Layout from '../../../components/Layout/Layout';
 import BackButton from '../../../components/BackButton/BackButton';
 import AppProviders from '../../../providers/AppProviders';
-import { userAPI } from '../../../services/api';
+import { adminAPI } from '../../../services/api';
 
 const AdminUsersContent = () => {
   const [users, setUsers] = useState([]);
@@ -56,6 +56,7 @@ const AdminUsersContent = () => {
     role: 'farm_owner'
   });
   const [saving, setSaving] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null, deleting: false });
 
   useEffect(() => {
     loadUsers();
@@ -64,32 +65,32 @@ const AdminUsersContent = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Mock data for now - replace with actual API call
-      const mockUsers = [
-        {
-          _id: '1',
-          email: 'admin@farm-mgt.com',
-          profile: { firstName: 'System', lastName: 'Administrator' },
-          role: 'admin',
-          contact: { phone: '+94701234567' },
-          isActive: true,
-          createdAt: new Date().toISOString()
-        },
-        {
-          _id: '2',
-          email: 'expert@farm-mgt.com',
-          profile: { firstName: 'Agricultural', lastName: 'Expert' },
-          role: 'expert',
-          contact: { phone: '+94701234568' },
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ];
-      
-      setUsers(mockUsers);
-      // Uncomment when API is ready:
-      // const response = await userAPI.getUsers();
-      // setUsers(response.data.data);
+      // Fetch farmer users from admin API
+  const response = await adminAPI.getFarmers({ page: 1, limit: 100, all: true });
+      // backend responds with { success, count, total, page, data }
+      let fetched = response?.data?.data || [];
+
+      // Sort users so admins, experts and managers appear at the top.
+      const rolePriority = {
+        admin: 0,
+        expert: 1,
+        farm_manager: 2,
+        farm_owner: 3,
+        worker: 4,
+        viewer: 5,
+      };
+
+      fetched.sort((a, b) => {
+        const pa = rolePriority[a.role] ?? 99;
+        const pb = rolePriority[b.role] ?? 99;
+        if (pa !== pb) return pa - pb;
+        // If same priority, show newest users first
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+
+      setUsers(fetched);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
@@ -159,11 +160,23 @@ const AdminUsersContent = () => {
     setSaving(true);
     try {
       if (editDialog.open) {
-        // Update user
-        console.log('Updating user:', editDialog.user._id, formData);
+        // Update user via admin API
+        const payload = {
+          email: formData.email,
+          role: formData.role,
+          profile: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+          },
+          contact: {
+            phone: formData.phone,
+          }
+        };
+
+        await adminAPI.updateFarmer(editDialog.user._id, payload);
         toast.success('User updated successfully');
       } else {
-        // Create user
+        // Create user (not implemented yet)
         console.log('Creating user:', formData);
         toast.success('User created successfully');
       }
@@ -181,23 +194,30 @@ const AdminUsersContent = () => {
     }
   };
 
-  const handleDelete = async (user) => {
-    if (!window.confirm(`Are you sure you want to delete ${user.profile.firstName} ${user.profile.lastName}?`)) {
-      return;
-    }
-
+  const handleDelete = (user) => {
+    // Prevent deleting admin users
     if (user.role === 'admin') {
       toast.error('Cannot delete admin users');
       return;
     }
 
+    setDeleteDialog({ open: true, user, deleting: false });
+  };
+
+  const confirmDelete = async () => {
+    const user = deleteDialog.user;
+    if (!user) return;
+
+    setDeleteDialog(prev => ({ ...prev, deleting: true }));
     try {
-      console.log('Deleting user:', user._id);
+      await adminAPI.deleteFarmer(user._id);
       toast.success('User deleted successfully');
+      setDeleteDialog({ open: false, user: null, deleting: false });
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');
+      setDeleteDialog({ open: false, user: null, deleting: false });
     }
   };
 
@@ -460,6 +480,28 @@ const AdminUsersContent = () => {
             startIcon={saving ? <CircularProgress size={20} /> : null}
           >
             {saving ? 'Creating...' : 'Create User'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, user: null, deleting: false })} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {deleteDialog.user ? `Are you sure you want to delete ${deleteDialog.user.profile.firstName} ${deleteDialog.user.profile.lastName}? This action cannot be undone.` : ''}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog({ open: false, user: null, deleting: false })}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDelete}
+            disabled={deleteDialog.deleting}
+            startIcon={deleteDialog.deleting ? <CircularProgress size={18} /> : null}
+          >
+            {deleteDialog.deleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
