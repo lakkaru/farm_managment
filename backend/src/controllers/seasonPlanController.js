@@ -145,6 +145,7 @@ const createSeasonPlan = async (req, res) => {
       paddyVariety.duration,
       plantingMethod,
       soilP,
+      req.body.transplantingDate || null,
       req.body.season // Pass season to determine zinc sulphate application
     );
 
@@ -260,6 +261,7 @@ const updateSeasonPlan = async (req, res) => {
       const cultivatingArea = safeBody.cultivatingArea !== undefined ? Number(safeBody.cultivatingArea) : updatedPlan.cultivatingArea;
       const cultivatingAreaInAcres = convertToAcres(cultivatingArea, areaUnit);
 
+      const transplantingDate = safeBody.transplantingDate || updatedPlan.transplantingDate || null;
       const newSchedule = generateFertilizerSchedule(
         anchorDate,
         cultivatingAreaInAcres, // Use converted area
@@ -268,6 +270,7 @@ const updateSeasonPlan = async (req, res) => {
         paddyVariety.duration,
         plantingMethod,
         soilP,
+        transplantingDate,
         safeBody.season || updatedPlan.season // Pass season for zinc sulphate
       );
 
@@ -388,8 +391,10 @@ const convertToAcres = (value, unit) => {
  * Optional soilP (ppm) can be passed to skip TSP if > 10.
  * Optional season parameter to determine zinc sulphate application (only in Maha season).
  * plantingMethod: 'direct_seeding' | 'transplanting' (default direct_seeding)
+ * soilP: optional soil phosphorus ppm
+ * transplantingDate: optional Date used as anchor when plantingMethod === 'transplanting'
  */
-const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMethod, district, durationString, plantingMethod = 'direct_seeding', soilP = null, season = 'maha') => {
+const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMethod, district, durationString, plantingMethod = 'direct_seeding', soilP = null, transplantingDate = null, season = 'maha') => {
   // Convert area from acres to hectares (1 acre = 0.404686 hectares)
   const areaHa = areaInAcres * 0.404686;
   
@@ -437,8 +442,10 @@ const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMeth
 
   // Generate schedule entries, apply soilP rule: if soilP > 10, set tsp to 0
   return selectedRecommendation.schedule.map(app => {
-    const applicationDate = new Date(cultivationDate);
-    applicationDate.setDate(applicationDate.getDate() + (app.week * 7)); // Convert weeks to days
+  // For transplanted crops, anchor fertilizer applications to transplanting date if provided
+  const anchor = (plantingMethod === 'transplanting' && transplantingDate) ? new Date(transplantingDate) : new Date(cultivationDate);
+  const applicationDate = new Date(anchor);
+  applicationDate.setDate(applicationDate.getDate() + (app.week * 7)); // Convert weeks to days
 
     const computePerField = (kgPerHa) => Math.round(kgPerHa * areaHa * 100) / 100;
 
