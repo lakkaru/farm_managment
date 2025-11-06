@@ -367,7 +367,8 @@ const EditSeasonPlanContent = ({ id }) => {
                 value={formData.cultivatingArea}
                 onChange={handleChange}
                 required
-                inputProps={{ min: 0.1, step: 0.1 }}
+                // Allow two-decimal precision (e.g., 0.51 acres). Helper text already mentions 0.01 min.
+                inputProps={{ min: 0.01, step: 0.01 }}
                 helperText={t('seasonPlans.createForm.cultivatingAreaMinimum', { 
                   unit: t(`seasonPlans.units.${getUnitTranslationKey(formData.areaUnit)}`) 
                 })}
