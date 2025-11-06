@@ -27,7 +27,9 @@ const seasonPlanSchema = new mongoose.Schema({
   },
   plantingMethod: {
     type: String,
-    enum: ['direct_seeding', 'transplanting'],
+    // Added 'parachute_seeding' as a valid planting method (treated similarly to direct seeding
+    // for fertilizer recommendation anchoring). Keep existing default.
+    enum: ['direct_seeding', 'transplanting', 'parachute_seeding'],
     default: 'direct_seeding'
   },
   paddyVariety: {

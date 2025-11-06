@@ -431,7 +431,8 @@
       "plantingMethod": "රෝපණ ක්‍රමය",
       "plantingMethods": {
         "direct_seeding": "වී වැපිරීම",
-        "transplanting": "පැළ සිටුවීම"
+        "transplanting": "පැළ සිටුවීම",
+        "parachute_seeding": "පැරෂූට් වැපිරීම"
       },
       "cultivationDateAuto": "අස්වනු දිනයෙන් ස්වයංක්‍රීයව ගණනය කරන ලදී",
       "selectPaddyVarietyFirst": "පළමුව වී ප්‍රභේදය තෝරන්න",
@@ -571,7 +572,8 @@
       "plantingMethod": "වගා ක්‍රමය",
       "plantingMethods": {
         "direct_seeding": "වී වැපිරීම",
-        "transplanting": "පැළ සිටුවීම"
+        "transplanting": "පැළ සිටුවීම",
+        "parachute_seeding": "පැරෂූට් වැපිරීම"
       },
       "soilCondition": "පස් තත්ත්වය",
       "cultivationDate": "වගා දිනය",

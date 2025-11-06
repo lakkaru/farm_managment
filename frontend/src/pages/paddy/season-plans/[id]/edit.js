@@ -322,6 +322,7 @@ const EditSeasonPlanContent = ({ id }) => {
                 >
                   <MenuItem value="direct_seeding">{t('seasonPlans.createForm.plantingMethods.direct_seeding')}</MenuItem>
                   <MenuItem value="transplanting">{t('seasonPlans.createForm.plantingMethods.transplanting')}</MenuItem>
+                  <MenuItem value="parachute_seeding">{t('seasonPlans.createForm.plantingMethods.parachute_seeding')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

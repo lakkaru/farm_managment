@@ -294,7 +294,8 @@
     "cultivationDate": "Cultivation Date",
     "plantingMethods": {
       "direct_seeding": "Direct seeding",
-      "transplanting": "Transplanting"
+      "transplanting": "Transplanting",
+      "parachute_seeding": "Parachute seeding"
     },
     "expectedHarvestDate": "Expected Harvest Date",
     "status": "Status",
@@ -408,7 +409,8 @@
       "plantingMethod": "Planting Method",
       "plantingMethods": {
         "direct_seeding": "Direct seeding",
-        "transplanting": "Transplanting"
+        "transplanting": "Transplanting",
+        "parachute_seeding": "Parachute seeding"
       },
       "cultivationDateAuto": "Auto-calculated from harvest date",
       "selectPaddyVarietyFirst": "Select paddy variety first",
@@ -504,7 +506,8 @@
       "plantingMethod": "Planting Method",
       "plantingMethods": {
         "direct_seeding": "Direct seeding",
-        "transplanting": "Transplanting"
+        "transplanting": "Transplanting",
+        "parachute_seeding": "Parachute seeding"
       },
       "soilCondition": "Soil Condition",
       "cultivationDate": "Cultivation Date",
