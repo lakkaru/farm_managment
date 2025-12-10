@@ -124,13 +124,17 @@ const createSeasonPlan = async (req, res) => {
       climateZone: farm.cultivationZone || getDefaultClimateZone(farm.district),
     };
 
-    // Generate growing stages
-    planData.growingStages = generateGrowingStages(req.body.cultivationDate, paddyVariety.duration);
-    
-  // Determine anchor date: always use cultivationDate as the start date.
+    // Determine planting method early so we can generate growing stages with correct behavior
+    const plantingMethod = req.body.plantingMethod || 'direct_seeding';
+
+    // Generate growing stages (now accepts plantingMethod so we can include
+    // a 7-day shock/recovery period for transplanting)
+    planData.growingStages = generateGrowingStages(req.body.cultivationDate, paddyVariety.duration, plantingMethod);
+
+  // Determine anchor date: always use cultivationDate as the start date for schedule generation.
   // NOTE: even for transplanting, the cultivation date (sowing/nursery start) is the reference
-  // for duration and fertilizer schedules. Transplanting date remains a separate event.
-  const plantingMethod = req.body.plantingMethod || 'direct_seeding';
+  // for many derived dates. Transplanting date remains a separate event and may be used as
+  // the fertilizer schedule anchor when explicitly required (handled in generateFertilizerSchedule).
   const anchorDate = req.body.cultivationDate;
 
     // Optional soil test P (ppm) passed in request body as soilP
@@ -174,7 +178,7 @@ const createSeasonPlan = async (req, res) => {
       estimatedYield: calculateEstimatedYield(cultivatingAreaInAcres, paddyVariety.characteristics?.yield || 4),
     };
 
-    console.log('Creating season plan with data:', JSON.stringify(planData, null, 2));
+    // console.log('Creating season plan with data:', JSON.stringify(planData, null, 2));
 
     const plan = await SeasonPlan.create(planData);
     
@@ -275,6 +279,10 @@ const updateSeasonPlan = async (req, res) => {
       );
 
       updatedPlan.fertilizerSchedule = newSchedule;
+
+      // Also regenerate growing stages using the planting method so the shock
+      // period is included for transplanting.
+      updatedPlan.growingStages = generateGrowingStages(anchorDate, paddyVariety.duration, plantingMethod);
       await updatedPlan.save();
     }
 
@@ -332,7 +340,7 @@ const deleteSeasonPlan = async (req, res) => {
 };
 
 // Helper functions
-const generateGrowingStages = (cultivationDate, durationString) => {
+const generateGrowingStages = (cultivationDate, durationString, plantingMethod = 'direct_seeding') => {
   // Extract numeric duration from string (e.g., "90-95 days" -> 92.5)
   let duration = 105; // default fallback
   const durationMatch = durationString.match(/(\d+)(?:-(\d+))?/);
@@ -342,11 +350,12 @@ const generateGrowingStages = (cultivationDate, durationString) => {
     duration = Math.round((minDuration + maxDuration) / 2);
   }
 
+  // Base stages common to all planting methods (exclude Transplanting for
+  // methods that don't use it, e.g., direct_seeding and parachute_seeding).
   const stages = [
     { stage: 'First Plowing', startDay: -21, endDay: -21, description: 'First plowing - breaking the soil' },
     { stage: 'Second Plowing & Field Leveling', startDay: -7, endDay: -1, description: 'Second plowing and field leveling for proper water management' },
     { stage: 'Nursery/Sowing', startDay: 0, endDay: 21, description: 'Seed sowing in nursery or direct seeding' },
-    { stage: 'Transplanting', startDay: 11, endDay: 14, description: 'Transplanting seedlings to main field' },
     { stage: 'Tillering', startDay: 28, endDay: 45, description: 'Formation of tillers and vegetative growth' },
     { stage: 'Panicle Initiation', startDay: 45, endDay: 65, description: 'Panicle development begins' },
     { stage: 'Flowering', startDay: 65, endDay: 85, description: 'Flowering and pollination' },
@@ -354,6 +363,29 @@ const generateGrowingStages = (cultivationDate, durationString) => {
     { stage: 'Maturity', startDay: duration - 15, endDay: duration, description: 'Grain maturity and harvest preparation' },
     { stage: 'Harvesting', startDay: duration, endDay: duration + 7, description: 'Harvesting and post-harvest activities' },
   ];
+
+  // If planting method is transplanting, insert the Transplanting stage at the
+  // appropriate place (before Tillering) and then add a 7-day shock/recovery
+  // period immediately after transplanting.
+  if (plantingMethod === 'transplanting') {
+    // Insert Transplanting between Nursery/Sowing and Tillering.
+    const transplantStage = { stage: 'Transplanting', startDay: 11, endDay: 14, description: 'Transplanting seedlings to main field' };
+    // Find index of Tillering to insert before it
+    const tilleringIndex = stages.findIndex(s => s.stage === 'Tillering');
+    const insertIndex = tilleringIndex !== -1 ? tilleringIndex : 3; // default position
+    stages.splice(insertIndex, 0, transplantStage);
+
+    // Calculate shock period immediately after transplanting stage
+    const shockStart = transplantStage.endDay + 1;
+    const shockEnd = transplantStage.endDay + 7; // 7-day shock period
+    const shockStage = {
+      stage: 'Shock period',
+      startDay: shockStart,
+      endDay: shockEnd,
+      description: 'Post-transplanting shock and recovery period for seedlings',
+    };
+    stages.splice(insertIndex + 1, 0, shockStage);
+  }
 
   return stages.map(stage => {
     const startDate = new Date(cultivationDate);
@@ -428,7 +460,11 @@ const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMeth
   const zoneType = isWetZone ? 'wet_zone' : 'intermediate_dry_zone';
   const conditionType = isIrrigated ? 'irrigated' : 'rainfed';
 
-  const plantingKey = plantingMethod === 'transplanting' ? 'transplanting' : 'direct_seeding';
+  // Map plantingMethod to the recommendation key used by fertilizer tables.
+  // - 'transplanting' uses transplanting recommendations and is anchored to transplantingDate
+  // - 'direct_seeding' and 'parachute_seeding' share the same recommendations and are
+  //   anchored to cultivationDate
+  const plantingKey = (plantingMethod === 'transplanting') ? 'transplanting' : 'direct_seeding';
 
   const selectedRecommendation = (((recommendations || {})[zoneType] || {})[conditionType] || {})[plantingKey]?.[ageGroup];
 
@@ -442,7 +478,11 @@ const generateFertilizerSchedule = (cultivationDate, areaInAcres, irrigationMeth
 
   // Generate schedule entries, apply soilP rule: if soilP > 10, set tsp to 0
   return selectedRecommendation.schedule.map(app => {
-  // For transplanted crops, anchor fertilizer applications to transplanting date if provided
+  // Anchor logic:
+  // - If plantingMethod is 'transplanting' and a transplantingDate is provided, use that
+  //   as the anchor for fertilizer application dates (users plant seedlings into the field
+  //   later than cultivation/nursery date).
+  // - For 'direct_seeding' and 'parachute_seeding' the cultivationDate is the anchor.
   const anchor = (plantingMethod === 'transplanting' && transplantingDate) ? new Date(transplantingDate) : new Date(cultivationDate);
   const applicationDate = new Date(anchor);
   applicationDate.setDate(applicationDate.getDate() + (app.week * 7)); // Convert weeks to days
