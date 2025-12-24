@@ -427,6 +427,34 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     return Math.max(0, ageWeeks); // Ensure non-negative
   };
 
+  const getSeedingDate = (plan) => {
+    // For transplanting, use transplanting date if available, otherwise cultivation date
+    if (plan?.plantingMethod === 'transplanting' && plan?.transplantingDate) {
+      return plan.transplantingDate;
+    }
+    // For direct seeding and parachute seeding, use cultivation date
+    return plan?.cultivationDate;
+  };
+
+  const calculatePlantAgeInDays = () => {
+    const seedingDate = getSeedingDate(plan);
+    if (!seedingDate) return null;
+    const now = new Date();
+    const seeding = new Date(seedingDate);
+    const diffTime = Math.abs(now - seeding);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const calculateDaysToHarvest = () => {
+    if (!plan?.expectedHarvest?.date) return null;
+    const now = new Date();
+    const harvest = new Date(plan.expectedHarvest.date);
+    const diffTime = harvest - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const handleLeafColorCalculation = () => {
     if (leafColorData.currentDate && plan?.cultivationDate) {
       const calculatedAge = calculatePlantAge(
@@ -1360,10 +1388,76 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <CalendarIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.cultivationDate')}
-                    secondary={formatShortDate(plan.cultivationDate)}
+                    primary={
+                      plan.plantingMethod === 'transplanting' && plan.transplantingDate
+                        ? t('seasonPlans.transplantingDate', { defaultValue: 'Transplanting Date' })
+                        : t('seasonPlans.seedingDate', { defaultValue: 'Seeding Date' })
+                    }
+                    secondary={
+                      plan.plantingMethod === 'transplanting' && plan.transplantingDate
+                        ? formatShortDate(plan.transplantingDate)
+                        : formatShortDate(plan.cultivationDate)
+                    }
                   />
                 </ListItem>
+                {plan.plantingMethod === 'transplanting' && plan.cultivationDate && plan.transplantingDate && (
+                  <ListItem>
+                    <ListItemIcon>
+                      <SpaIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={t('seasonPlans.nurserySowingDate', { defaultValue: 'Nursery Sowing Date' })}
+                      secondary={formatShortDate(plan.cultivationDate)}
+                    />
+                  </ListItem>
+                )}
+                {plan.status === 'active' && (() => {
+                  const plantAge = calculatePlantAgeInDays();
+                  const daysToHarvest = calculateDaysToHarvest();
+                  return (
+                    <>
+                      {plantAge !== null && (
+                        <ListItem>
+                          <ListItemIcon>
+                            <GrassIcon color="primary" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={t('seasonPlans.plantAge', { defaultValue: 'Plant Age' })}
+                            secondary={
+                              <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
+                                {plantAge} {t('seasonPlans.days', { defaultValue: 'days' })}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      )}
+                      {daysToHarvest !== null && (
+                        <ListItem>
+                          <ListItemIcon>
+                            <ScheduleIcon sx={{ color: daysToHarvest > 0 ? 'success.main' : 'warning.main' }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={t('seasonPlans.daysToHarvest', { defaultValue: 'Days to Harvest' })}
+                            secondary={
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontWeight: 'medium',
+                                  color: daysToHarvest > 0 ? 'success.main' : 'warning.main'
+                                }}
+                              >
+                                {daysToHarvest > 0 
+                                  ? `${daysToHarvest} ${t('seasonPlans.days', { defaultValue: 'days' })}`
+                                  : t('seasonPlans.harvestDue', { defaultValue: 'Harvest is due' })
+                                }
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      )}
+                    </>
+                  );
+                })()}
                 {plan.expectedHarvest?.date && (
                   <ListItem>
                     <ListItemIcon>

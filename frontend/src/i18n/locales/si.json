@@ -591,6 +591,8 @@
       "completed": "{{date}} දින සම්පූර්ණ කරන ලදී",
       "harvestCompleted": "අස්වනු සම්පූර්ණ කරන ලදී",
       "growingStages": "වර්ධන අදියර",
+      "growingStagesDisclaimer": "පාරිසරික තත්ව, පසේ ස්වභාවය ආදී කරුණු අනුව මෙම දින වකවානු ආසන්න ලෙස වෙනස් විය හැකි බව කරුණාවෙන් සලකන්න.",
+      "fertilizerScheduleDisclaimer": "කෘෂි ක්‍රම දෙපාර්තමෙන්තුවේ 'වී වගාව සඳහා පොහොර නිර්දේශය - 2013' අනුව සකසා ඇත.",
       "watchVideo": "වීඩියෝව බලන්න",
       "markCompleteInDialog": "සටහන් සංවාදයෙන් අදියර සම්පූර්ණ බව සලකුණු කරන්න",
       "growingStageNames": {

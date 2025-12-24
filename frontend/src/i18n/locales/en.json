@@ -517,6 +517,8 @@
       "completed": "Completed on {{date}}",
       "harvestCompleted": "Harvest completed",
       "growingStages": "Growing Stages",
+      "growingStagesDisclaimer": "The growing stages are approximate and may vary depending on environmental conditions and farming practices.",
+      "fertilizerScheduleDisclaimer": "Based on 'Fertilizer Recommendation for Paddy Cultivation - 2013' by the Department of Agriculture.",
       "watchVideo": "Watch video",
       "markCompleteInDialog": "Mark completion from the notes dialog",
       "growingStageNames": {
