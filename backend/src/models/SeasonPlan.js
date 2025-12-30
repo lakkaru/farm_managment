@@ -145,6 +145,8 @@ const seasonPlanSchema = new mongoose.Schema({
     date: Date,
     estimatedYield: Number,
   },
+  // Note: seed recommendation and tray counts are computed on the client for display
+  // and are intentionally NOT persisted on the SeasonPlan document.
   actualHarvest: {
     date: Date,
     actualYield: Number,

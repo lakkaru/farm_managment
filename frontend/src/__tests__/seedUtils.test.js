@@ -5,6 +5,10 @@ describe('seedUtils', () => {
     expect(getVarietyLength({ type: 'Long Duration' })).toBe('long');
     expect(getVarietyLength({ type: 'Short Duration' })).toBe('short');
     expect(getVarietyLength({ type: 'Medium Duration' })).toBe('short');
+    expect(getVarietyLength({ type: 'Intermediate Duration' })).toBe('short');
+    // grainShape based classification
+    expect(getVarietyLength({ characteristics: { grainQuality: { grainShape: 'Intermediate Medium' } } })).toBe('short');
+    expect(getVarietyLength({ characteristics: { grainQuality: { grainShape: 'Long' } } })).toBe('long');
     expect(getVarietyLength(null)).toBe('short');
   });
 
@@ -27,6 +31,8 @@ describe('seedUtils', () => {
     const res1 = computeSeedTotals({ area: 1, unit: 'hectares', plantingMethod: 'direct_seeding', variety: { type: 'Long Duration' } });
     expect(res1.perHaLabel).toBe('100 kg/ha');
     expect(res1.minTotalKg).toBeCloseTo(100);
+    // direct seeding should not provide tray counts
+    expect(res1.trayCount).toBeUndefined();
 
     const res2 = computeSeedTotals({ area: 0.5, unit: 'hectares', plantingMethod: 'direct_seeding', variety: { type: 'Short Duration' } });
     expect(res2.perHaLabel).toBe('75-80 kg/ha');
@@ -36,5 +42,8 @@ describe('seedUtils', () => {
     const res3 = computeSeedTotals({ area: 1, unit: 'acres', plantingMethod: 'parachute_seeding', variety: { type: 'Short Duration' } });
     // 1 acre -> ~0.404686 ha * 32.5 = ~13.16
     expect(res3.minTotalKg).toBeCloseTo(0.404685642 * 32.5, 5);
+    const expectedTrays = Math.round(0.404685642 * 1000);
+    expect(res3.trayCount).toBe(expectedTrays);
+    expect(res3.traysPerHa).toBe(1000);
   });
 });

@@ -35,6 +35,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { computeSeedTotals } from "../../../../utils/seedUtils";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -66,7 +67,7 @@ import {
   AttachMoney as MoneyIcon,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
-import BackButton from '../../../../components/BackButton';
+import BackButton from "../../../../components/BackButton";
 import GrowingStages from "../../../../components/paddy/season-plans/GrowingStages";
 import FertilizerSchedule from "../../../../components/paddy/season-plans/FertilizerSchedule";
 import { navigate } from "gatsby";
@@ -165,7 +166,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           setImageLoaded(true);
           console.log(
             "✅ Thumbnail loaded successfully via backend API:",
-            imageUrl
+            imageUrl,
           );
         }}
         onError={(e) => {
@@ -173,25 +174,25 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           setImageError(true);
           console.error(
             "❌ Thumbnail failed to load via backend API:",
-            imageUrl
+            imageUrl,
           );
-        }} />
+        }}
+      />
+    </Box>
+  );
+};
 
-      </Box>
-    );
-  };
-
-  const SeasonPlanViewContent = ({ id }) => {
+const SeasonPlanViewContent = ({ id }) => {
   const { t, i18n } = useTranslation();
 
   // Helper to convert area unit from DB format to translation key
   const getUnitTranslationKey = (unit) => {
     const unitMap = {
-      'hectares': 'hectares',
-      'acres': 'acres',
-      'perches': 'perches'
+      hectares: "hectares",
+      acres: "acres",
+      perches: "perches",
     };
-    return unitMap[unit] || 'acres';
+    return unitMap[unit] || "acres";
   };
 
   // Local component state (restored after refactor)
@@ -199,7 +200,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [leafColorData, setLeafColorData] = useState({ currentDate: "", plantAge: "", leafColorIndex: "", recommendedUrea: 0 });
+  const [leafColorData, setLeafColorData] = useState({
+    currentDate: "",
+    plantAge: "",
+    leafColorIndex: "",
+    recommendedUrea: 0,
+  });
   const [leafColorDialog, setLeafColorDialog] = useState(false);
   const toastShownRef = useRef(false);
 
@@ -213,21 +219,40 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   const [remarkImages, setRemarkImages] = useState([]);
   const [remarkDialog, setRemarkDialog] = useState(false);
   const [editingRemark, setEditingRemark] = useState(null);
-  const [remarkData, setRemarkData] = useState({ date: dayjs().format("YYYY-MM-DD"), category: "general", title: "", description: "", images: [] });
+  const [remarkData, setRemarkData] = useState({
+    date: dayjs().format("YYYY-MM-DD"),
+    category: "general",
+    title: "",
+    description: "",
+    images: [],
+  });
   const [deleteRemarkId, setDeleteRemarkId] = useState(null);
   const [deleteRemarkDialog, setDeleteRemarkDialog] = useState(false);
 
   const [implementationData, setImplementationData] = useState({});
-  const [fertilizerDialog, setFertilizerDialog] = useState({ open: false, index: null });
+  const [fertilizerDialog, setFertilizerDialog] = useState({
+    open: false,
+    index: null,
+  });
   const [stageDialog, setStageDialog] = useState({ open: false, index: null });
 
-  const [harvestData, setHarvestData] = useState({ date: "", actualYield: "", quality: "", notes: "" });
+  const [harvestData, setHarvestData] = useState({
+    date: "",
+    actualYield: "",
+    quality: "",
+    notes: "",
+  });
   const [harvestDialog, setHarvestDialog] = useState(false);
 
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteFertilizerIndex, setDeleteFertilizerIndex] = useState(null);
-  const [deleteFertilizerDialogOpen, setDeleteFertilizerDialogOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({ growingStages: false, fertilizerSchedule: false, dailyRemarks: false });
+  const [deleteFertilizerDialogOpen, setDeleteFertilizerDialogOpen] =
+    useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    growingStages: false,
+    fertilizerSchedule: false,
+    dailyRemarks: false,
+  });
   const [leafColorEnabled, setLeafColorEnabled] = useState(false);
 
   // Basic categories used in expense UI (minimal defaults)
@@ -256,7 +281,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   // Remark categories derived from constants (fallback)
   const remarkCategories = PADDY_REMARK_CATEGORIES || [
-    { key: 'general', label: 'General' }
+    { key: "general", label: "General" },
   ];
 
   // Wrapper to remove an image from remarkImages (keeps previous API)
@@ -266,15 +291,15 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   // Payment methods and units used in expense UI
   const paymentMethods = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'card', label: 'Card' },
-    { value: 'bank', label: 'Bank Transfer' },
+    { value: "cash", label: "Cash" },
+    { value: "card", label: "Card" },
+    { value: "bank", label: "Bank Transfer" },
   ];
 
   const units = [
-    { value: 'kg', label: 'kg' },
-    { value: 'ltr', label: 'ltr' },
-    { value: 'unit', label: 'unit' },
+    { value: "kg", label: "kg" },
+    { value: "ltr", label: "ltr" },
+    { value: "unit", label: "unit" },
   ];
 
   const loadSeasonPlan = useCallback(async () => {
@@ -347,37 +372,46 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   // Helper: slugify string for i18n keys
   const slugify = (s) => {
-    if (!s) return '';
-    return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    if (!s) return "";
+    return String(s)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
   };
 
   // Helper: compute duration months (rounded to 0.5) and days from a variety object
   const getVarietyDurationDisplay = (variety) => {
-    if (!variety) return '';
+    if (!variety) return "";
 
     // Prefer virtuals if present
     const months = variety.durationMonths || undefined;
     const daysFromVirtual = variety.durationDays || undefined;
 
     if (months || daysFromVirtual) {
-      const m = months !== undefined ? months : Math.round((daysFromVirtual / 30) * 2) / 2;
-      const d = daysFromVirtual !== undefined ? Math.round(daysFromVirtual) : Math.round(m * 30);
-      return `${m} ${t('paddyVarieties.monthsUnit')} (${d} ${t('paddyVarieties.daysUnit')})`;
+      const m =
+        months !== undefined
+          ? months
+          : Math.round((daysFromVirtual / 30) * 2) / 2;
+      const d =
+        daysFromVirtual !== undefined
+          ? Math.round(daysFromVirtual)
+          : Math.round(m * 30);
+      return `${m} ${t("paddyVarieties.monthsUnit")} (${d} ${t("paddyVarieties.daysUnit")})`;
     }
 
     // Fallback: parse duration string like "90-95 days" or "105 days"
-    const dur = variety.duration || '';
+    const dur = variety.duration || "";
     const match = String(dur).match(/(\d+)(?:-(\d+))?/);
     if (match) {
       const minD = parseInt(match[1], 10);
       const maxD = match[2] ? parseInt(match[2], 10) : minD;
       const avgDays = Math.round((minD + maxD) / 2);
       const monthsRounded = Math.round((avgDays / 30) * 2) / 2;
-      return `${monthsRounded} ${t('paddyVarieties.monthsUnit')} (${avgDays} ${t('paddyVarieties.daysUnit')})`;
+      return `${monthsRounded} ${t("paddyVarieties.monthsUnit")} (${avgDays} ${t("paddyVarieties.daysUnit")})`;
     }
 
     // Last fallback: show raw duration string
-    return dur || '';
+    return dur || "";
   };
 
   const getCompletedStages = () => {
@@ -393,7 +427,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   // Harvest button gating: disable record harvest until growing stages are completed
   const totalGrowingStages = plan?.growingStages?.length || 0;
-  const isHarvestBlocked = !plan?.actualHarvest?.date && totalGrowingStages > 0 && getCompletedStages() < totalGrowingStages;
+  const isHarvestBlocked =
+    !plan?.actualHarvest?.date &&
+    totalGrowingStages > 0 &&
+    getCompletedStages() < totalGrowingStages;
 
   // Leaf Color Chart calculation with all 6 color indices
   const leafColorChart = {
@@ -429,7 +466,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
   const getSeedingDate = (plan) => {
     // For transplanting, use transplanting date if available, otherwise cultivation date
-    if (plan?.plantingMethod === 'transplanting' && plan?.transplantingDate) {
+    if (plan?.plantingMethod === "transplanting" && plan?.transplantingDate) {
       return plan.transplantingDate;
     }
     // For direct seeding and parachute seeding, use cultivation date
@@ -459,7 +496,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     if (leafColorData.currentDate && plan?.cultivationDate) {
       const calculatedAge = calculatePlantAge(
         leafColorData.currentDate,
-        plan.cultivationDate
+        plan.cultivationDate,
       );
       setLeafColorData((prev) => ({
         ...prev,
@@ -469,7 +506,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
       if (calculatedAge && leafColorData.leafColorIndex) {
         const recommended = calculateUreaRecommendation(
           calculatedAge,
-          parseInt(leafColorData.leafColorIndex)
+          parseInt(leafColorData.leafColorIndex),
         );
         setLeafColorData((prev) => ({
           ...prev,
@@ -492,17 +529,20 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         leafColorIndex: leafColorData.leafColorIndex,
         recommendedUrea: leafColorData.recommendedUrea,
         applicationDate: leafColorData.currentDate, // Use the selected date from dialog
-        notes: t('seasonPlans.viewPage.leafColor.lccApplicationNotes', {
+        notes: t("seasonPlans.viewPage.leafColor.lccApplicationNotes", {
           amount: leafColorData.recommendedUrea,
           age: leafColorData.plantAge,
-          index: leafColorData.leafColorIndex
+          index: leafColorData.leafColorIndex,
         }),
       };
-      
+
       // Debug logging to verify date is being sent correctly
-      console.log('Sending LCC Application Data:', lccData);
-      
-      const response = await seasonPlanAPI.addLCCFertilizerApplication(id, lccData);
+      console.log("Sending LCC Application Data:", lccData);
+
+      const response = await seasonPlanAPI.addLCCFertilizerApplication(
+        id,
+        lccData,
+      );
 
       setPlan(response.data.data);
       setLeafColorDialog(false);
@@ -518,7 +558,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
       if (!toastShownRef.current) {
         toastShownRef.current = true;
         toast.success(
-          `🌱 LCC-based urea application added: ${leafColorData.recommendedUrea * plan.cultivatingArea}kg total`
+          `🌱 LCC-based urea application added: ${leafColorData.recommendedUrea * plan.cultivatingArea}kg total`,
         );
       }
     } catch (error) {
@@ -558,7 +598,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
 
       const response = await seasonPlanAPI.deleteFertilizerApplication(
         id,
-        applicationIndex
+        applicationIndex,
       );
       setPlan(response.data.data);
 
@@ -569,14 +609,14 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         toastShownRef.current = true;
         const deletedType = application.isLCCBased ? "LCC-based" : "Scheduled";
         toast.success(
-          `🗑️ ${deletedType} fertilizer application deleted successfully`
+          `🗑️ ${deletedType} fertilizer application deleted successfully`,
         );
       }
     } catch (error) {
       console.error("Error deleting fertilizer application:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to delete fertilizer application"
+          "Failed to delete fertilizer application",
       );
     } finally {
       setSaving(false);
@@ -640,7 +680,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           applied: implementationData.applied,
           implementedDate: implementationData.implementedDate || undefined,
           notes: implementationData.notes,
-        }
+        },
       );
       setPlan(response.data.data);
       setFertilizerDialog({ open: false, index: null });
@@ -675,7 +715,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           actualStartDate: implementationData.actualStartDate || undefined,
           actualEndDate: implementationData.actualEndDate || undefined,
           notes: implementationData.notes,
-        }
+        },
       );
       setPlan(response.data.data);
       setStageDialog({ open: false, index: null });
@@ -818,17 +858,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
 
-    console.log("[MOBILE DEBUG] Files selected:", files.map(f => ({
-      name: f.name,
-      size: f.size,
-      type: f.type,
-      lastModified: f.lastModified
-    })));
+    console.log(
+      "[MOBILE DEBUG] Files selected:",
+      files.map((f) => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        lastModified: f.lastModified,
+      })),
+    );
 
     // Check file sizes (10MB limit per file)
-    const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+    const oversizedFiles = files.filter((file) => file.size > 10 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      toast.error(`Some files are too large (>10MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+      toast.error(
+        `Some files are too large (>10MB): ${oversizedFiles.map((f) => f.name).join(", ")}`,
+      );
       event.target.value = "";
       return;
     }
@@ -836,7 +881,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     // Check total size for mobile (50MB total limit)
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > 50 * 1024 * 1024) {
-      toast.error(`Total file size too large (${Math.round(totalSize / 1024 / 1024)}MB). Please select fewer or smaller images.`);
+      toast.error(
+        `Total file size too large (${Math.round(totalSize / 1024 / 1024)}MB). Please select fewer or smaller images.`,
+      );
       event.target.value = "";
       return;
     }
@@ -927,13 +974,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
       console.log("=== MOBILE DEBUG: Starting saveRemark ===");
       console.log("Remark data:", remarkData);
       console.log("Remark images count:", remarkImages.length);
-      console.log("Remark images details:", remarkImages.map(img => ({
-        name: img.name,
-        size: img.size,
-        type: img.file?.type,
-        isHeic: img.isHeic,
-        hasFile: !!img.file
-      })));
+      console.log(
+        "Remark images details:",
+        remarkImages.map((img) => ({
+          name: img.name,
+          size: img.size,
+          type: img.file?.type,
+          isHeic: img.isHeic,
+          hasFile: !!img.file,
+        })),
+      );
 
       const formData = new FormData();
       formData.append("date", remarkData.date);
@@ -948,11 +998,13 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             name: imageObj.file.name,
             size: imageObj.file.size,
             type: imageObj.file.type,
-            lastModified: imageObj.file.lastModified
+            lastModified: imageObj.file.lastModified,
           });
           formData.append("images", imageObj.file);
         } else {
-          console.log(`[MOBILE DEBUG] Skipping image ${index} - no file object`);
+          console.log(
+            `[MOBILE DEBUG] Skipping image ${index} - no file object`,
+          );
         }
       });
 
@@ -964,7 +1016,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             name: value.name,
             size: value.size,
             type: value.type,
-            lastModified: value.lastModified
+            lastModified: value.lastModified,
           });
         } else {
           console.log(`${key}:`, value);
@@ -978,7 +1030,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         response = await seasonPlanAPI.updateDailyRemark(
           id,
           editingRemark._id,
-          formData
+          formData,
         );
         console.log("[MOBILE DEBUG] Update successful:", response.data);
         toast.success("📝 Daily remark updated successfully");
@@ -1004,23 +1056,26 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           url: error.config?.url,
           method: error.config?.method,
           headers: error.config?.headers,
-          timeout: error.config?.timeout
-        }
+          timeout: error.config?.timeout,
+        },
       });
-      
+
       let errorMessage = "Failed to save daily remark";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
-      } else if (error.message.includes('timeout')) {
-        errorMessage = "Upload timeout - image file might be too large for mobile connection";
-      } else if (error.message.includes('Network Error')) {
-        errorMessage = "Network error - please check your connection and try again";
+      } else if (error.message.includes("timeout")) {
+        errorMessage =
+          "Upload timeout - image file might be too large for mobile connection";
+      } else if (error.message.includes("Network Error")) {
+        errorMessage =
+          "Network error - please check your connection and try again";
       } else if (error.response?.status === 413) {
-        errorMessage = "Image files are too large for upload. Please use smaller images or contact support.";
+        errorMessage =
+          "Image files are too large for upload. Please use smaller images or contact support.";
       } else if (error.response?.status >= 500) {
         errorMessage = "Server error - please try again later";
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -1038,7 +1093,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
     try {
       const response = await seasonPlanAPI.deleteDailyRemark(
         id,
-        deleteRemarkId
+        deleteRemarkId,
       );
       setPlan(response.data.data);
       toast.success("🗑️ Daily remark deleted successfully");
@@ -1140,7 +1195,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         const response = await seasonPlanAPI.updateExpense(
           id,
           editingExpense._id,
-          expensePayload
+          expensePayload,
         );
         toast.success("💰 Expense updated successfully");
         // Update plan with the response data that includes updated expenses
@@ -1174,7 +1229,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   const handleDeleteExpense = async (expenseId) => {
     if (
       !window.confirm(
-        "Are you sure you want to delete this expense? This action cannot be undone."
+        "Are you sure you want to delete this expense? This action cannot be undone.",
       )
     ) {
       return;
@@ -1226,7 +1281,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   if (loading) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography>{t('seasonPlans.viewPage.loading')}</Typography>
+        <Typography>{t("seasonPlans.viewPage.loading")}</Typography>
       </Box>
     );
   }
@@ -1234,9 +1289,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
   if (error || !plan) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">{error || t('seasonPlans.viewPage.notFound')}</Alert>
+        <Alert severity="error">
+          {error || t("seasonPlans.viewPage.notFound")}
+        </Alert>
         <BackButton to="/paddy/season-plans" sx={{ mt: 2 }}>
-          {t('seasonPlans.viewPage.backToList')}
+          {t("seasonPlans.viewPage.backToList")}
         </BackButton>
       </Box>
     );
@@ -1251,42 +1308,52 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           alignItems: "center",
           justifyContent: "space-between",
           mb: 3,
-          flexDirection: { xs: 'column', sm: 'row' },
+          flexDirection: { xs: "column", sm: "row" },
           gap: { xs: 1, sm: 0 },
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <BackButton to="/paddy/season-plans" sx={{ mr: 2 }}>
-            {t('common.back')}
+            {t("common.back")}
           </BackButton>
           <Box>
-            <Box >
+            <Box>
               <Typography variant="h4" gutterBottom>
                 {plan.farmId?.name}
               </Typography>
               <Typography variant="h6" gutterBottom>
-                {t(`seasonPlans.${plan.season}`, { defaultValue: plan.season.toUpperCase() })} {t('seasonPlans.season')}
+                {t(`seasonPlans.${plan.season}`, {
+                  defaultValue: plan.season.toUpperCase(),
+                })}{" "}
+                {t("seasonPlans.season")}
               </Typography>
             </Box>
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexDirection: { xs: "column", sm: "row" },
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
           <Button
             startIcon={<EditIcon />}
             variant="outlined"
             onClick={() => navigate(`/paddy/season-plans/${id}/edit`)}
-            sx={{ minWidth:'97px', width: { xs: '100%', sm: 'auto' } }}
+            sx={{ minWidth: "97px", width: { xs: "100%", sm: "auto" } }}
           >
-            {t('seasonPlans.viewPage.editPlan')}
+            {t("seasonPlans.viewPage.editPlan")}
           </Button>
           <Button
             startIcon={<DeleteIcon />}
             variant="outlined"
             color="error"
             onClick={() => setDeleteDialog(true)}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
           >
-            {t('seasonPlans.viewPage.deletePlan')}
+            {t("seasonPlans.viewPage.deletePlan")}
           </Button>
         </Box>
       </Box>
@@ -1295,11 +1362,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         {/* Basic Information */}
         <Grid item xs={12} md={6} sx={{ display: "flex" }}>
           <Card
-            sx={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+            }}
           >
             <CardContent sx={{ flex: 1 }}>
               <Typography variant="h6" gutterBottom>
-                {t('seasonPlans.viewPage.basicInfo')}
+                {t("seasonPlans.viewPage.basicInfo")}
               </Typography>
               <List dense>
                 <ListItem>
@@ -1307,8 +1379,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <LocationIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.district')}
-                    secondary={plan.farmId?.district || t('common.notSpecified')}
+                    primary={t("seasonPlans.viewPage.district")}
+                    secondary={
+                      plan.farmId?.district || t("common.notSpecified")
+                    }
                   />
                 </ListItem>
                 <ListItem>
@@ -1316,17 +1390,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <TerrainIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.climateZone')}
+                    primary={t("seasonPlans.viewPage.climateZone")}
                     secondary={plan.climateZone}
                   />
                 </ListItem>
+
+               
                 <ListItem>
                   <ListItemIcon>
                     <WaterIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.irrigationMethod')}
-                    secondary={t(`seasonPlans.viewPage.irrigationMethods.${plan.irrigationMethod}`, { defaultValue: plan.irrigationMethod })}
+                    primary={t("seasonPlans.viewPage.irrigationMethod")}
+                    secondary={t(
+                      `seasonPlans.viewPage.irrigationMethods.${plan.irrigationMethod}`,
+                      { defaultValue: plan.irrigationMethod },
+                    )}
                   />
                 </ListItem>
                 <ListItem>
@@ -1334,8 +1413,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <SpaIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.plantingMethod')}
-                    secondary={t(`seasonPlans.viewPage.plantingMethods.${plan.plantingMethod || 'direct_seeding'}`)}
+                    primary={t("seasonPlans.viewPage.plantingMethod")}
+                    secondary={t(
+                      `seasonPlans.viewPage.plantingMethods.${plan.plantingMethod || "direct_seeding"}`,
+                    )}
                   />
                 </ListItem>
                 {/* Soil condition removed — not used for fertilizer recommendations */}
@@ -1344,18 +1425,26 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <GrassIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.paddyVariety')}
+                    primary={t("seasonPlans.viewPage.paddyVariety")}
                     secondary={(() => {
                       const v = plan.paddyVariety;
-                      if (!v) return t('common.notSpecified');
-                      const name = v.name || t('common.notSpecified');
+                      if (!v) return t("common.notSpecified");
+                      const name = v.name || t("common.notSpecified");
                       const durationDisplay = getVarietyDurationDisplay(v);
                       // Get grain color and shape from characteristics (support nested grainQuality)
-                      const pericarp = v.characteristics?.grainQuality?.pericarpColour || v.characteristics?.pericarpColour;
-                      const grainShape = v.characteristics?.grainQuality?.grainShape || v.characteristics?.grainShape;
-                      const colorLabel = pericarp ? ` • ${t('paddyVarieties.grainColorLabel')} ${t(`paddyVarieties.colors.${slugify(pericarp)}`, { defaultValue: pericarp })}` : '';
-                      const shapeLabel = grainShape ? ` • ${t('paddyVarieties.grainSizeLabel')} ${t(`paddyVarieties.grainSizes.${slugify(grainShape)}`, { defaultValue: grainShape })}` : '';
-                      return `${name}${durationDisplay ? ` — ${durationDisplay}` : ''}${colorLabel}${shapeLabel}`;
+                      const pericarp =
+                        v.characteristics?.grainQuality?.pericarpColour ||
+                        v.characteristics?.pericarpColour;
+                      const grainShape =
+                        v.characteristics?.grainQuality?.grainShape ||
+                        v.characteristics?.grainShape;
+                      const colorLabel = pericarp
+                        ? ` • ${t("paddyVarieties.grainColorLabel")} ${t(`paddyVarieties.colors.${slugify(pericarp)}`, { defaultValue: pericarp })}`
+                        : "";
+                      const shapeLabel = grainShape
+                        ? ` • ${t("paddyVarieties.grainSizeLabel")} ${t(`paddyVarieties.grainSizes.${slugify(grainShape)}`, { defaultValue: grainShape })}`
+                        : "";
+                      return `${name}${durationDisplay ? ` — ${durationDisplay}` : ""}${colorLabel}${shapeLabel}`;
                     })()}
                   />
                 </ListItem>
@@ -1364,10 +1453,48 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     <AreaIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={t('seasonPlans.viewPage.cultivatingArea')}
+                    primary={t("seasonPlans.viewPage.cultivatingArea")}
                     secondary={`${plan.cultivatingArea} ${t(`seasonPlans.units.${getUnitTranslationKey(plan.areaUnit)}`)}`}
                   />
                 </ListItem>
+                 {/* Seed recommendation (computed client-side; not stored in DB) */}
+                {(() => {
+                  const seedRes = computeSeedTotals({
+                    area: plan.cultivatingArea,
+                    unit: plan.areaUnit,
+                    plantingMethod: plan.plantingMethod,
+                    variety: plan.paddyVariety,
+                  });
+
+                  if (!seedRes.computed) return null;
+
+                  return (
+                    <ListItem>
+                      <ListItemIcon>
+                        <ScienceIcon />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={t(
+                          "seasonPlans.createForm.seedRecommendation",
+                          { defaultValue: "Seed recommendation" },
+                        )}
+                        secondary={
+                          seedRes.minTotalKg === seedRes.maxTotalKg
+                            ? ` ${seedRes.minTotalKg.toFixed(2)} kg `
+                            : `${seedRes.perHaLabel} • ${seedRes.minTotalKg.toFixed(2)} - ${seedRes.maxTotalKg.toFixed(2)} kg `
+                        }
+                      />
+                      {plan.plantingMethod === "parachute_seeding" &&
+                        seedRes.trayCount && (
+                          <Box sx={{ pl: 7 }}>
+                            <Typography variant="caption" color="textSecondary">
+                              {`${t("seasonPlans.createForm.parachuteTrayCount", { defaultValue: "Approx trays" })}: ${seedRes.trayCount}`}
+                            </Typography>
+                          </Box>
+                        )}
+                    </ListItem>
+                  );
+                })()}
               </List>
             </CardContent>
           </Card>
@@ -1376,11 +1503,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         {/* Dates and Progress */}
         <Grid item xs={12} md={6} sx={{ display: "flex" }}>
           <Card
-            sx={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+            }}
           >
             <CardContent sx={{ flex: 1 }}>
               <Typography variant="h6" gutterBottom>
-                {t('seasonPlans.viewPage.timeline')}
+                {t("seasonPlans.viewPage.timeline")}
               </Typography>
               <List dense>
                 <ListItem>
@@ -1389,82 +1521,115 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={
-                      plan.plantingMethod === 'transplanting' && plan.transplantingDate
-                        ? t('seasonPlans.transplantingDate', { defaultValue: 'Transplanting Date' })
-                        : t('seasonPlans.seedingDate', { defaultValue: 'Seeding Date' })
+                      plan.plantingMethod === "transplanting" &&
+                      plan.transplantingDate
+                        ? t("seasonPlans.transplantingDate", {
+                            defaultValue: "Transplanting Date",
+                          })
+                        : t("seasonPlans.seedingDate", {
+                            defaultValue: "Seeding Date",
+                          })
                     }
                     secondary={
-                      plan.plantingMethod === 'transplanting' && plan.transplantingDate
+                      plan.plantingMethod === "transplanting" &&
+                      plan.transplantingDate
                         ? formatShortDate(plan.transplantingDate)
                         : formatShortDate(plan.cultivationDate)
                     }
                   />
                 </ListItem>
-                {plan.plantingMethod === 'transplanting' && plan.cultivationDate && plan.transplantingDate && (
-                  <ListItem>
-                    <ListItemIcon>
-                      <SpaIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={t('seasonPlans.nurserySowingDate', { defaultValue: 'Nursery Sowing Date' })}
-                      secondary={formatShortDate(plan.cultivationDate)}
-                    />
-                  </ListItem>
-                )}
-                {plan.status === 'active' && (() => {
-                  const plantAge = calculatePlantAgeInDays();
-                  const daysToHarvest = calculateDaysToHarvest();
-                  return (
-                    <>
-                      {plantAge !== null && (
-                        <ListItem>
-                          <ListItemIcon>
-                            <GrassIcon color="primary" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={t('seasonPlans.plantAge', { defaultValue: 'Plant Age' })}
-                            secondary={
-                              <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
-                                {plantAge} {t('seasonPlans.days', { defaultValue: 'days' })}
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                      )}
-                      {daysToHarvest !== null && (
-                        <ListItem>
-                          <ListItemIcon>
-                            <ScheduleIcon sx={{ color: daysToHarvest > 0 ? 'success.main' : 'warning.main' }} />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={t('seasonPlans.daysToHarvest', { defaultValue: 'Days to Harvest' })}
-                            secondary={
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  fontWeight: 'medium',
-                                  color: daysToHarvest > 0 ? 'success.main' : 'warning.main'
+                {plan.plantingMethod === "transplanting" &&
+                  plan.cultivationDate &&
+                  plan.transplantingDate && (
+                    <ListItem>
+                      <ListItemIcon>
+                        <SpaIcon />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={t("seasonPlans.nurserySowingDate", {
+                          defaultValue: "Nursery Sowing Date",
+                        })}
+                        secondary={formatShortDate(plan.cultivationDate)}
+                      />
+                    </ListItem>
+                  )}
+                {plan.status === "active" &&
+                  (() => {
+                    const plantAge = calculatePlantAgeInDays();
+                    const daysToHarvest = calculateDaysToHarvest();
+                    return (
+                      <>
+                        {plantAge !== null && (
+                          <ListItem>
+                            <ListItemIcon>
+                              <GrassIcon color="primary" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={t("seasonPlans.plantAge", {
+                                defaultValue: "Plant Age",
+                              })}
+                              secondary={
+                                <Typography
+                                  variant="body2"
+                                  color="primary"
+                                  sx={{ fontWeight: "medium" }}
+                                >
+                                  {plantAge}{" "}
+                                  {t("seasonPlans.days", {
+                                    defaultValue: "days",
+                                  })}
+                                </Typography>
+                              }
+                            />
+                          </ListItem>
+                        )}
+                        {daysToHarvest !== null && (
+                          <ListItem>
+                            <ListItemIcon>
+                              <ScheduleIcon
+                                sx={{
+                                  color:
+                                    daysToHarvest > 0
+                                      ? "success.main"
+                                      : "warning.main",
                                 }}
-                              >
-                                {daysToHarvest > 0 
-                                  ? `${daysToHarvest} ${t('seasonPlans.days', { defaultValue: 'days' })}`
-                                  : t('seasonPlans.harvestDue', { defaultValue: 'Harvest is due' })
-                                }
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                      )}
-                    </>
-                  );
-                })()}
+                              />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={t("seasonPlans.daysToHarvest", {
+                                defaultValue: "Days to Harvest",
+                              })}
+                              secondary={
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: "medium",
+                                    color:
+                                      daysToHarvest > 0
+                                        ? "success.main"
+                                        : "warning.main",
+                                  }}
+                                >
+                                  {daysToHarvest > 0
+                                    ? `${daysToHarvest} ${t("seasonPlans.days", { defaultValue: "days" })}`
+                                    : t("seasonPlans.harvestDue", {
+                                        defaultValue: "Harvest is due",
+                                      })}
+                                </Typography>
+                              }
+                            />
+                          </ListItem>
+                        )}
+                      </>
+                    );
+                  })()}
                 {plan.expectedHarvest?.date && (
                   <ListItem>
                     <ListItemIcon>
                       <CalendarIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary={t('seasonPlans.viewPage.expectedHarvest')}
+                      primary={t("seasonPlans.viewPage.expectedHarvest")}
                       secondary={formatShortDate(plan.expectedHarvest.date)}
                     />
                   </ListItem>
@@ -1475,7 +1640,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       <CheckCircleIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary={t('seasonPlans.viewPage.actualHarvest.label')}
+                      primary={t("seasonPlans.viewPage.actualHarvest.label")}
                       secondary={formatShortDate(plan.actualHarvest.date)}
                     />
                   </ListItem>
@@ -1485,7 +1650,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               {/* Progress */}
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle1" gutterBottom>
-                🌾 {t('seasonPlans.viewPage.growingStages')}
+                🌾 {t("seasonPlans.viewPage.growingStages")}
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <LinearProgress
@@ -1508,7 +1673,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   color="textSecondary"
                   sx={{ mt: 1 }}
                 >
-                  🌱 {t('seasonPlans.viewPage.stageProgress', { current: getCompletedStages(), total: plan.growingStages?.length || 0 })}
+                  🌱{" "}
+                  {t("seasonPlans.viewPage.stageProgress", {
+                    current: getCompletedStages(),
+                    total: plan.growingStages?.length || 0,
+                  })}
                 </Typography>
               </Box>
 
@@ -1516,20 +1685,31 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Divider sx={{ my: 2 }} />
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                   mb: 2,
-                  flexDirection: { xs: 'column', sm: 'row' },
+                  flexDirection: { xs: "column", sm: "row" },
                   gap: { xs: 1, sm: 0 },
                 }}
               >
                 <Typography variant="subtitle1">
-                  🌾   {t('seasonPlans.viewPage.harvestInformation')}
+                  🌾 {t("seasonPlans.viewPage.harvestInformation")}
                 </Typography>
-                <Box sx={{ width: { xs: '100%', sm: 'auto' }, display: 'flex', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+                <Box
+                  sx={{
+                    width: { xs: "100%", sm: "auto" },
+                    display: "flex",
+                    justifyContent: { xs: "flex-start", sm: "flex-end" },
+                  }}
+                >
                   {isHarvestBlocked && !plan.actualHarvest?.date ? (
-                    <Tooltip title={t('seasonPlans.viewPage.harvestBlockedTooltip') || 'Complete all growing stages first'}>
+                    <Tooltip
+                      title={
+                        t("seasonPlans.viewPage.harvestBlockedTooltip") ||
+                        "Complete all growing stages first"
+                      }
+                    >
                       <span>
                         <Button
                           variant="contained"
@@ -1538,11 +1718,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                           disabled
                           fullWidth
                           sx={{
-                            background: "linear-gradient(45deg, #DAA520, #FFD700)",
+                            background:
+                              "linear-gradient(45deg, #DAA520, #FFD700)",
                             opacity: 0.6,
                           }}
                         >
-                          {t('seasonPlans.viewPage.recordHarvest')}
+                          {t("seasonPlans.viewPage.recordHarvest")}
                         </Button>
                       </span>
                     </Tooltip>
@@ -1565,8 +1746,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       }}
                     >
                       {plan.actualHarvest?.date
-                        ? t('seasonPlans.viewPage.updateHarvest')
-                        : t('seasonPlans.viewPage.recordHarvest')}
+                        ? t("seasonPlans.viewPage.updateHarvest")
+                        : t("seasonPlans.viewPage.recordHarvest")}
                     </Button>
                   )}
                 </Box>
@@ -1586,17 +1767,28 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     variant="body2"
                     sx={{ color: "#006400", fontWeight: "bold", mb: 1 }}
                   >
-                    ✅ {t('seasonPlans.viewPage.harvestCompleted')}: {formatShortDate(plan.actualHarvest.date)}
+                    ✅ {t("seasonPlans.viewPage.harvestCompleted")}:{" "}
+                    {formatShortDate(plan.actualHarvest.date)}
                   </Typography>
                   {plan.actualHarvest.actualYield && (
                     <Typography
                       variant="body2"
                       sx={{ color: "#228B22", mb: 0.5 }}
                     >
-                      📊 {t('seasonPlans.viewPage.actualYield')}: {plan.actualHarvest.actualYield} kg
+                      📊 {t("seasonPlans.viewPage.actualYield")}:{" "}
+                      {plan.actualHarvest.actualYield} kg
                       {plan.expectedHarvest?.estimatedYield && (
                         <span style={{ color: "#666", marginLeft: 8 }}>
-                          ({t('seasonPlans.viewPage.expectedHarvest')}: {plan.expectedHarvest.estimatedYield} {t('seasonPlans.units.tons')} - {((plan.actualHarvest.actualYield / (plan.expectedHarvest.estimatedYield * 1000)) * 100).toFixed(1)}% {t('seasonPlans.viewPage.actualHarvest.ofExpected')})
+                          ({t("seasonPlans.viewPage.expectedHarvest")}:{" "}
+                          {plan.expectedHarvest.estimatedYield}{" "}
+                          {t("seasonPlans.units.tons")} -{" "}
+                          {(
+                            (plan.actualHarvest.actualYield /
+                              (plan.expectedHarvest.estimatedYield * 1000)) *
+                            100
+                          ).toFixed(1)}
+                          % {t("seasonPlans.viewPage.actualHarvest.ofExpected")}
+                          )
                         </span>
                       )}
                     </Typography>
@@ -1606,7 +1798,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       variant="body2"
                       sx={{ color: "#228B22", mb: 0.5 }}
                     >
-                      🏆 {t('seasonPlans.viewPage.yieldQuality')}: {plan.actualHarvest.quality}
+                      🏆 {t("seasonPlans.viewPage.yieldQuality")}:{" "}
+                      {plan.actualHarvest.quality}
                     </Typography>
                   )}
                   {plan.actualHarvest.notes && (
@@ -1614,7 +1807,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       variant="body2"
                       sx={{ color: "#228B22", fontStyle: "italic" }}
                     >
-                      📝 {t('seasonPlans.viewPage.harvestNotes')}: {plan.actualHarvest.notes}
+                      📝 {t("seasonPlans.viewPage.harvestNotes")}:{" "}
+                      {plan.actualHarvest.notes}
                     </Typography>
                   )}
                 </Box>
@@ -1631,7 +1825,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#B8860B" }}>
-                    📅 {t('seasonPlans.viewPage.expectedHarvest')}: {formatShortDate(plan.expectedHarvest.date)}
+                    📅 {t("seasonPlans.viewPage.expectedHarvest")}:{" "}
+                    {formatShortDate(plan.expectedHarvest.date)}
                     {plan.expectedHarvest.estimatedYield && (
                       <span style={{ marginLeft: 8 }}>
                         (Estimated: {plan.expectedHarvest.estimatedYield} tons)
@@ -1673,7 +1868,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           locale={i18n?.language}
         />
 
-             {/* Daily Remarks */}
+        {/* Daily Remarks */}
         <Grid item xs={12}>
           <Accordion
             expanded={expandedSections.dailyRemarks}
@@ -1702,27 +1897,29 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
                   <CommentIcon />
-                  {t('seasonPlans.viewPage.dailyRemarks')}
+                  {t("seasonPlans.viewPage.dailyRemarks")}
                   {plan.dailyRemarks && (
                     <Chip
-                      label={`${plan.dailyRemarks.length} ${t('seasonPlans.viewPage.remarks')}`}
+                      label={`${plan.dailyRemarks.length} ${t("seasonPlans.viewPage.remarks")}`}
                       size="small"
                       color={
                         plan.dailyRemarks.length > 0 ? "success" : "default"
                       }
-                      sx={{ ml: 2, display: { xs: 'none', sm: 'inline-flex' } }}
+                      sx={{ ml: 2, display: { xs: "none", sm: "inline-flex" } }}
                     />
                   )}
                 </Typography>
-                <Box sx={{ 
-                  display: "flex", 
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: "stretch", sm: "center" }, 
-                  justifyContent: { xs: 'center', sm: 'flex-end' },  
-                  gap: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                  mt: { xs: 1, sm: 0 }
-                }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: { xs: "stretch", sm: "center" },
+                    justifyContent: { xs: "center", sm: "flex-end" },
+                    gap: { xs: 1.5, sm: 1 },
+                    width: { xs: "100%", sm: "auto" },
+                    mt: { xs: 1, sm: 0 },
+                  }}
+                >
                   {plan.dailyRemarks && (
                     <Chip
                       label={`${plan.dailyRemarks.length} remarks`}
@@ -1730,7 +1927,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       color={
                         plan.dailyRemarks.length > 0 ? "success" : "default"
                       }
-                      sx={{ display: { xs: 'flex', sm: 'none' }, alignSelf: 'center' }}
+                      sx={{
+                        display: { xs: "flex", sm: "none" },
+                        alignSelf: "center",
+                      }}
                     />
                   )}
                   <Button
@@ -1745,11 +1945,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       },
                       px: { xs: 1, sm: 2 },
                       py: { xs: 0.5, sm: 1 },
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                      minWidth: { xs: 'auto', sm: '64px' }
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      minWidth: { xs: "auto", sm: "64px" },
                     }}
                   >
-                    {t('seasonPlans.viewPage.addRemark')}
+                    {t("seasonPlans.viewPage.addRemark")}
                   </Button>
                 </Box>
               </Box>
@@ -1827,7 +2027,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                     flexShrink: 0,
                                   }}
                                 >
-                                  <Tooltip title={t('common.edit')}>
+                                  <Tooltip title={t("common.edit")}>
                                     <IconButton
                                       size="small"
                                       onClick={() => openRemarkDialog(remark)}
@@ -1835,7 +2035,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                       <EditIcon fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-                                  <Tooltip title={t('common.delete')}>
+                                  <Tooltip title={t("common.delete")}>
                                     <IconButton
                                       size="small"
                                       color="error"
@@ -1906,7 +2106,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                         const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                                         console.log(
                                           "Constructed imageUrl (via backend):",
-                                          imageUrl
+                                          imageUrl,
                                         );
                                         console.log("========================");
 
@@ -1935,11 +2135,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                               const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                                               console.log(
                                                 "Opening image via backend API:",
-                                                backendImageUrl
+                                                backendImageUrl,
                                               );
                                               window.open(
                                                 backendImageUrl,
-                                                "_blank"
+                                                "_blank",
                                               );
                                             }}
                                           >
@@ -2001,11 +2201,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                             const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${remark.images[3].filename}`;
                                             console.log(
                                               "Opening additional image via backend API:",
-                                              backendImageUrl
+                                              backendImageUrl,
                                             );
                                             window.open(
                                               backendImageUrl,
-                                              "_blank"
+                                              "_blank",
                                             );
                                           }
                                         }}
@@ -2054,7 +2254,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     onClick={() => openRemarkDialog()}
                     sx={{ color: "#4CAF50", borderColor: "#4CAF50" }}
                   >
-                    {t('seasonPlans.viewPage.addFirstRemark')}
+                    {t("seasonPlans.viewPage.addFirstRemark")}
                   </Button>
                 </Box>
               )}
@@ -2080,9 +2280,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: { xs: 'column', sm: 'row' },
+                  flexDirection: { xs: "column", sm: "row" },
                   alignItems: "center",
-                  justifyContent: { xs: 'center', sm: "space-between" },
+                  justifyContent: { xs: "center", sm: "space-between" },
                   width: "100%",
                   pr: 2,
                 }}
@@ -2091,7 +2291,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   variant="h6"
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  💰 {t('seasonPlans.viewPage.expenses')}
+                  💰 {t("seasonPlans.viewPage.expenses")}
                   {expenseSummary && (
                     <Chip
                       label={`${expenseSummary.expenseCount} records | ${formatCurrency(expenseSummary.totalExpenses)}`}
@@ -2100,20 +2300,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                         ml: 2,
                         backgroundColor: "#e8f5e8",
                         color: "#2e7d32",
-                        display: { xs: 'none', md: 'inline-flex' }
+                        display: { xs: "none", md: "inline-flex" },
                       }}
                     />
                   )}
                 </Typography>
-                <Box sx={{ 
-                  display: "flex", 
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: "stretch", sm: "center" }, 
-                  justifyContent: { xs: 'center', sm: 'flex-end' },  
-                  gap: { xs: 1.5, sm: 1 },
-                  width: { xs: '100%', sm: 'auto' },
-                  mt: { xs: 1, sm: 0 }
-                }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: { xs: "stretch", sm: "center" },
+                    justifyContent: { xs: "center", sm: "flex-end" },
+                    gap: { xs: 1.5, sm: 1 },
+                    width: { xs: "100%", sm: "auto" },
+                    mt: { xs: 1, sm: 0 },
+                  }}
+                >
                   {expenseSummary && (
                     <Chip
                       label={`${expenseSummary.expenseCount} records | ${formatCurrency(expenseSummary.totalExpenses)}`}
@@ -2121,8 +2323,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       sx={{
                         backgroundColor: "#e8f5e8",
                         color: "#2e7d32",
-                        display: { xs: 'flex', md: 'none' },
-                        alignSelf: 'center'
+                        display: { xs: "flex", md: "none" },
+                        alignSelf: "center",
                       }}
                     />
                   )}
@@ -2136,11 +2338,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       "&:hover": { backgroundColor: "#45a049" },
                       px: { xs: 1.5, sm: 2 },
                       py: { xs: 0.5, sm: 1 },
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                      minWidth: { xs: 'auto', sm: '64px' }
+                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      minWidth: { xs: "auto", sm: "64px" },
                     }}
                   >
-                    {t('seasonPlans.viewPage.addExpense')}
+                    {t("seasonPlans.viewPage.addExpense")}
                   </Button>
                 </Box>
               </Box>
@@ -2160,11 +2362,15 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                         <MoneyIcon
                           sx={{ fontSize: 32, color: "#4CAF50", mb: 1 }}
                         />
-                        <Typography variant="h6" color="#4CAF50" sx={{ wordBreak: "break-word" }}>
+                        <Typography
+                          variant="h6"
+                          color="#4CAF50"
+                          sx={{ wordBreak: "break-word" }}
+                        >
                           {formatCurrency(expenseSummary.totalExpenses)}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
-                          {t('seasonPlans.viewPage.totalExpenses')}
+                          {t("seasonPlans.viewPage.totalExpenses")}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -2180,7 +2386,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                         <TrendingUpIcon
                           sx={{ fontSize: 32, color: "#ff9800", mb: 1 }}
                         />
-                        <Typography variant="h6" color="#ff9800" sx={{ wordBreak: "break-word" }}>
+                        <Typography
+                          variant="h6"
+                          color="#ff9800"
+                          sx={{ wordBreak: "break-word" }}
+                        >
                           {formatCurrency(expenseSummary.costPerAcre)}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
@@ -2200,7 +2410,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                         <ReceiptIcon
                           sx={{ fontSize: 32, color: "#9c27b0", mb: 1 }}
                         />
-                        <Typography variant="h6" color="#9c27b0" sx={{ wordBreak: "break-word" }}>
+                        <Typography
+                          variant="h6"
+                          color="#9c27b0"
+                          sx={{ wordBreak: "break-word" }}
+                        >
                           {expenseSummary.expenseCount}
                         </Typography>
                         <Typography variant="body2" color="textSecondary">
@@ -2220,7 +2434,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                         <CategoryIcon
                           sx={{ fontSize: 32, color: "#03a9f4", mb: 1 }}
                         />
-                        <Typography variant="h6" color="#03a9f4" sx={{ wordBreak: "break-word" }}>
+                        <Typography
+                          variant="h6"
+                          color="#03a9f4"
+                          sx={{ wordBreak: "break-word" }}
+                        >
                           {
                             Object.keys(expenseSummary.expensesByCategory || {})
                               .length
@@ -2243,7 +2461,8 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     gutterBottom
                     sx={{ fontWeight: "bold", mb: 2 }}
                   >
-                    {t('seasonPlans.viewPage.recentExpenses')} ({plan.expenses.length})
+                    {t("seasonPlans.viewPage.recentExpenses")} (
+                    {plan.expenses.length})
                   </Typography>
                   <Grid container spacing={2}>
                     {plan.expenses
@@ -2456,19 +2675,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  {t('seasonPlans.viewPage.harvestInformation')}
+                  {t("seasonPlans.viewPage.harvestInformation")}
                 </Typography>
                 <Grid container spacing={3}>
                   {plan.expectedHarvest && (
                     <Grid item xs={12} md={6}>
                       <Typography variant="subtitle1" gutterBottom>
-                        {t('seasonPlans.viewPage.expectedHarvest')}
+                        {t("seasonPlans.viewPage.expectedHarvest")}
                       </Typography>
                       <Typography variant="body2">
-                        {t('seasonPlans.viewPage.actualHarvest.date')}: {formatShortDate(plan.expectedHarvest.date)}
+                        {t("seasonPlans.viewPage.actualHarvest.date")}:{" "}
+                        {formatShortDate(plan.expectedHarvest.date)}
                       </Typography>
                       <Typography variant="body2">
-                        {t('seasonPlans.viewPage.actualHarvest.yield')}: {plan.expectedHarvest.estimatedYield} {t('seasonPlans.units.tons')}
+                        {t("seasonPlans.viewPage.actualHarvest.yield")}:{" "}
+                        {plan.expectedHarvest.estimatedYield}{" "}
+                        {t("seasonPlans.units.tons")}
                       </Typography>
                     </Grid>
                   )}
@@ -2508,16 +2730,14 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
       <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>
-            {t('seasonPlans.viewPage.deleteConfirm')}
-          </Typography>
+          <Typography>{t("seasonPlans.viewPage.deleteConfirm")}</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialog(false)}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleDelete} color="error" variant="contained">
-            {t('common.delete')}
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2530,12 +2750,13 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         fullWidth
       >
         <DialogTitle>
-          {t('seasonPlans.viewPage.updateFertilizerApplication')}
+          {t("seasonPlans.viewPage.updateFertilizerApplication")}
           {fertilizerDialog.index !== null &&
             plan?.fertilizerSchedule?.[fertilizerDialog.index] && (
               <Typography variant="subtitle2" color="textSecondary">
                 {(() => {
-                  const stage = plan.fertilizerSchedule[fertilizerDialog.index].stage || "";
+                  const stage =
+                    plan.fertilizerSchedule[fertilizerDialog.index].stage || "";
                   // slugify stage to match translation keys (e.g., 'Zinc Sulphate' -> 'zinc_sulphate')
                   const slug = stage
                     .toString()
@@ -2563,14 +2784,14 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }
                 />
               }
-              label={t('seasonPlans.applied')}
+              label={t("seasonPlans.applied")}
               sx={{ mb: 2 }}
             />
 
             {implementationData.applied && (
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label={t('seasonPlans.viewPage.implementationDate')}
+                  label={t("seasonPlans.viewPage.implementationDate")}
                   value={
                     implementationData.implementedDate
                       ? dayjs(implementationData.implementedDate)
@@ -2596,7 +2817,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             )}
 
             <TextField
-              label={`${t('seasonPlans.viewPage.notes')} (${t('common.optional')})`}
+              label={`${t("seasonPlans.viewPage.notes")} (${t("common.optional")})`}
               multiline
               rows={3}
               value={implementationData.notes}
@@ -2607,20 +2828,20 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 })
               }
               fullWidth
-              placeholder={t('seasonPlans.notesPlaceholder')}
+              placeholder={t("seasonPlans.notesPlaceholder")}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeFertilizerDialog} disabled={saving}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={saveFertilizerImplementation}
             variant="contained"
             disabled={saving}
           >
-            {saving ? t('seasonPlans.viewPage.saving') : t('common.save')}
+            {saving ? t("seasonPlans.viewPage.saving") : t("common.save")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2630,20 +2851,25 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         open={deleteFertilizerDialogOpen}
         onClose={() => setDeleteFertilizerDialogOpen(false)}
       >
-        <DialogTitle>{t('seasonPlans.viewPage.deleteFertilizerTitle') || 'Confirm Delete'}</DialogTitle>
+        <DialogTitle>
+          {t("seasonPlans.viewPage.deleteFertilizerTitle") || "Confirm Delete"}
+        </DialogTitle>
         <DialogContent>
           <Typography>
-            {t('seasonPlans.viewPage.deleteFertilizerConfirm') || 'Are you sure you want to delete this fertilizer application? This action cannot be undone.'}
+            {t("seasonPlans.viewPage.deleteFertilizerConfirm") ||
+              "Are you sure you want to delete this fertilizer application? This action cannot be undone."}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteFertilizerDialogOpen(false)}>{t('common.cancel')}</Button>
+          <Button onClick={() => setDeleteFertilizerDialogOpen(false)}>
+            {t("common.cancel")}
+          </Button>
           <Button
             onClick={confirmDeleteFertilizerApplication}
             color="error"
             variant="contained"
           >
-            {t('common.delete')}
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2656,7 +2882,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         fullWidth
       >
         <DialogTitle>
-          {t('seasonPlans.viewPage.updateImplementation')}
+          {t("seasonPlans.viewPage.updateImplementation")}
           {stageDialog.index !== null &&
             plan?.growingStages?.[stageDialog.index] && (
               <Typography variant="subtitle2" color="textSecondary">
@@ -2678,7 +2904,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }
                 />
               }
-              label={t('seasonPlans.viewPage.markComplete')}
+              label={t("seasonPlans.viewPage.markComplete")}
               sx={{ mb: 2 }}
             />
 
@@ -2774,16 +3000,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         fullWidth
       >
         <DialogTitle>
-          {`🌾 ${t('seasonPlans.viewPage.recordHarvest')}`}
+          {`🌾 ${t("seasonPlans.viewPage.recordHarvest")}`}
           <Typography variant="subtitle2" color="textSecondary">
-            {t('seasonPlans.viewPage.recordHarvestSubtitle')}
+            {t("seasonPlans.viewPage.recordHarvestSubtitle")}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
-                label={t('seasonPlans.viewPage.harvestDate')}
+                label={t("seasonPlans.viewPage.harvestDate")}
                 value={harvestData.date ? dayjs(harvestData.date) : null}
                 onChange={(newValue) => {
                   const dateString = newValue
@@ -2801,7 +3027,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             </LocalizationProvider>
 
             <TextField
-              label={`${t('seasonPlans.viewPage.actualYield')} (${t('seasonPlans.units.kg')})`}
+              label={`${t("seasonPlans.viewPage.actualYield")} (${t("seasonPlans.units.kg")})`}
               type="number"
               value={harvestData.actualYield}
               onChange={(e) =>
@@ -2810,11 +3036,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               fullWidth
               sx={{ mb: 2 }}
               inputProps={{ min: 0, step: 0.1 }}
-              placeholder={t('seasonPlans.viewPage.placeholders.actualYield')}
+              placeholder={t("seasonPlans.viewPage.placeholders.actualYield")}
             />
 
             <TextField
-              label={t('seasonPlans.viewPage.yieldQuality')}
+              label={t("seasonPlans.viewPage.yieldQuality")}
               select
               value={harvestData.quality}
               onChange={(e) =>
@@ -2827,16 +3053,33 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 native: true,
               }}
             >
-              <option value="">{t('seasonPlans.viewPage.qualityOptions.select')}</option>
-              <option value="Premium">{t('seasonPlans.viewPage.qualityOptions.premium')}</option>
-              <option value="Grade A">{t('seasonPlans.viewPage.qualityOptions.gradeA')}</option>
-              <option value="Grade B">{t('seasonPlans.viewPage.qualityOptions.gradeB')}</option>
-              <option value="Grade C">{t('seasonPlans.viewPage.qualityOptions.gradeC')}</option>
-              <option value="Below Grade">{t('seasonPlans.viewPage.qualityOptions.belowGrade')}</option>
+              <option value="">
+                {t("seasonPlans.viewPage.qualityOptions.select")}
+              </option>
+              <option value="Premium">
+                {t("seasonPlans.viewPage.qualityOptions.premium")}
+              </option>
+              <option value="Grade A">
+                {t("seasonPlans.viewPage.qualityOptions.gradeA")}
+              </option>
+              <option value="Grade B">
+                {t("seasonPlans.viewPage.qualityOptions.gradeB")}
+              </option>
+              <option value="Grade C">
+                {t("seasonPlans.viewPage.qualityOptions.gradeC")}
+              </option>
+              <option value="Below Grade">
+                {t("seasonPlans.viewPage.qualityOptions.belowGrade")}
+              </option>
             </TextField>
 
             <TextField
-              label={t('seasonPlans.viewPage.harvestNotes') + ' (' + t('common.optional') + ')'}
+              label={
+                t("seasonPlans.viewPage.harvestNotes") +
+                " (" +
+                t("common.optional") +
+                ")"
+              }
               multiline
               rows={3}
               value={harvestData.notes}
@@ -2844,13 +3087,13 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 setHarvestData({ ...harvestData, notes: e.target.value })
               }
               fullWidth
-              placeholder={t('seasonPlans.viewPage.placeholders.notes')}
+              placeholder={t("seasonPlans.viewPage.placeholders.notes")}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeHarvestDialog} disabled={saving}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={saveHarvestData}
@@ -2863,7 +3106,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               },
             }}
           >
-            {saving ? t('common.saving') : t('seasonPlans.viewPage.saveHarvest')}
+            {saving
+              ? t("common.saving")
+              : t("seasonPlans.viewPage.saveHarvest")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -2876,16 +3121,16 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         fullWidth
       >
         <DialogTitle>
-          {`🌱 ${t('seasonPlans.viewPage.leafColorChartTitle')}`}
+          {`🌱 ${t("seasonPlans.viewPage.leafColorChartTitle")}`}
           <Typography variant="subtitle2" color="textSecondary">
-            {t('seasonPlans.viewPage.leafColorChartSubtitle')}
+            {t("seasonPlans.viewPage.leafColorChartSubtitle")}
           </Typography>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label={t('seasonPlans.viewPage.leafColor.currentDate')}
+              <DatePicker
+                label={t("seasonPlans.viewPage.leafColor.currentDate")}
                 value={
                   leafColorData.currentDate
                     ? dayjs(leafColorData.currentDate)
@@ -2895,12 +3140,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   const dateString = newValue
                     ? newValue.format("YYYY-MM-DD")
                     : "";
-                  
+
                   // Auto-calculate plant age when date changes
                   if (dateString && plan?.cultivationDate) {
                     const calculatedAge = calculatePlantAge(
                       dateString,
-                      plan.cultivationDate
+                      plan.cultivationDate,
                     );
                     setLeafColorData((prev) => ({
                       ...prev,
@@ -2924,22 +3169,28 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     fullWidth: true,
                     sx: { mb: 3 },
                     helperText: plan?.cultivationDate
-                      ? t('seasonPlans.viewPage.leafColor.cultivationStarted', { date: formatShortDate(plan.cultivationDate) })
-                      : t('seasonPlans.viewPage.leafColor.cultivationDateNotAvailable'),
+                      ? t("seasonPlans.viewPage.leafColor.cultivationStarted", {
+                          date: formatShortDate(plan.cultivationDate),
+                        })
+                      : t(
+                          "seasonPlans.viewPage.leafColor.cultivationDateNotAvailable",
+                        ),
                   },
                 }}
               />
             </LocalizationProvider>
 
             <TextField
-              label={t('seasonPlans.viewPage.leafColor.plantAge')}
+              label={t("seasonPlans.viewPage.leafColor.plantAge")}
               value={
-                leafColorData.plantAge ? `${leafColorData.plantAge} ${t('seasonPlans.viewPage.leafColor.weeks')}` : ""
+                leafColorData.plantAge
+                  ? `${leafColorData.plantAge} ${t("seasonPlans.viewPage.leafColor.weeks")}`
+                  : ""
               }
               fullWidth
               disabled
               sx={{ mb: 3 }}
-              helperText={t('seasonPlans.viewPage.leafColor.plantAgeHelper')}
+              helperText={t("seasonPlans.viewPage.leafColor.plantAgeHelper")}
               InputProps={{
                 style: {
                   backgroundColor: "#f5f5f5",
@@ -2948,51 +3199,56 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
             />
 
             {leafColorData.plantAge && (
-                <TextField
-                  label={t('seasonPlans.viewPage.leafColor.colorIndex')}
-                  select
-                  value={leafColorData.leafColorIndex}
-                  onChange={(e) => {
-                    const newIndex = e.target.value;
+              <TextField
+                label={t("seasonPlans.viewPage.leafColor.colorIndex")}
+                select
+                value={leafColorData.leafColorIndex}
+                onChange={(e) => {
+                  const newIndex = e.target.value;
+                  setLeafColorData((prev) => ({
+                    ...prev,
+                    leafColorIndex: newIndex,
+                  }));
+                  if (newIndex && leafColorData.plantAge) {
+                    const recommended = calculateUreaRecommendation(
+                      parseInt(leafColorData.plantAge),
+                      parseInt(newIndex),
+                    );
                     setLeafColorData((prev) => ({
                       ...prev,
                       leafColorIndex: newIndex,
+                      recommendedUrea: recommended,
                     }));
-                    if (newIndex && leafColorData.plantAge) {
-                      const recommended = calculateUreaRecommendation(
-                        parseInt(leafColorData.plantAge),
-                        parseInt(newIndex)
-                      );
-                      setLeafColorData((prev) => ({
-                        ...prev,
-                        leafColorIndex: newIndex,
-                        recommendedUrea: recommended,
-                      }));
-                    }
-                  }}
-                  fullWidth
-                  sx={{ mb: 3 }}
-                  SelectProps={{
-                    native: true,
-                    displayEmpty: true,
-                  }}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  helperText={t('seasonPlans.viewPage.leafColor.helper')}
-                >
-                  <option value="" disabled>{t('seasonPlans.viewPage.leafColor.selectPlaceholder')}</option>
-                  {/* Show all color indices 1-6 regardless of plant age */}
-                  {['1', '2', '3', '4', '5', '6'].map((colorIndex) => (
-                    <option key={colorIndex} value={colorIndex}>
-                      {t(`seasonPlans.viewPage.leafColor.indexLabel`, {
-                        index: colorIndex,
-                        label: t(`seasonPlans.viewPage.leafColor.labels.${colorIndex}`, { defaultValue: '' }),
-                      })}
-                    </option>
-                  ))}
-                </TextField>
-              )}
+                  }
+                }}
+                fullWidth
+                sx={{ mb: 3 }}
+                SelectProps={{
+                  native: true,
+                  displayEmpty: true,
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                helperText={t("seasonPlans.viewPage.leafColor.helper")}
+              >
+                <option value="" disabled>
+                  {t("seasonPlans.viewPage.leafColor.selectPlaceholder")}
+                </option>
+                {/* Show all color indices 1-6 regardless of plant age */}
+                {["1", "2", "3", "4", "5", "6"].map((colorIndex) => (
+                  <option key={colorIndex} value={colorIndex}>
+                    {t(`seasonPlans.viewPage.leafColor.indexLabel`, {
+                      index: colorIndex,
+                      label: t(
+                        `seasonPlans.viewPage.leafColor.labels.${colorIndex}`,
+                        { defaultValue: "" },
+                      ),
+                    })}
+                  </option>
+                ))}
+              </TextField>
+            )}
 
             {/* Warning for plant age outside recommended range */}
             {leafColorData.plantAge &&
@@ -3008,7 +3264,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#F57C00" }}>
-                    ⚠️ {t('seasonPlans.viewPage.leafColor.ageWarning', { age: leafColorData.plantAge })}
+                    ⚠️{" "}
+                    {t("seasonPlans.viewPage.leafColor.ageWarning", {
+                      age: leafColorData.plantAge,
+                    })}
                   </Typography>
                 </Box>
               )}
@@ -3020,7 +3279,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               (parseInt(leafColorData.plantAge) < 2 ||
                 parseInt(leafColorData.plantAge) > 8 ||
                 !leafColorChart[leafColorData.plantAge] ||
-                !leafColorChart[leafColorData.plantAge][leafColorData.leafColorIndex]) && (
+                !leafColorChart[leafColorData.plantAge][
+                  leafColorData.leafColorIndex
+                ]) && (
                 <Box
                   sx={{
                     p: 2,
@@ -3031,9 +3292,10 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ color: "#1976D2" }}>
-                    ℹ️ {t('seasonPlans.viewPage.leafColor.noRecommendation', {
+                    ℹ️{" "}
+                    {t("seasonPlans.viewPage.leafColor.noRecommendation", {
                       age: leafColorData.plantAge,
-                      index: leafColorData.leafColorIndex
+                      index: leafColorData.leafColorIndex,
                     })}
                   </Typography>
                 </Box>
@@ -3059,16 +3321,18 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   }}
                 >
                   <ColorizeIcon sx={{ mr: 1 }} />
-                  {t('seasonPlans.viewPage.leafColor.ureaRecommendation')}
+                  {t("seasonPlans.viewPage.leafColor.ureaRecommendation")}
                 </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{ color: "#228B22", fontWeight: "bold", mb: 1 }}
-                  >
-                    {t('seasonPlans.viewPage.leafColor.applyRecommendation', { amount: leafColorData.recommendedUrea })}
-                  </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#228B22", fontWeight: "bold", mb: 1 }}
+                >
+                  {t("seasonPlans.viewPage.leafColor.applyRecommendation", {
+                    amount: leafColorData.recommendedUrea,
+                  })}
+                </Typography>
                 <Typography variant="body2" sx={{ color: "#666", mb: 1 }}>
-                  {t('seasonPlans.viewPage.leafColor.basedOn', {
+                  {t("seasonPlans.viewPage.leafColor.basedOn", {
                     weeks: leafColorData.plantAge,
                     index: leafColorData.leafColorIndex,
                   })}
@@ -3077,10 +3341,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                   variant="body2"
                   sx={{ color: "#228B22", fontWeight: "bold" }}
                 >
-                  {t('seasonPlans.viewPage.leafColor.totalFor', {
+                  {t("seasonPlans.viewPage.leafColor.totalFor", {
                     area: plan?.cultivatingArea || 0,
                     total: (
-                      leafColorData.recommendedUrea * (plan?.cultivatingArea || 0)
+                      leafColorData.recommendedUrea *
+                      (plan?.cultivatingArea || 0)
                     ).toFixed(1),
                   })}
                 </Typography>
@@ -3115,11 +3380,22 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 gutterBottom
                 sx={{ fontWeight: "bold" }}
               >
-                {`📋 ${t('seasonPlans.viewPage.leafColor.guideTitle')}`}
+                {`📋 ${t("seasonPlans.viewPage.leafColor.guideTitle")}`}
               </Typography>
               {[1, 2, 3, 4, 5, 6].map((index) => (
-                <Typography key={index} variant="caption" display="block" sx={{ mb: 0.5 }}>
-                  • <strong>{t(`seasonPlans.viewPage.leafColor.guide.index${index}.title`)}</strong> {t(`seasonPlans.viewPage.leafColor.guide.index${index}.desc`)}
+                <Typography
+                  key={index}
+                  variant="caption"
+                  display="block"
+                  sx={{ mb: 0.5 }}
+                >
+                  •{" "}
+                  <strong>
+                    {t(
+                      `seasonPlans.viewPage.leafColor.guide.index${index}.title`,
+                    )}
+                  </strong>{" "}
+                  {t(`seasonPlans.viewPage.leafColor.guide.index${index}.desc`)}
                 </Typography>
               ))}
               <Typography
@@ -3127,13 +3403,13 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 display="block"
                 sx={{ mt: 1, fontStyle: "italic", color: "#666" }}
               >
-                {t('seasonPlans.viewPage.leafColor.guide.compare')}
+                {t("seasonPlans.viewPage.leafColor.guide.compare")}
               </Typography>
             </Box>
           </Box>
         </DialogContent>
         <DialogActions>
-    <Button onClick={resetLeafColorDialog}>{t('common.close')}</Button>
+          <Button onClick={resetLeafColorDialog}>{t("common.close")}</Button>
           {leafColorData.recommendedUrea > 0 && (
             <Button
               variant="contained"
@@ -3146,7 +3422,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               }}
               onClick={saveLCCFertilizerApplication}
             >
-              {saving ? t('seasonPlans.viewPage.adding') : t('seasonPlans.viewPage.addToFertilizerSchedule')}
+              {saving
+                ? t("seasonPlans.viewPage.adding")
+                : t("seasonPlans.viewPage.addToFertilizerSchedule")}
             </Button>
           )}
         </DialogActions>
@@ -3407,23 +3685,23 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                             console.log("=== EXISTING IMAGE DEBUG ===");
                             console.log(
                               "Full image object:",
-                              JSON.stringify(image, null, 2)
+                              JSON.stringify(image, null, 2),
                             );
                             console.log("Image filename:", image.filename);
                             console.log(
                               "Image originalName:",
-                              image.originalName
+                              image.originalName,
                             );
                             console.log("Image URL from R2:", image.url);
                             console.log(
                               "Environment GATSBY_API_URL:",
-                              process.env.GATSBY_API_URL
+                              process.env.GATSBY_API_URL,
                             );
 
                             const imageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                             console.log(
                               "Final imageUrl (via backend):",
-                              imageUrl
+                              imageUrl,
                             );
                             console.log("==========================");
 
@@ -3454,24 +3732,24 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                       const backendImageUrl = `${process.env.GATSBY_API_URL}/season-plans/remark-image/${image.filename}`;
                                       console.log(
                                         "Edit dialog - Opening image via backend API:",
-                                        backendImageUrl
+                                        backendImageUrl,
                                       );
                                       window.open(backendImageUrl, "_blank");
                                     }}
                                     onLoad={() => {
                                       console.log(
                                         "✅ Edit dialog - Existing image loaded successfully:",
-                                        imageUrl
+                                        imageUrl,
                                       );
                                     }}
                                     onError={(e) => {
                                       console.error(
                                         "❌ Edit dialog - Existing image failed to load:",
-                                        imageUrl
+                                        imageUrl,
                                       );
                                       console.error(
                                         "Edit dialog - Image src:",
-                                        e.target.src
+                                        e.target.src,
                                       );
                                       console.error(
                                         "Edit dialog - Error details:",
@@ -3479,7 +3757,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                           filename: image.filename,
                                           originalName: image.originalName,
                                           imageObject: image,
-                                        }
+                                        },
                                       );
 
                                       // Hide the failed image and show React-based fallback
@@ -3503,7 +3781,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                                     onClick={() =>
                                       removeRemarkImage(
                                         editingRemark._id,
-                                        image.filename
+                                        image.filename,
                                       )
                                     }
                                   >
@@ -3521,7 +3799,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeRemarkDialog}>{t('common.cancel')}</Button>
+          <Button onClick={closeRemarkDialog}>{t("common.cancel")}</Button>
           <Button
             variant="contained"
             onClick={saveRemark}
@@ -3537,7 +3815,11 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               },
             }}
           >
-            {saving ? t('seasonPlans.viewPage.saving') : editingRemark ? t('common.update') : t('seasonPlans.viewPage.addRemark')}
+            {saving
+              ? t("seasonPlans.viewPage.saving")
+              : editingRemark
+                ? t("common.update")
+                : t("seasonPlans.viewPage.addRemark")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3547,20 +3829,20 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         open={deleteRemarkDialog}
         onClose={() => setDeleteRemarkDialog(false)}
       >
-        <DialogTitle>{t('seasonPlans.viewPage.deleteRemark')}</DialogTitle>
+        <DialogTitle>{t("seasonPlans.viewPage.deleteRemark")}</DialogTitle>
         <DialogContent>
-          <Typography>
-            {t('seasonPlans.confirmDeleteMessage')}
-          </Typography>
+          <Typography>{t("seasonPlans.confirmDeleteMessage")}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteRemarkDialog(false)}>{t('common.cancel')}</Button>
+          <Button onClick={() => setDeleteRemarkDialog(false)}>
+            {t("common.cancel")}
+          </Button>
           <Button
             onClick={confirmDeleteRemark}
             color="error"
             variant="contained"
           >
-            {t('common.delete')}
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -3573,7 +3855,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
         fullWidth
       >
         <DialogTitle>
-          {editingExpense ? t('seasonPlans.viewPage.editExpense') : t('seasonPlans.viewPage.addExpense')}
+          {editingExpense
+            ? t("seasonPlans.viewPage.editExpense")
+            : t("seasonPlans.viewPage.addExpense")}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -3582,7 +3866,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
-                    label={`${t('seasonPlans.viewPage.expenseDate')} *`}
+                    label={`${t("seasonPlans.viewPage.expenseDate")} *`}
                     value={expenseData.date ? dayjs(expenseData.date) : null}
                     onChange={(newValue) => {
                       const dateString = newValue
@@ -3608,7 +3892,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 <TextField
                   fullWidth
                   select
-                  label={t('seasonPlans.viewPage.expenseCategory')}
+                  label={t("seasonPlans.viewPage.expenseCategory")}
                   value={expenseData.category}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, category: e.target.value })
@@ -3632,7 +3916,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label={`Subcategory (${t('common.optional')})`}
+                  label={`Subcategory (${t("common.optional")})`}
                   value={expenseData.subcategory}
                   onChange={(e) =>
                     setExpenseData({
@@ -3649,7 +3933,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 <TextField
                   fullWidth
                   select
-                  label={t('seasonPlans.viewPage.paymentMethod')}
+                  label={t("seasonPlans.viewPage.paymentMethod")}
                   value={expenseData.paymentMethod}
                   onChange={(e) =>
                     setExpenseData({
@@ -3670,7 +3954,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label={t('seasonPlans.viewPage.expenseDescription')}
+                  label={t("seasonPlans.viewPage.expenseDescription")}
                   value={expenseData.description}
                   onChange={(e) =>
                     setExpenseData({
@@ -3689,7 +3973,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label={t('seasonPlans.viewPage.expenseAmount')}
+                  label={t("seasonPlans.viewPage.expenseAmount")}
                   type="number"
                   value={expenseData.amount}
                   onChange={(e) =>
@@ -3704,7 +3988,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
-                  label={`${t('seasonPlans.viewPage.quantity')} (${t('common.optional')})`}
+                  label={`${t("seasonPlans.viewPage.quantity")} (${t("common.optional")})`}
                   type="number"
                   value={expenseData.quantity}
                   onChange={(e) => {
@@ -3731,7 +4015,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                 <TextField
                   fullWidth
                   select
-                  label={`${t('seasonPlans.viewPage.unit')} (${t('common.optional')})`}
+                  label={`${t("seasonPlans.viewPage.unit")} (${t("common.optional")})`}
                   value={expenseData.unit}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, unit: e.target.value })
@@ -3749,7 +4033,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label={t('seasonPlans.viewPage.unitPrice')}
+                  label={t("seasonPlans.viewPage.unitPrice")}
                   type="number"
                   value={expenseData.unitPrice}
                   onChange={(e) =>
@@ -3759,7 +4043,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                     })
                   }
                   inputProps={{ min: 0, step: 0.01 }}
-                  helperText={t('seasonPlans.viewPage.unitPriceHelper')}
+                  helperText={t("seasonPlans.viewPage.unitPriceHelper")}
                 />
               </Grid>
 
@@ -3767,12 +4051,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label={`${t('seasonPlans.viewPage.vendor')} (${t('common.optional')})`}
+                  label={`${t("seasonPlans.viewPage.vendor")} (${t("common.optional")})`}
                   value={expenseData.vendor}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, vendor: e.target.value })
                   }
-                  placeholder={t('seasonPlans.viewPage.vendorPlaceholder')}
+                  placeholder={t("seasonPlans.viewPage.vendorPlaceholder")}
                 />
               </Grid>
 
@@ -3780,7 +4064,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label={`${t('seasonPlans.viewPage.receiptNumber')} (${t('common.optional')})`}
+                  label={`${t("seasonPlans.viewPage.receiptNumber")} (${t("common.optional")})`}
                   value={expenseData.receiptNumber}
                   onChange={(e) =>
                     setExpenseData({
@@ -3788,7 +4072,7 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
                       receiptNumber: e.target.value,
                     })
                   }
-                  placeholder={t('seasonPlans.viewPage.receiptPlaceholder')}
+                  placeholder={t("seasonPlans.viewPage.receiptPlaceholder")}
                 />
               </Grid>
 
@@ -3796,12 +4080,12 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label={`${t('seasonPlans.viewPage.remarks')} (${t('common.optional')})`}
+                  label={`${t("seasonPlans.viewPage.remarks")} (${t("common.optional")})`}
                   value={expenseData.remarks}
                   onChange={(e) =>
                     setExpenseData({ ...expenseData, remarks: e.target.value })
                   }
-                  placeholder={t('seasonPlans.viewPage.remarksPlaceholder')}
+                  placeholder={t("seasonPlans.viewPage.remarksPlaceholder")}
                   multiline
                   rows={2}
                 />
@@ -3810,7 +4094,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setExpenseDialog(false)}>{t('common.cancel')}</Button>
+          <Button onClick={() => setExpenseDialog(false)}>
+            {t("common.cancel")}
+          </Button>
           <Button
             onClick={handleSaveExpense}
             variant="contained"
@@ -3819,7 +4105,9 @@ const ThumbnailDisplay = ({ image, imageUrl }) => {
               "&:hover": { backgroundColor: "#45a049" },
             }}
           >
-            {editingExpense ? t('seasonPlans.viewPage.editExpense') : t('seasonPlans.viewPage.addExpense')}
+            {editingExpense
+              ? t("seasonPlans.viewPage.editExpense")
+              : t("seasonPlans.viewPage.addExpense")}
           </Button>
         </DialogActions>
       </Dialog>

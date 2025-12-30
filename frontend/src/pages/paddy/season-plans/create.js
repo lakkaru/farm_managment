@@ -29,7 +29,7 @@ import AppProviders from '../../../providers/AppProviders';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
-import { computeSeedTotals, getVarietyLength as seedGetVarietyLength, getSeedRatePerHa as seedGetSeedRatePerHa, areaToHectares as seedAreaToHectares } from '../../../utils/seedUtils';
+import { computeSeedTotals } from '../../../utils/seedUtils';
 
 const CreateSeasonPlanContent = () => {
   const { t, i18n } = useTranslation();
@@ -86,16 +86,6 @@ const CreateSeasonPlanContent = () => {
 
   const isFarmSelected = Boolean(formData.farmId);
 
-  // Wrapper helpers that use local data
-  const getVarietyLength = (varietyId) => {
-    const v = paddyVarieties.find(x => x._id === varietyId);
-    return seedGetVarietyLength(v);
-  };
-
-  const getSeedRatePerHa = (plantingMethod, varietyLength) => seedGetSeedRatePerHa(plantingMethod, varietyLength);
-
-  const areaToHectares = (area, unit) => seedAreaToHectares(area, unit);
-
   const updateSeedInfo = (override = {}) => {
     const plantingMethod = override.plantingMethod ?? formData.plantingMethod;
     const varietyId = override.paddyVariety ?? formData.paddyVariety;
@@ -107,6 +97,19 @@ const CreateSeasonPlanContent = () => {
     if (!res.computed) {
       setSeedInfo({ perHaLabel: '', minTotalKg: null, maxTotalKg: null, computed: false });
       return;
+    }
+
+    // Dev-only debug: log variety type and computed result
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('seed recommendation:', {
+        plantingMethod,
+        varietyType: variety?.type,
+        perHaLabel: res.perHaLabel,
+        minTotalKg: res.minTotalKg,
+        maxTotalKg: res.maxTotalKg,
+        area: cultivatingArea,
+        unit,
+      });
     }
 
     setSeedInfo(res);
@@ -426,6 +429,8 @@ const CreateSeasonPlanContent = () => {
       // Remove the frontend-only field
       delete planData.expectedHarvestDate;
 
+      // Seed recommendation is computed client-side for display; we do NOT persist it on the SeasonPlan.
+
       console.log('Sending season plan data:', planData);
 
       await seasonPlanAPI.createSeasonPlan(planData);
@@ -716,6 +721,11 @@ const CreateSeasonPlanContent = () => {
                         t('seasonPlans.createForm.seedRecommendationAreaNote', { defaultValue: 'Enter cultivating area to compute total seed required.' })
                       )}
                     </Typography>
+                    {formData.plantingMethod === 'parachute_seeding' && seedInfo.trayCount && formData.cultivatingArea && (
+                      <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
+                        {`${t('seasonPlans.createForm.parachuteTrayCount', { defaultValue: 'Approx trays' })}: ~${seedInfo.trayCount} trays for ${formData.cultivatingArea} ${selectedFarmInfo.areaUnit || 'acres'}`}
+                      </Typography>
+                    )}
                   </Box>
                 </Alert>
               </Grid>
