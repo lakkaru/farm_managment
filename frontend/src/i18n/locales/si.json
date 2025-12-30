@@ -370,6 +370,12 @@
       "kg": "කි.ග්‍රෑ."
     },
     "days": "දින",
+    "plantAge": "වයස",
+    "seedingDate": "බීජ වපුරන දිනය",
+    "transplantingDate": "පැල සිටුවීමේ දිනය",
+    "nurserySowingDate": "තවාන් බීජ වැපුරීමේ දිනය",
+    "daysToHarvest": "අස්වැන්නට දින",
+    "harvestDue": "අස්වැන්න ලබාගත යුතුයි",
     "duration": "කාල සීමාව",
     "applied": "යෙදූ ලෙස සලකුණු කරන්න",
     "notesPlaceholder": "පොහොර යෙදීම ගැන කිසියම් සටහනක් එකතු කරන්න...",

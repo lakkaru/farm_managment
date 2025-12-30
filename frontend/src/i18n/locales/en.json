@@ -351,6 +351,12 @@
       "kg": "kg"
     },
     "days": "days",
+    "plantAge": "Plant age",
+    "seedingDate": "Seeding Date",
+    "transplantingDate": "Transplanting Date",
+    "nurserySowingDate": "Nursery Sowing Date",
+    "daysToHarvest": "Days to harvest",
+    "harvestDue": "Harvest due",
     "duration": "Duration",
     "applied": "Mark as Applied",
     "notesPlaceholder": "Add any notes about the fertilizer application...",
