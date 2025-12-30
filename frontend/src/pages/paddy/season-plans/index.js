@@ -122,6 +122,33 @@ const SeasonPlansContent = () => {
     });
   };
 
+  const calculatePlantAge = (seedingDate) => {
+    if (!seedingDate) return null;
+    const now = new Date();
+    const seeding = new Date(seedingDate);
+    const diffTime = Math.abs(now - seeding);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const calculateDaysToHarvest = (harvestDate) => {
+    if (!harvestDate) return null;
+    const now = new Date();
+    const harvest = new Date(harvestDate);
+    const diffTime = harvest - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getSeedingDate = (plan) => {
+    // For transplanting, use transplanting date if available, otherwise cultivation date
+    if (plan.plantingMethod === 'transplanting' && plan.transplantingDate) {
+      return plan.transplantingDate;
+    }
+    // For direct seeding and parachute seeding, use cultivation date
+    return plan.cultivationDate;
+  };
+
   const getUnitTranslationKey = (unit) => {
     const unitMap = {
       'hectares': 'hectares',
@@ -314,9 +341,40 @@ const SeasonPlansContent = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <CalendarIcon sx={{ fontSize: 16, mr: 1, color: 'grey.600' }} />
                       <Typography variant="body2" color="textSecondary">
-                        {formatDate(plan.cultivationDate)}
+                        {plan.plantingMethod === 'transplanting' && plan.transplantingDate
+                          ? `${t('seasonPlans.transplantingDate', { defaultValue: 'Transplanting' })}: ${formatDate(plan.transplantingDate)}`
+                          : `${t('seasonPlans.seedingDate', { defaultValue: 'Seeding' })}: ${formatDate(plan.cultivationDate)}`
+                        }
                       </Typography>
                     </Box>
+                    {plan.status === 'active' && (() => {
+                      const seedingDate = getSeedingDate(plan);
+                      const plantAge = calculatePlantAge(seedingDate);
+                      const daysToHarvest = plan.expectedHarvest?.date ? calculateDaysToHarvest(plan.expectedHarvest.date) : null;
+                      return (
+                        <>
+                          {plantAge !== null && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <AgricultureIcon sx={{ fontSize: 16, mr: 1, color: 'primary.main' }} />
+                              <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
+                                {t('seasonPlans.plantAge', { defaultValue: 'Plant age' })}: {plantAge} {t('seasonPlans.days', { defaultValue: 'days' })}
+                              </Typography>
+                            </Box>
+                          )}
+                          {daysToHarvest !== null && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <CalendarIcon sx={{ fontSize: 16, mr: 1, color: daysToHarvest > 0 ? 'success.main' : 'warning.main' }} />
+                              <Typography variant="body2" sx={{ fontWeight: 'medium', color: daysToHarvest > 0 ? 'success.main' : 'warning.main' }}>
+                                {daysToHarvest > 0 
+                                  ? `${t('seasonPlans.daysToHarvest', { defaultValue: 'Days to harvest' })}: ${daysToHarvest}`
+                                  : t('seasonPlans.harvestDue', { defaultValue: 'Harvest due' })
+                                }
+                              </Typography>
+                            </Box>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Box>
 
                   {/* Area and Variety */}

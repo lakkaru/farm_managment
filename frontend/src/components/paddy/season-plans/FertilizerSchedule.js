@@ -273,83 +273,59 @@ const FertilizerSchedule = ({
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: "column",
               width: "100%",
               pr: 2,
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
-              🌿 {t('seasonPlans.viewPage.fertilizerSchedule')}
-              {plan.fertilizerSchedule && (
-                <Chip
-                  label={t('seasonPlans.viewPage.appliedCount', { 
-                    applied: plan.fertilizerSchedule.filter((app) => app.applied).length, 
-                    total: plan.fertilizerSchedule.length 
-                  })}
-                  size="small"
-                  color={
-                    plan.fertilizerSchedule.filter((app) => app.applied)
-                      .length === plan.fertilizerSchedule.length
-                      ? "success"
-                      : "default"
-                  }
-                  sx={{ ml: 2, display: { xs: 'none', sm: 'inline-flex' } }}
-                />
-              )}
-            </Typography>
+            {/* Title and Progress */}
             <Box sx={{ 
               display: "flex", 
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: "stretch", sm: "center" }, 
-              justifyContent: { xs: 'center', sm: 'flex-end' },  
-              gap: 1,
-              width: { xs: '100%', sm: 'auto' }
+              alignItems: "center", 
+              justifyContent: "space-between", 
+              width: "100%",
+              flexWrap: "wrap",
+              gap: 1
             }}>
-              {plan.fertilizerSchedule && (
-                <Chip
-                  label={t('seasonPlans.viewPage.appliedCount', { 
-                    applied: plan.fertilizerSchedule.filter((app) => app.applied).length, 
-                    total: plan.fertilizerSchedule.length 
-                  })}
-                  size="small"
-                  color={
-                    plan.fertilizerSchedule.filter((app) => app.applied)
-                      .length === plan.fertilizerSchedule.length
-                      ? "success"
-                      : "default"
-                  }
-                  sx={{ display: { xs: 'flex', sm: 'none' }, alignSelf: 'center' }}
-                />
-              )}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}>
+                <Typography variant="h6">
+                  🌿 {t('seasonPlans.viewPage.fertilizerSchedule')}
+                </Typography>
+                {plan.fertilizerSchedule && (
+                  <Chip
+                    label={t('seasonPlans.viewPage.appliedCount', { 
+                      applied: plan.fertilizerSchedule.filter((app) => app.applied).length, 
+                      total: plan.fertilizerSchedule.length 
+                    })}
+                    size="small"
+                    color={
+                      plan.fertilizerSchedule.filter((app) => app.applied)
+                        .length === plan.fertilizerSchedule.length
+                        ? "success"
+                        : "default"
+                    }
+                  />
+                )}
+              </Box>
 
+              {/* Leaf Color Chart Controls */}
               <Box sx={{ 
                 display: "flex", 
-                flexDirection: { xs: 'column', sm: 'row' },
                 alignItems: "center", 
-                gap: { xs: 1, sm: 2 }
+                gap: 1
               }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                  <Typography variant="caption" color="textSecondary" sx={{ mr: 1 }}>
-                    {t('seasonPlans.viewPage.anchorDate')}:
-                  </Typography>
-                  <Typography variant="caption">{formatShortDate(getAnchorDateUsed())}</Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="body2">{t('seasonPlans.viewPage.leafColorChart')}:</Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setLeafColorEnabled(!leafColorEnabled)}
-                    sx={{
-                      color: leafColorEnabled ? "success.main" : "grey.400",
-                    }}
-                  >
-                    {leafColorEnabled ? <ToggleOnIcon /> : <ToggleOffIcon />}
-                  </IconButton>
-                </Box>
+                <Typography variant="body2" color="textSecondary">
+                  {t('seasonPlans.viewPage.leafColorChart')}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setLeafColorEnabled(!leafColorEnabled)}
+                  sx={{
+                    color: leafColorEnabled ? "success.main" : "grey.400",
+                  }}
+                >
+                  {leafColorEnabled ? <ToggleOnIcon /> : <ToggleOffIcon />}
+                </IconButton>
                 {leafColorEnabled && (
                   <Button
                     variant="outlined"
@@ -378,6 +354,15 @@ const FertilizerSchedule = ({
                 )}
               </Box>
             </Box>
+
+            {/* Disclaimer */}
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              sx={{ mt: 1 }}
+            >
+              {t("seasonPlans.viewPage.fertilizerScheduleDisclaimer")}
+            </Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails>
