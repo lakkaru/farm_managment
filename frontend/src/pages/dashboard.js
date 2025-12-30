@@ -98,9 +98,15 @@ const DashboardContent = () => {
       }
 
       // Count active seasons (current or future seasons)
-      const now = new Date();
+      // const now = new Date();
+      // console.log('seasonPlans:', seasonPlans);
+      // const activeSeasons = seasonPlans.filter(plan => 
+      //   new Date(plan.expectedHarvest?.date || plan.cultivationDate) >= now
+      // );
+     
+      // console.log('seasonPlans:', seasonPlans);
       const activeSeasons = seasonPlans.filter(plan => 
-        new Date(plan.expectedHarvest?.date || plan.cultivationDate) >= now
+        plan.status === 'active'
       );
 
       // Count request statuses

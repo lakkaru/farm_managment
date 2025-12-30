@@ -22,6 +22,7 @@ import { navigate } from 'gatsby';
 import Layout from '../../../../components/Layout/Layout';
 import AppProviders from '../../../../providers/AppProviders';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../../services/api';
+import { computeSeedTotals } from '../../../../utils/seedUtils';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 
@@ -46,6 +47,9 @@ const EditSeasonPlanContent = ({ id }) => {
     soilP: '',
   });
 
+  // Seed recommendation state (per ha + totals + trays)
+  const [seedInfo, setSeedInfo] = useState({ perHaLabel: '', minTotalKg: null, maxTotalKg: null, traysPerHa: null, trayCount: null, computed: false });
+
   const loadSeasonPlan = async () => {
     try {
       const response = await seasonPlanAPI.getSeasonPlan(id);
@@ -68,6 +72,8 @@ const EditSeasonPlanContent = ({ id }) => {
         transplantingDate: transplantingDate,
         soilP: planData.soilP !== undefined ? String(planData.soilP) : '',
       });
+
+      // Seed recommendation is computed client-side for display — it is not persisted on the SeasonPlan. The local `seedInfo` will be computed by the useEffect below.
     } catch (error) {
       console.error('Error loading season plan:', error);
       setError('Failed to load season plan');
@@ -133,6 +139,19 @@ const EditSeasonPlanContent = ({ id }) => {
     }
   }, [id]);
 
+  // Recompute seed recommendation whenever variety, planting method, or area changes
+  useEffect(() => {
+    const unit = formData.areaUnit || 'acres';
+    const plantingMethod = formData.plantingMethod;
+    const variety = paddyVarieties.find(v => v._id === formData.paddyVariety);
+    const res = computeSeedTotals({ area: formData.cultivatingArea, unit, plantingMethod, variety });
+    if (!res.computed) {
+      setSeedInfo({ perHaLabel: '', minTotalKg: null, maxTotalKg: null, traysPerHa: null, trayCount: null, computed: false });
+      return;
+    }
+    setSeedInfo({ perHaLabel: res.perHaLabel, minTotalKg: res.minTotalKg, maxTotalKg: res.maxTotalKg, traysPerHa: res.traysPerHa, trayCount: res.trayCount, computed: true });
+  }, [formData.plantingMethod, formData.paddyVariety, formData.cultivatingArea, formData.areaUnit, paddyVarieties]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -184,6 +203,8 @@ const EditSeasonPlanContent = ({ id }) => {
         transplantingDate: formData.transplantingDate ? dayjs(formData.transplantingDate).toISOString() : undefined,
         soilP: formData.soilP !== '' ? Number(formData.soilP) : undefined,
       };
+
+      // Seed recommendation is display-only and not persisted; do not include on the update payload.
 
       console.log('Updating season plan data (safe payload):', planData);
 

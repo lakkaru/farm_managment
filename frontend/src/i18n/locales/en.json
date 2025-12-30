@@ -398,6 +398,8 @@
       "paddyVarietyRequired": "Paddy Variety",
       "noPaddyVarieties": "No paddy varieties available",
       "loadingVarieties": "Loading varieties...",
+      "seedRecommendation": "Seed Recommendation",
+      "parachuteTrayCount": "Approx trays" ,
       "noPaddyVarietiesFound": "No paddy varieties found. Please check your connection or contact support.",
       "totalFarmArea": "Total Farm Area",
       "totalAreaHelperText": "Total area of selected farm",

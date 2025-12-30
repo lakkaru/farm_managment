@@ -153,6 +153,8 @@ const createSeasonPlan = async (req, res) => {
       req.body.season // Pass season to determine zinc sulphate application
     );
 
+    // Seed recommendation is computed on-the-fly by the frontend for display and is not persisted server-side.
+
     // Set expected harvest date
     let expectedHarvestDate;
     
@@ -283,6 +285,9 @@ const updateSeasonPlan = async (req, res) => {
       // Also regenerate growing stages using the planting method so the shock
       // period is included for transplanting.
       updatedPlan.growingStages = generateGrowingStages(anchorDate, paddyVariety.duration, plantingMethod);
+
+      // Seed recommendation is calculated by the frontend for display purposes; it is not stored on the SeasonPlan.
+
       await updatedPlan.save();
     }
 

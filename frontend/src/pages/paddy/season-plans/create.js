@@ -29,6 +29,7 @@ import AppProviders from '../../../providers/AppProviders';
 import { seasonPlanAPI, paddyVarietyAPI, farmAPI } from '../../../services/api';
 import { useFarm } from '../../../contexts/FarmContext';
 import { toast } from 'react-toastify';
+import { computeSeedTotals } from '../../../utils/seedUtils';
 
 const CreateSeasonPlanContent = () => {
   const { t, i18n } = useTranslation();
@@ -75,7 +76,44 @@ const CreateSeasonPlanContent = () => {
     areaUnit: '',
   });
 
+  // Seed recommendation state (per ha and computed total for current area)
+  const [seedInfo, setSeedInfo] = useState({
+    perHaLabel: '',
+    minTotalKg: null,
+    maxTotalKg: null,
+    computed: false,
+  });
+
   const isFarmSelected = Boolean(formData.farmId);
+
+  const updateSeedInfo = (override = {}) => {
+    const plantingMethod = override.plantingMethod ?? formData.plantingMethod;
+    const varietyId = override.paddyVariety ?? formData.paddyVariety;
+    const cultivatingArea = override.cultivatingArea ?? formData.cultivatingArea;
+    const unit = selectedFarmInfo.areaUnit || 'acres';
+
+    const variety = paddyVarieties.find(v => v._id === varietyId);
+    const res = computeSeedTotals({ area: cultivatingArea, unit, plantingMethod, variety });
+    if (!res.computed) {
+      setSeedInfo({ perHaLabel: '', minTotalKg: null, maxTotalKg: null, computed: false });
+      return;
+    }
+
+    // Dev-only debug: log variety type and computed result
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('seed recommendation:', {
+        plantingMethod,
+        varietyType: variety?.type,
+        perHaLabel: res.perHaLabel,
+        minTotalKg: res.minTotalKg,
+        maxTotalKg: res.maxTotalKg,
+        area: cultivatingArea,
+        unit,
+      });
+    }
+
+    setSeedInfo(res);
+  };
 
   // Check if all required fields are filled
   const isFormValid = () => {
@@ -105,6 +143,11 @@ const CreateSeasonPlanContent = () => {
     };
     loadData();
   }, []);
+
+  // Recompute seed recommendation whenever variety, planting method, cultivating area, or farm unit changes
+  useEffect(() => {
+    updateSeedInfo();
+  }, [formData.plantingMethod, formData.paddyVariety, formData.cultivatingArea, selectedFarmInfo.areaUnit, paddyVarieties]);
 
   useEffect(() => {
     if (selectedFarm) {
@@ -205,6 +248,11 @@ const CreateSeasonPlanContent = () => {
           cultivationDate: cultivationDate,
         }));
       }
+    }
+
+    // Update seed recommendation when relevant fields change
+    if (['plantingMethod', 'paddyVariety', 'cultivatingArea'].includes(name)) {
+      updateSeedInfo({ [name]: value });
     }
   };
 
@@ -380,6 +428,8 @@ const CreateSeasonPlanContent = () => {
 
       // Remove the frontend-only field
       delete planData.expectedHarvestDate;
+
+      // Seed recommendation is computed client-side for display; we do NOT persist it on the SeasonPlan.
 
       console.log('Sending season plan data:', planData);
 
@@ -653,6 +703,33 @@ const CreateSeasonPlanContent = () => {
                 error={selectedFarmInfo.totalArea && parseFloat(formData.cultivatingArea) > (parseFloat(selectedFarmInfo.totalArea) + 0.01)}
               />
             </Grid>
+
+            {/* Seed recommendation (shows per-ha and total for selected area) */}
+            {formData.plantingMethod !== 'transplanting' && seedInfo.perHaLabel && (
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                      <strong>{t('seasonPlans.createForm.seedRecommendation', { defaultValue: 'Seed recommendation' })}</strong>: {seedInfo.perHaLabel}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {(seedInfo.computed && formData.cultivatingArea) ? (
+                        seedInfo.minTotalKg === seedInfo.maxTotalKg ?
+                          `${seedInfo.minTotalKg.toFixed(2)} kg for ${formData.cultivatingArea} ${selectedFarmInfo.areaUnit || 'acres'}` :
+                          `${seedInfo.minTotalKg.toFixed(2)} - ${seedInfo.maxTotalKg.toFixed(2)} kg for ${formData.cultivatingArea} ${selectedFarmInfo.areaUnit || 'acres'}`
+                      ) : (
+                        t('seasonPlans.createForm.seedRecommendationAreaNote', { defaultValue: 'Enter cultivating area to compute total seed required.' })
+                      )}
+                    </Typography>
+                    {formData.plantingMethod === 'parachute_seeding' && seedInfo.trayCount && formData.cultivatingArea && (
+                      <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 0.5 }}>
+                        {`${t('seasonPlans.createForm.parachuteTrayCount', { defaultValue: 'Approx trays' })}: ~${seedInfo.trayCount} trays for ${formData.cultivatingArea} ${selectedFarmInfo.areaUnit || 'acres'}`}
+                      </Typography>
+                    )}
+                  </Box>
+                </Alert>
+              </Grid>
+            )}
 
             {/* Date Calculation Mode Toggle */}
             <Grid item xs={12}>

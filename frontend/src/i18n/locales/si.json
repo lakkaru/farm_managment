@@ -420,6 +420,8 @@
       "paddyVarietyRequired": "වී ප්‍රභේදය",
       "noPaddyVarieties": "වී ප්‍රභේද නැත",
       "loadingVarieties": "ප්‍රභේද පූරණය කරමින්...",
+      "seedRecommendation": "බීජ නිර්දේශය",
+      "parachuteTrayCount": "ආසන්න තැටි ගණන",
       "noPaddyVarietiesFound": "වී ප්‍රභේද සොයාගත නොහැක. ඔබගේ සම්බන්ධතාව පරීක්ෂා කරන්න හෝ සහාය සම්බන්ධ කරගන්න.",
       "totalFarmArea": "සම්පූර්ණ ගොවිපල ප්‍රමාණය",
       "totalAreaHelperText": "තෝරාගත් ගොවිපලේ සම්පූර්ණ ප්‍රමාණය",
