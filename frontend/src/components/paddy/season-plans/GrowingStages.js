@@ -211,17 +211,15 @@ const GrowingStages = ({
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              flexDirection: "column",
               width: "100%",
               pr: 2,
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
-              🌾 {t("seasonPlans.viewPage.growingStages")}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="h6">
+                🌾 {t("seasonPlans.viewPage.growingStages")}
+              </Typography>
               {plan.growingStages && (
                 <Chip
                   label={t("seasonPlans.viewPage.stageProgress", {
@@ -234,9 +232,15 @@ const GrowingStages = ({
                       ? "success"
                       : "default"
                   }
-                  sx={{ ml: 2 }}
                 />
               )}
+            </Box>
+            <Typography
+              variant="caption"
+              color="textSecondary"
+              sx={{ mt: 0.5 }}
+            >
+              {t("seasonPlans.viewPage.growingStagesDisclaimer")}
             </Typography>
           </Box>
         </AccordionSummary>
