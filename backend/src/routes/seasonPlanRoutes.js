@@ -34,12 +34,12 @@ const remarkUpload = multer({
   },
   fileFilter: function (req, file, cb) {
     // Log the file details for debugging
-    console.log('File upload attempt:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      fieldname: file.fieldname
-    });
+    // console.log('File upload attempt:', {
+    //   originalname: file.originalname,
+    //   mimetype: file.mimetype,
+    //   size: file.size,
+    //   fieldname: file.fieldname
+    // });
 
     // Supported image types including HEIC/HEIF with various MIME types
     const supportedTypes = [
@@ -71,28 +71,28 @@ const remarkUpload = multer({
     
     // Check by MIME type first
     if (supportedTypes.includes(mimeType)) {
-      console.log('✅ File accepted by MIME type:', mimeType);
+      // console.log('✅ File accepted by MIME type:', mimeType);
       return cb(null, true);
     }
     
     // Mobile devices often send HEIC files with generic MIME types, so check by extension
     if (hasImageExtension) {
-      console.log('✅ File accepted by extension:', fileName, 'with MIME type:', mimeType);
+      // console.log('✅ File accepted by extension:', fileName, 'with MIME type:', mimeType);
       return cb(null, true);
     }
     
     // Fallback: if MIME type starts with 'image/' accept it
     if (mimeType.startsWith('image/')) {
-      console.log('✅ File accepted as generic image type:', mimeType);
+      // console.log('✅ File accepted as generic image type:', mimeType);
       return cb(null, true);
     }
     
-    console.log('❌ File rejected:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      hasImageExtension,
-      reason: 'Unsupported format - not recognized as image'
-    });
+    // console.log('❌ File rejected:', {
+    //   originalname: file.originalname,
+    //   mimetype: file.mimetype,
+    //   hasImageExtension,
+    //   reason: 'Unsupported format - not recognized as image'
+    // });
     
     return cb(new Error(`Unsupported image format! File: ${file.originalname}, MIME: ${file.mimetype}. Supported formats: JPEG, PNG, GIF, WebP, HEIC, HEIF, BMP, TIFF`), false);
   }
@@ -125,9 +125,9 @@ const seasonPlanValidation = [
 router.get('/remark-image/*', async (req, res) => {
   // Extract the full path after /remark-image/
   const filename = req.params[0]; // This captures everything after the asterisk
-  console.log('=== IMAGE SERVING DEBUG ===');
-  console.log('Serving remark image:', filename);
-  console.log('Full URL path:', req.originalUrl);
+  // console.log('=== IMAGE SERVING DEBUG ===');
+  // console.log('Serving remark image:', filename);
+  // console.log('Full URL path:', req.originalUrl);
   
   // Set CORS headers for images
   res.header('Access-Control-Allow-Origin', '*');
@@ -138,41 +138,41 @@ router.get('/remark-image/*', async (req, res) => {
     // First, try to find the image in the database to check if it has an R2 URL
     const SeasonPlan = require('../models/SeasonPlan');
     
-    console.log('Searching for image in database...');
+    // console.log('Searching for image in database...');
     // Search for the image in all season plans
     const seasonPlan = await SeasonPlan.findOne({
       'dailyRemarks.images.filename': filename
     });
     
-    console.log('Season plan found:', !!seasonPlan);
+    // console.log('Season plan found:', !!seasonPlan);
     
     if (seasonPlan) {
-      console.log('Season plan ID:', seasonPlan._id);
+      // console.log('Season plan ID:', seasonPlan._id);
       // Find the specific image in the remarks
       let targetImage = null;
       for (const remark of seasonPlan.dailyRemarks) {
         const image = remark.images.find(img => img.filename === filename);
         if (image) {
           targetImage = image;
-          console.log('Found target image:', {
-            filename: image.filename,
-            hasUrl: !!image.url,
-            url: image.url
-          });
+          // console.log('Found target image:', {
+          //   filename: image.filename,
+          //   hasUrl: !!image.url,
+          //   url: image.url
+          // });
           break;
         }
       }
       
       // If image has R2 URL, stream it using R2 service (since R2 bucket is private)
       if (targetImage && targetImage.url) {
-        console.log('Streaming R2 image using R2 service for:', targetImage.filename);
+        // console.log('Streaming R2 image using R2 service for:', targetImage.filename);
         
         try {
           const r2Service = require('../services/r2Service');
           
           // Use the filename as the R2 key since that's what's stored
           const r2Key = targetImage.filename;
-          console.log('R2 key:', r2Key);
+          // console.log('R2 key:', r2Key);
           
           // Get file stream from R2
           const fileData = await r2Service.getFileStream(r2Key);
@@ -188,7 +188,7 @@ router.get('/remark-image/*', async (req, res) => {
           
           // Stream the image
           fileData.stream.pipe(res);
-          console.log('✅ Successfully streamed R2 image via R2 service');
+          // console.log('✅ Successfully streamed R2 image via R2 service');
           return;
           
         } catch (error) {
@@ -196,26 +196,26 @@ router.get('/remark-image/*', async (req, res) => {
           // Continue to local filesystem fallback
         }
       } else {
-        console.log('Target image found but no R2 URL available');
+        // console.log('Target image found but no R2 URL available');
       }
     } else {
-      console.log('No season plan found with this image filename');
+      // console.log('No season plan found with this image filename');
     }
     
     // Function to check local filesystem as fallback
     function checkLocalFilesystem() {
       const fs = require('fs');
       const imagePath = path.join(__dirname, '../../uploads/remarks', filename);
-      console.log('Trying local filesystem:', imagePath);
+      // console.log('Trying local filesystem:', imagePath);
       
       if (fs.existsSync(imagePath)) {
-        console.log('Serving legacy image from filesystem');
+        // console.log('Serving legacy image from filesystem');
         return res.sendFile(imagePath);
       }
       
       // Image not found anywhere
-      console.log('Image not found anywhere - filename:', filename);
-      console.log('===========================');
+      // console.log('Image not found anywhere - filename:', filename);
+      // console.log('===========================');
       return res.status(404).json({ 
         error: 'Image not found',
         message: `Image "${filename}" is no longer available`
@@ -316,18 +316,18 @@ const handleRemarkUploadErrors = (error, req, res, next) => {
 
 // Middleware to log daily remarks requests
 const logDailyRemarksRequest = (req, res, next) => {
-  console.log('\n=== DAILY REMARKS REQUEST DEBUG ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.originalUrl);
-  console.log('Headers:', {
-    'content-type': req.headers['content-type'],
-    'content-length': req.headers['content-length'],
-    'user-agent': req.headers['user-agent']
-  });
-  console.log('Body fields:', Object.keys(req.body || {}));
-  console.log('Files:', req.files ? req.files.length : 'no files yet');
-  console.log('Params:', req.params);
-  console.log('=====================================\n');
+  // console.log('\n=== DAILY REMARKS REQUEST DEBUG ===');
+  // console.log('Method:', req.method);
+  // console.log('URL:', req.originalUrl);
+  // console.log('Headers:', {
+  //   'content-type': req.headers['content-type'],
+  //   'content-length': req.headers['content-length'],
+  //   'user-agent': req.headers['user-agent']
+  // });
+  // console.log('Body fields:', Object.keys(req.body || {}));
+  // console.log('Files:', req.files ? req.files.length : 'no files yet');
+  // console.log('Params:', req.params);
+  // console.log('=====================================\n');
   next();
 };
 

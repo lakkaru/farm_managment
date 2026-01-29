@@ -780,7 +780,7 @@ const addLCCFertilizerApplication = async (req, res) => {
     const { plantAge, leafColorIndex, recommendedUrea, notes, applicationDate } = req.body;
 
     // Debug logging to verify applicationDate is received
-    console.log('LCC Application Data:', { plantAge, leafColorIndex, recommendedUrea, applicationDate });
+    // console.log('LCC Application Data:', { plantAge, leafColorIndex, recommendedUrea, applicationDate });
 
     const plan = await SeasonPlan.findById(id);
     
@@ -807,12 +807,12 @@ const addLCCFertilizerApplication = async (req, res) => {
     })();
 
     // Debug logging to verify which date is being used
-    console.log('Date selection:', { 
-      providedDate: applicationDate, 
-      usedDate: appDate.toISOString(),
-      cultivationDate: plan.cultivationDate,
-      isUsingProvidedDate: !!applicationDate 
-    });
+    // console.log('Date selection:', { 
+    //   providedDate: applicationDate, 
+    //   usedDate: appDate.toISOString(),
+    //   cultivationDate: plan.cultivationDate,
+    //   isUsingProvidedDate: !!applicationDate 
+    // });
 
     // Convert cultivating area to acres for LCC calculations
     const areaUnit = plan.areaUnit || 'acres';
@@ -943,27 +943,27 @@ const deleteFertilizerApplication = async (req, res) => {
 // @access  Private
 const addDailyRemark = async (req, res) => {
   try {
-    console.log('\n=== ADD DAILY REMARK CONTROLLER DEBUG ===');
-    console.log('Request received for season plan:', req.params.id);
-    console.log('Body:', req.body);
-    console.log('Files received:', req.files ? req.files.length : 0);
-    if (req.files) {
-      req.files.forEach((file, index) => {
-        console.log(`File ${index}:`, {
-          originalname: file.originalname,
-          mimetype: file.mimetype,
-          size: file.size,
-          bufferLength: file.buffer ? file.buffer.length : 'no buffer'
-        });
-      });
-    }
-    console.log('==========================================\n');
+    // console.log('\n=== ADD DAILY REMARK CONTROLLER DEBUG ===');
+    // console.log('Request received for season plan:', req.params.id);
+    // console.log('Body:', req.body);
+    // console.log('Files received:', req.files ? req.files.length : 0);
+    // if (req.files) {
+    //   req.files.forEach((file, index) => {
+    //     console.log(`File ${index}:`, {
+    //       originalname: file.originalname,
+    //       mimetype: file.mimetype,
+    //       size: file.size,
+    //       bufferLength: file.buffer ? file.buffer.length : 'no buffer'
+    //     });
+    //   });
+    // }
+    // console.log('==========================================\n');
 
     const { id } = req.params;
     const { date, category, title, description } = req.body;
 
     if (!date || !description) {
-      console.log('[MOBILE DEBUG] Validation failed - missing required fields');
+      // console.log('[MOBILE DEBUG] Validation failed - missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Date and description are required',
@@ -990,16 +990,16 @@ const addDailyRemark = async (req, res) => {
     let imageObjects = [];
     if (req.files && req.files.length > 0) {
       try {
-        console.log(`[MOBILE DEBUG] Processing ${req.files.length} files:`, req.files.map(f => ({
-          name: f.originalname,
-          mime: f.mimetype,
-          size: f.size,
-          bufferLength: f.buffer ? f.buffer.length : 'no buffer'
-        })));
+        // console.log(`[MOBILE DEBUG] Processing ${req.files.length} files:`, req.files.map(f => ({
+        //   name: f.originalname,
+        //   mime: f.mimetype,
+        //   size: f.size,
+        //   bufferLength: f.buffer ? f.buffer.length : 'no buffer'
+        // })));
 
         // Process and upload images to Cloudflare R2
         const uploadPromises = req.files.map(async (file, index) => {
-          console.log(`[MOBILE DEBUG] Processing image ${index + 1}: ${file.originalname} (${file.mimetype}) - Size: ${file.size} bytes`);
+          // console.log(`[MOBILE DEBUG] Processing image ${index + 1}: ${file.originalname} (${file.mimetype}) - Size: ${file.size} bytes`);
           
           // Check if buffer exists and has content
           if (!file.buffer || file.buffer.length === 0) {
@@ -1007,7 +1007,7 @@ const addDailyRemark = async (req, res) => {
           }
           
           // Validate image
-          console.log(`[MOBILE DEBUG] Validating image: ${file.originalname}`);
+          // console.log(`[MOBILE DEBUG] Validating image: ${file.originalname}`);
           const validation = await imageProcessingService.validateImage(
             file.buffer, 
             file.mimetype, 
@@ -1019,10 +1019,10 @@ const addDailyRemark = async (req, res) => {
             throw new Error(`Invalid image ${file.originalname}: ${validation.error}`);
           }
           
-          console.log(`[MOBILE DEBUG] Validation passed for ${file.originalname}`);
+          // console.log(`[MOBILE DEBUG] Validation passed for ${file.originalname}`);
           
           // Process image (convert HEIC to JPEG, optimize, resize)
-          console.log(`[MOBILE DEBUG] Starting image processing for ${file.originalname}`);
+          // console.log(`[MOBILE DEBUG] Starting image processing for ${file.originalname}`);
           const processedImage = await imageProcessingService.processImage(
             file.buffer,
             file.mimetype,
@@ -1035,13 +1035,13 @@ const addDailyRemark = async (req, res) => {
             file.originalname // Pass filename for better HEIC detection
           );
           
-          console.log(`[MOBILE DEBUG] Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
+          // console.log(`[MOBILE DEBUG] Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
           
           // Generate new filename with correct extension
           const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
           const processedFileName = `${fileNameWithoutExt}${processedImage.fileExtension}`;
           
-          console.log(`[MOBILE DEBUG] Uploading to R2 as: ${processedFileName}`);
+          // console.log(`[MOBILE DEBUG] Uploading to R2 as: ${processedFileName}`);
           // Upload processed image to R2
           const uploadResult = await r2Service.uploadFile(
             processedImage.buffer,
@@ -1050,7 +1050,7 @@ const addDailyRemark = async (req, res) => {
             'daily-remarks'
           );
           
-          console.log(`[MOBILE DEBUG] Successfully uploaded: ${processedFileName} to R2`);
+          // console.log(`[MOBILE DEBUG] Successfully uploaded: ${processedFileName} to R2`);
           
           return {
             filename: uploadResult.key, // R2 key as filename
@@ -1068,7 +1068,7 @@ const addDailyRemark = async (req, res) => {
         });
 
         imageObjects = await Promise.all(uploadPromises);
-        console.log(`[MOBILE DEBUG] Successfully processed and uploaded ${imageObjects.length} images`);
+        // console.log(`[MOBILE DEBUG] Successfully processed and uploaded ${imageObjects.length} images`);
       } catch (error) {
         console.error('[MOBILE DEBUG] Image processing/upload error:', error);
         console.error('[MOBILE DEBUG] Error stack:', error.stack);
@@ -1178,7 +1178,7 @@ const updateDailyRemark = async (req, res) => {
       try {
         // Process and upload new images to Cloudflare R2
         const uploadPromises = req.files.map(async (file) => {
-          console.log(`Processing image: ${file.originalname} (${file.mimetype})`);
+          // console.log(`Processing image: ${file.originalname} (${file.mimetype})`);
           
           // Validate image
           const validation = await imageProcessingService.validateImage(
@@ -1204,7 +1204,7 @@ const updateDailyRemark = async (req, res) => {
             file.originalname // Pass filename for better HEIC detection
           );
           
-          console.log(`Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
+          // console.log(`Image processed: ${file.originalname} - Size: ${processedImage.originalSize} → ${processedImage.processedSize} bytes (${processedImage.compressionRatio}% reduction)`);
           
           // Generate new filename with correct extension
           const fileNameWithoutExt = file.originalname.replace(/\.[^/.]+$/, '');
@@ -1234,7 +1234,7 @@ const updateDailyRemark = async (req, res) => {
         });
 
         const newImageObjects = await Promise.all(uploadPromises);
-        console.log(`Successfully processed and uploaded ${newImageObjects.length} images`);
+        // console.log(`Successfully processed and uploaded ${newImageObjects.length} images`);
         // Add new images to existing ones (don't replace, append)
         remark.images = [...(remark.images || []), ...newImageObjects];
       } catch (error) {
@@ -1306,9 +1306,9 @@ const deleteDailyRemark = async (req, res) => {
           r2Service.deleteFile(image.filename)
         );
         await Promise.all(deletePromises);
-        console.log(`Deleted ${remark.images.length} images from R2 for remark ${remarkId}`);
+        // console.log(`Deleted ${remark.images.length} images from R2 for remark ${remarkId}`);
       } catch (error) {
-        console.log('Warning: Some images could not be deleted from R2:', error.message);
+        // console.log('Warning: Some images could not be deleted from R2:', error.message);
         // Continue with remark deletion even if R2 cleanup fails
       }
     }
@@ -1341,11 +1341,11 @@ const removeRemarkImage = async (req, res) => {
     const { id, remarkId } = req.params;
     const { imageFilename } = req.body;
     
-    console.log('=== REMOVE IMAGE DEBUG ===');
-    console.log('Season plan ID:', id);
-    console.log('Remark ID:', remarkId);
-    console.log('Image filename from body:', imageFilename);
-    console.log('==========================');
+    // console.log('=== REMOVE IMAGE DEBUG ===');
+    // console.log('Season plan ID:', id);
+    // console.log('Remark ID:', remarkId);
+    // console.log('Image filename from body:', imageFilename);
+    // console.log('==========================');
     
     if (!imageFilename) {
       return res.status(400).json({
@@ -1396,9 +1396,9 @@ const removeRemarkImage = async (req, res) => {
     // Delete the image from Cloudflare R2
     try {
       await r2Service.deleteFile(imageFilename);
-      console.log('Image deleted from R2:', imageFilename);
+      // console.log('Image deleted from R2:', imageFilename);
     } catch (error) {
-      console.log('Warning: Could not delete image from R2:', imageFilename, error.message);
+      // console.log('Warning: Could not delete image from R2:', imageFilename, error.message);
       // Continue execution even if R2 deletion fails
     }
 

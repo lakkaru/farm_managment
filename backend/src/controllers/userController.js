@@ -371,16 +371,16 @@ const uploadProfileAvatar = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/change-password
 // @access  Private
 const changePassword = asyncHandler(async (req, res) => {
-  console.log('Change password request received:', { 
-    userId: req.user._id, 
-    hasCurrentPassword: !!req.body.currentPassword, 
-    hasNewPassword: !!req.body.newPassword 
-  });
+  // console.log('Change password request received:', { 
+  //   userId: req.user._id, 
+  //   hasCurrentPassword: !!req.body.currentPassword, 
+  //   hasNewPassword: !!req.body.newPassword 
+  // });
 
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    console.log('Missing password fields');
+    // console.log('Missing password fields');
     return res.status(400).json({
       success: false,
       message: 'Current password and new password are required',
@@ -391,17 +391,17 @@ const changePassword = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('+password');
 
   if (!user) {
-    console.log('User not found:', req.user._id);
+    // console.log('User not found:', req.user._id);
     return res.status(404).json({
       success: false,
       message: 'User not found',
     });
   }
 
-  console.log('User found, verifying current password');
+  // console.log('User found, verifying current password');
   // Verify current password
   const isCurrentPasswordValid = await user.matchPassword(currentPassword);
-  console.log('Current password valid:', isCurrentPasswordValid);
+  // console.log('Current password valid:', isCurrentPasswordValid);
   
   if (!isCurrentPasswordValid) {
     return res.status(400).json({
@@ -412,7 +412,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
   // Check if new password is different from current password
   const isSamePassword = await user.matchPassword(newPassword);
-  console.log('New password same as current:', isSamePassword);
+  // console.log('New password same as current:', isSamePassword);
   
   if (isSamePassword) {
     return res.status(400).json({
@@ -421,12 +421,12 @@ const changePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log('Updating password for user:', user._id);
+  // console.log('Updating password for user:', user._id);
   // Update password (pre-save hook will hash it)
   user.password = newPassword;
   await user.save();
 
-  console.log('Password updated successfully');
+  // console.log('Password updated successfully');
   res.status(200).json({
     success: true,
     message: 'Password changed successfully',
