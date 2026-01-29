@@ -10,6 +10,7 @@ const {
 } = require('../middleware/validation');
 const DiseaseReference = require('../models/DiseaseReference');
 const AnalysisHistory = require('../models/AnalysisHistory');
+const openaiService = require('../services/openaiService');
 
 const router = express.Router();
 
@@ -299,23 +300,65 @@ const diseaseDatabase = [
   }
 ];
 
-// Enhanced image analysis with reference image comparison
+// Enhanced image analysis with OpenAI Vision API and reference image comparison
 async function analyzeImage(imagePath, imageMetadata = {}) {
   try {
     const { size, type, timestamp = Date.now() } = imageMetadata;
     
     // Simulate image quality assessment
     const imageQuality = assessImageQuality(size, type);
-    
-    // Enhanced disease selection logic based on various factors
     const seasonalFactors = getCurrentSeasonalFactors();
+    
+    // Try OpenAI Vision API first if available
+    if (openaiService.isAvailable()) {
+      try {
+        console.log('Using OpenAI Vision API for disease detection...');
+        const openaiResult = await openaiService.analyzeRicePlantImage(imagePath);
+        
+        if (openaiResult.success) {
+          // Map OpenAI result to our format and enhance with local disease database
+          const enhancedDiseases = enhanceOpenAIDiseases(openaiResult.diseases);
+          
+          return {
+            isHealthy: openaiResult.isHealthy,
+            healthScore: openaiResult.healthScore,
+            diseases: enhancedDiseases,
+            nutritionalDeficiencies: openaiResult.nutritionalDeficiencies || [],
+            recommendations: [
+              ...openaiResult.recommendations,
+              ...generateAdvancedRecommendations(enhancedDiseases, openaiResult.healthScore, seasonalFactors)
+            ],
+            treatment: openaiResult.treatment || [],
+            prevention: openaiResult.prevention || [],
+            urgency: openaiResult.urgency || 'routine',
+            notes: openaiResult.notes || '',
+            analysisMetadata: {
+              imageQuality: openaiResult.imageQuality,
+              processingTime: Date.now() - timestamp,
+              modelVersion: 'OpenAI GPT-4 Vision',
+              confidenceLevel: calculateOverallConfidence(enhancedDiseases),
+              environmentalFactors: seasonalFactors,
+              analysisMethod: 'openai_vision',
+              aiProvider: 'OpenAI',
+              tokensUsed: openaiResult.metadata?.totalTokens || 0
+            }
+          };
+        }
+      } catch (openaiError) {
+        console.error('OpenAI analysis failed, falling back to traditional method:', openaiError);
+        // Fall through to traditional analysis
+      }
+    }
+    
+    // Fallback: Traditional analysis with reference image comparison
+    console.log('Using traditional disease detection method...');
     
     // NEW: Attempt reference image comparison first
     let referenceBasedResults = null;
     try {
       referenceBasedResults = await performReferenceImageComparison(imagePath);
     } catch (error) {
-      console.error('Reference comparison failed, falling back to traditional analysis:', error);
+      console.error('Reference comparison failed, falling back to simulated analysis:', error);
     }
     
     let detectedDiseases = [];
@@ -348,7 +391,7 @@ async function analyzeImage(imagePath, imageMetadata = {}) {
         modelVersion: '2.1.0',
         confidenceLevel: calculateOverallConfidence(detectedDiseases),
         environmentalFactors: seasonalFactors,
-        analysisMethod, // NEW: Track which method was used
+        analysisMethod, // Track which method was used
         referenceMatches: referenceBasedResults ? referenceBasedResults.matches.length : 0
       }
     };
@@ -356,6 +399,65 @@ async function analyzeImage(imagePath, imageMetadata = {}) {
     console.error('Error in image analysis:', error);
     throw error;
   }
+}
+
+// Enhance OpenAI diseases with local database information
+function enhanceOpenAIDiseases(openaiDiseases) {
+  return openaiDiseases.map(disease => {
+    // Try to match with local database for additional information
+    const localDisease = diseaseDatabase.find(d => 
+      d.name.toLowerCase() === disease.name.toLowerCase() ||
+      d.scientificName.toLowerCase() === disease.scientificName.toLowerCase()
+    );
+    
+    if (localDisease) {
+      // Merge OpenAI detection with local database information
+      return {
+        ...localDisease,
+        id: localDisease.id,
+        confidence: disease.confidence,
+        severity: disease.severity,
+        affectedAreas: disease.affectedAreas || [],
+        aiDetectedSymptoms: disease.symptoms || [],
+        // Keep both local and AI-detected information
+        treatment: [...new Set([...(disease.treatment || []), ...(localDisease.treatment || [])])],
+        prevention: [...new Set([...(disease.prevention || []), ...(localDisease.prevention || [])])],
+      };
+    }
+    
+    // If not in local database, return OpenAI result as-is with generated ID
+    return {
+      ...disease,
+      id: Math.floor(Math.random() * 10000),
+    };
+  });
+}
+
+// Helper function to convert image quality string to number (0-100)
+function convertImageQualityToNumber(qualityString) {
+  const qualityMap = {
+    'excellent': 95,
+    'good': 80,
+    'fair': 60,
+    'poor': 35,
+    'very poor': 20,
+    'unknown': 50
+  };
+  
+  const normalized = (qualityString || 'fair').toLowerCase();
+  return qualityMap[normalized] || 60;
+}
+
+// Helper function to map analysis method to database enum
+function mapAnalysisMethodToEnum(analysisMethod) {
+  const methodMap = {
+    'openai_vision': 'ml_model',
+    'reference_matching': 'reference_matching',
+    'traditional_ai': 'ml_model',
+    'hybrid': 'hybrid'
+  };
+  
+  return methodMap[analysisMethod] || 'ml_model';
 }
 
 // NEW: Reference image comparison function
@@ -691,6 +793,16 @@ router.post('/analyze', protect, upload.single('image'), validateImageUpload, ha
     // Analyze the image with enhanced logic (now includes reference comparison)
     const analysis = await analyzeImage(imagePath, imageMetadata);
     
+    // Prepare analysis metadata for database (convert types as needed)
+    const dbMetadata = {
+      processingTime: analysis.analysisMetadata.processingTime || Date.now() - imageMetadata.timestamp,
+      modelVersion: analysis.analysisMetadata.modelVersion || 'Unknown',
+      imageQuality: convertImageQualityToNumber(analysis.imageQuality || analysis.analysisMetadata.imageQuality),
+      confidenceLevel: analysis.analysisMetadata.confidenceLevel || 70,
+      environmentalFactors: analysis.analysisMetadata.environmentalFactors || {},
+      comparisonMethod: mapAnalysisMethodToEnum(analysis.analysisMetadata.analysisMethod)
+    };
+    
     // Save analysis to database for history tracking
     const detectionRecord = new AnalysisHistory({
       userId: req.user.id,
@@ -715,16 +827,9 @@ router.post('/analyze', protect, upload.single('image'), validateImageUpload, ha
             matchingFeatures: disease.matchingFeatures || []
           }] : []
         })),
-        recommendations: analysis.recommendations
+        recommendations: analysis.recommendations || []
       },
-      analysisMetadata: {
-        processingTime: analysis.analysisMetadata.processingTime,
-        modelVersion: analysis.analysisMetadata.modelVersion,
-        imageQuality: analysis.analysisMetadata.imageQuality,
-        confidenceLevel: analysis.analysisMetadata.confidenceLevel,
-        environmentalFactors: analysis.analysisMetadata.environmentalFactors,
-        comparisonMethod: analysis.analysisMetadata.analysisMethod
-      },
+      analysisMetadata: dbMetadata,
       location: {
         farmId: req.body.farmId || null
       }

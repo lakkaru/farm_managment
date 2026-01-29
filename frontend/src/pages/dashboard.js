@@ -474,6 +474,15 @@ const DashboardContent = () => {
                   >
                     {t('dashboard.planPaddySeason')}
                   </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<DiseaseIcon />}
+                    onClick={() => navigate('/paddy/disease-detection')}
+                    fullWidth
+                    color="error"
+                  >
+                    Rice Plant Diseases
+                  </Button>
                 </>
               )}
               
