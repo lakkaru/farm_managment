@@ -96,7 +96,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Apply immediately at first signs. Response visible in 7-10 days',
       criticalStages: 'Tillering and panicle initiation stages',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/nitrogen-deficiency.jpg'
+      imageUrl: '/images/deficiencies/nitrogen.jpg'
     },
     {
       id: 2,
@@ -140,7 +140,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Critical at tillering and flowering stages',
       criticalStages: 'Tillering, flowering, and grain filling',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/nutrients-potassium-deficiency.jpg'
+      imageUrl: '/images/deficiencies/potassium.jpg'
     },
     {
       id: 3,
@@ -185,7 +185,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Best as basal application before transplanting',
       criticalStages: 'Early vegetative growth',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/phosphorus-deficiency-field.jpg'
+      imageUrl: '/images/deficiencies/phosphorus.jpg'
     },
     {
       id: 4,
@@ -229,7 +229,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Apply before transplanting or at first symptoms',
       criticalStages: 'Transplanting to tillering stage',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/nutrients-zinc-deficiency.jpg'
+      imageUrl: '/images/deficiencies/zinc.jpg'
     },
     {
       id: 5,
@@ -274,7 +274,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Drainage and lime application before symptoms worsen',
       criticalStages: 'Mid-tillering to flowering',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/nutrients-iron-toxicity.jpg'
+      imageUrl: '/images/deficiencies/iron-toxicity.jpg'
     },
     {
       id: 6,
@@ -317,7 +317,7 @@ const PlantDiseaseDetectionContent = () => {
       ],
       timing: 'Apply at first symptoms or as preventive measure',
       criticalStages: 'Early vegetative stage',
-      imageUrl: 'http://www.knowledgebank.irri.org/images/stories/sulfur-deficiency-1.jpg'
+      imageUrl: '/images/deficiencies/sulfur.jpg'
     }
   ];
 
